@@ -386,10 +386,22 @@ input,select{outline:none;font-family:inherit;}
   .hcard{padding:14px;}
   .hidesc{font-size:13px;}
 
-  /* admin & favorites — let inner rows wrap on narrow screens */
+  /* admin krow — let it wrap on narrow screens */
   .krow{flex-wrap:wrap;}
-  .fav-card-inner{flex-wrap:wrap;}
-  .fav-desc-input{font-size:14px;padding:7px 8px;}
+
+  /* ── favorites cards — explicit 3-row stack on mobile ── */
+  .fav-card{padding:12px 14px;}
+  .fav-card-inner{flex-wrap:wrap;gap:8px;align-items:center;}
+  /* ROW 1 (top): the desc+meta wrapper takes the full width */
+  .fav-card-inner > div:not(.qwrap){flex:0 0 100% !important;order:-2;width:100%;}
+  .fav-desc-input{width:100%;font-size:15px;padding:10px 12px;font-weight:600;}
+  .fav-meta{padding-left:0;font-size:11px;flex-wrap:wrap;gap:6px 10px;}
+  /* ROW 2 (middle): color | star | qty — qty pushed to the right */
+  .fav-card-inner > .fav-color-select{order:0;width:110px;padding:8px 10px;font-size:12px;}
+  .fav-card-inner > .fb{order:0;}
+  .fav-card-inner > .qwrap{order:0;margin-left:auto;}
+  /* ROW 3 (bottom): full-width Add as the primary action */
+  .fav-card-inner > .ab{flex:0 0 100% !important;order:1;padding:14px;font-size:13px;}
 
   /* recent-search dropdown — bigger taps */
   .recent-item{padding:11px 12px;}
