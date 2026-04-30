@@ -430,6 +430,45 @@ input,select{outline:none;font-family:inherit;}
   .role-btn{padding:14px 6px;}
   .role-btn .ri{font-size:22px;}
   .btn-login{padding:15px;font-size:13px;}
+
+  /* ── Event Log modal — convert the desktop table to stacked cards ── */
+  /* compact header — smaller title, allow buttons to wrap below if needed */
+  #mEventLog > div:first-child{padding:10px 12px !important;flex-wrap:wrap !important;gap:8px !important;}
+  #mEventLog > div:first-child > div:first-child > div:first-child{font-size:13px !important;}
+  #mEventLog > div:first-child > div:first-child > div:nth-child(2){font-size:10px !important;margin-top:2px !important;}
+  #mEventLog > div:first-child > div:nth-child(2) button{padding:7px 11px !important;font-size:10px !important;}
+  #eventLogBody{padding:10px !important;}
+  /* unwrap the table so each row becomes a self-contained card */
+  #eventLogBody table,
+  #eventLogBody tbody{display:block !important;width:100% !important;}
+  #eventLogBody tr{
+    display:block !important;
+    background:#1f1f1f !important;
+    border:1px solid #2a2a2a !important;
+    border-radius:3px !important;
+    margin-bottom:8px !important;
+    padding:10px 12px !important;
+  }
+  #eventLogBody td{
+    display:block !important;
+    padding:0 !important;
+    white-space:normal !important;
+    max-width:none !important;
+    border:none !important;
+    line-height:1.4 !important;
+  }
+  /* row 1: action + qty (colored, bold) */
+  #eventLogBody td:first-child{font-size:13px !important;margin-bottom:5px !important;}
+  /* row 2: part description (main content) */
+  #eventLogBody td:nth-child(2){font-size:13px !important;color:#e8e8e8 !important;margin-bottom:6px !important;}
+  /* row 3: who + role inline */
+  #eventLogBody td:nth-child(3){font-size:11px !important;display:inline-block !important;margin-right:10px !important;}
+  /* row 4: timestamp inline next to who */
+  #eventLogBody td:nth-child(4){font-size:10px !important;display:inline-block !important;color:#777 !important;}
+  /* prevent the role <span>'s <br> from forcing a new line — show "Name · Role" inline */
+  #eventLogBody td:nth-child(3) br{display:none !important;}
+  #eventLogBody td:nth-child(3) span{margin-left:6px !important;}
+  #eventLogBody td:nth-child(3) span:before{content:"· ";color:#555;}
 }
 
 /* very narrow phones (≤360px) — collapse role buttons; stats stay horizontal */
