@@ -576,7 +576,7 @@ input,select{outline:none;font-family:inherit;}
       <div class="search-row">
         <div class="sbox">
           <span class="sico">🔍</span>
-          <input type="text" id="bQ" placeholder='Search Oracle, SAGE, or description — try "exact phrase", typos OK' oninput="dbBrowse()" onfocus="showRecentDropdown('bQ')" onblur="hideRecentDropdown('bQ');saveRecentSearch(this.value)" />
+          <input type="text" id="bQ" placeholder='Search Oracle, SAGE, or description — try "exact phrase", typos OK' enterkeyhint="search" oninput="dbBrowse()" onkeydown="onSearchEnter(event,'browse')" onfocus="showRecentDropdown('bQ')" onblur="hideRecentDropdown('bQ');saveRecentSearch(this.value)" />
           <div id="bQ_recent" class="recent-dd"></div>
         </div>
         <select class="fsel" id="bDept" onchange="rstBrowse()">
@@ -594,7 +594,7 @@ input,select{outline:none;font-family:inherit;}
       <div class="search-row">
         <div class="sbox">
           <span class="sico">🔍</span>
-          <input type="text" id="fQ" placeholder="Search favorites..." oninput="renderFavs()" onfocus="showRecentDropdown('fQ')" onblur="hideRecentDropdown('fQ');saveRecentSearch(this.value)" />
+          <input type="text" id="fQ" placeholder="Search favorites..." enterkeyhint="search" oninput="dbFavs()" onkeydown="onSearchEnter(event,'fav')" onfocus="showRecentDropdown('fQ')" onblur="hideRecentDropdown('fQ');saveRecentSearch(this.value)" />
           <div id="fQ_recent" class="recent-dd"></div>
         </div>
         <select class="fsel" id="fDept" onchange="renderFavs()">
@@ -897,24 +897,31 @@ function expandToken(t){
 
 // Cached hyphen-stripped lowercase forms of part fields (oracle/sage/desc).
 // Invalidated on parts-array reference change (e.g. custom parts loaded).
-var _normCache=null, _normCacheSrc=null;
+// Also builds {oracle,sage} → index lookup tables for O(1) exact-ID hits in
+// smartSearch's fast path.
+var _normCache=null, _normCacheSrc=null, _idLookup=null;
 function _ensureNormCache(parts){
   if(_normCacheSrc===parts) return _normCache;
   _normCacheSrc=parts;
-  _normCache=parts.map(function(p){
-    return {
-      o: String(p[0]||'').toLowerCase().replace(/-/g,''),
-      s: String(p[1]||'').toLowerCase().replace(/-/g,''),
-      d: String(p[2]||'').toLowerCase().replace(/-/g,'')
-    };
+  var oMap=Object.create(null), sMap=Object.create(null);
+  _normCache=parts.map(function(p, i){
+    var o=String(p[0]||'').toLowerCase().replace(/-/g,'');
+    var s=String(p[1]||'').toLowerCase().replace(/-/g,'');
+    var d=String(p[2]||'').toLowerCase().replace(/-/g,'');
+    if(o && oMap[o]===undefined) oMap[o]=i;
+    if(s && sMap[s]===undefined) sMap[s]=i;
+    return {o:o, s:s, d:d};
   });
+  _idLookup={o:oMap, s:sMap};
   return _normCache;
 }
 
 // Vocabulary of unique words across all descriptions, used for typo
 // correction. Words ≥3 chars, lowercased, hyphen-stripped, must contain a
 // letter (skips pure-numeric tokens). Cached by parts-array reference.
-var _descVocab=null, _descVocabSrc=null;
+// Also builds a length-bucketed view (_descVocabByLen[len]) so _correctToken
+// can iterate only words within ±maxDist of the query token's length.
+var _descVocab=null, _descVocabByLen=null, _descVocabSrc=null;
 function _ensureDescVocab(parts){
   if(_descVocabSrc===parts) return _descVocab;
   var set=Object.create(null);
@@ -927,6 +934,14 @@ function _ensureDescVocab(parts){
     }
   }
   _descVocab=Object.keys(set);
+  // Bucket by length for fast _correctToken candidate pruning.
+  var byLen=Object.create(null);
+  for(var k=0;k<_descVocab.length;k++){
+    var w2=_descVocab[k];
+    if(!byLen[w2.length]) byLen[w2.length]=[];
+    byLen[w2.length].push(w2);
+  }
+  _descVocabByLen=byLen;
   _descVocabSrc=parts;
   return _descVocab;
 }
@@ -967,19 +982,26 @@ function _editDistance(a, b, cap){
 // Find nearest description-vocabulary word to a query token. Returns the
 // corrected word, or null if nothing within the edit-distance threshold.
 // Threshold scales with token length so short tokens demand a tighter match.
+// Iterates only the length buckets within ±maxDist for speed.
 function _correctToken(token, parts){
   var t=String(token||'').toLowerCase().replace(/-/g,'');
   if(t.length<3) return null;
   // Don't correct numeric tokens — they're usually IDs/sizes.
   if(!/[a-z]/.test(t)) return null;
-  var vocab=_ensureDescVocab(parts);
+  _ensureDescVocab(parts);
   var maxDist = t.length<=5 ? 1 : 2;
   var best=null, bestDist=maxDist+1;
-  for(var i=0;i<vocab.length;i++){
-    var w=vocab[i];
-    if(Math.abs(w.length - t.length) > maxDist) continue;
-    var d=_editDistance(t, w, maxDist);
-    if(d<bestDist){ bestDist=d; best=w; if(d===0) break; }
+  // Walk only the relevant length buckets — words with length difference
+  // greater than maxDist can never be within edit distance.
+  for(var L=t.length-maxDist; L<=t.length+maxDist; L++){
+    var bucket=_descVocabByLen[L];
+    if(!bucket) continue;
+    for(var i=0;i<bucket.length;i++){
+      var w=bucket[i];
+      var d=_editDistance(t, w, maxDist);
+      if(d<bestDist){ bestDist=d; best=w; if(d===0) break; }
+    }
+    if(bestDist===0) break;
   }
   return (best && best!==t) ? best : null;
 }
@@ -1076,6 +1098,18 @@ function _phraseMatches(phrase, parts){
 function smartSearch(q, parts, fuse){
   var trimmed=(q||'').trim();
   if(!trimmed||!fuse) return _attachMeta([], [], false);
+
+  // ── FAST PATH: exact ID lookup ──
+  // Single token, no quotes, looks like an Oracle/SAGE code (alphanumeric).
+  // If it's an exact match in the ID maps, return that one part immediately
+  // and skip token expansion + full scan entirely.
+  if(trimmed.indexOf('"')===-1 && !/\s/.test(trimmed) && /^[a-z0-9-]+$/i.test(trimmed)){
+    _ensureNormCache(parts);
+    var key=trimmed.toLowerCase().replace(/-/g,'');
+    var hit = _idLookup.o[key];
+    if(hit===undefined) hit = _idLookup.s[key];
+    if(hit!==undefined) return _attachMeta([{item:{i:hit}}], [], false);
+  }
 
   // Pull out "quoted phrases" first; everything else splits on whitespace.
   var tokens=[], phraseRe=/"([^"]+)"/g, m, lastIdx=0, leftover='';
@@ -1200,6 +1234,8 @@ function hideRecentDropdown(inputId){
 // ── STATE ───────────────────────────────────────────────────
 let user=null, order={}, keep={}, favs={}, hist=[];
 let bFil=[], bPg=0, bTmr=null;
+let fTmr=null;                 // debounce handle for favorites search
+let _favFuse=null, _favFuseKey=''; // cached Fuse for favorites pool
 const PG=50;
 const SK={o:'f6_ord',k:'f6_kp',h:'f6_hi',b:'f6_ob'};
 var favNicks={};  // {oracle: nickname} per role
@@ -1605,7 +1641,7 @@ function addP(oracle,qty){
   save();badges();renderOrder();toast('Added to order');
   const p=gp(oracle);
   console.log('[EWS] addP called, user:', user, 'oracle:', oracle);
-  if(user) writeLog('ADD', p?p[2]:'Oracle #'+oracle, qty, user.name, user.role);
+  if(user) writeLog('ADD', oracle, p?p[2]:'Oracle #'+oracle, qty, user.name, user.role);
 }
 function setQ(oracle,v){
   const prev=order[oracle]||0;
@@ -1619,14 +1655,14 @@ function adjQ(oracle,d){
   const n=prev+d;
   if(n<=0){delete order[oracle];delete orderBy[oracle];}else order[oracle]=n;
   save();badges();renderOrder();
-  if(n<=0){var pd=gp(oracle);if(user)writeLog('REMOVE',pd?pd[2]:'Oracle #'+oracle,'',user.name,user.role);}
+  if(n<=0){var pd=gp(oracle);if(user)writeLog('REMOVE',oracle,pd?pd[2]:'Oracle #'+oracle,'',user.name,user.role);}
 }
 function rmP(oracle){
   const p=gp(oracle);
   delete order[oracle];
   delete orderBy[oracle];
   save();badges();renderOrder();toast('Removed');
-  if(user) writeLog('REMOVE', p?p[2]:'Oracle #'+oracle, '', user.name, user.role);
+  if(user) writeLog('REMOVE', oracle, p?p[2]:'Oracle #'+oracle, '', user.name, user.role);
 }
 // Capture / refresh snapshots for every favorite whose Oracle # is in the
 // active parts list. Two jobs:
@@ -1724,12 +1760,49 @@ function renderOrder(){
 // ── FUZZY BROWSE ─────────────────────────────────────────────
 function dbBrowse(){clearTimeout(bTmr);bTmr=setTimeout(()=>{bPg=0;renderBrowse();},150);}
 function rstBrowse(){bPg=0;renderBrowse();}
+// Debounced favorites search — same 150ms cadence as Master List so the
+// keystroke→render path is consistent and large fav pools stay smooth.
+function dbFavs(){clearTimeout(fTmr);fTmr=setTimeout(renderFavs,150);}
+
+// Enter-key handler for the search inputs: cancels the debounce, saves the
+// query to recents, blurs (closes mobile keyboard + recent dropdown), and
+// runs the render synchronously so the user sees results immediately.
+function onSearchEnter(ev, which){
+  if(!ev || ev.key !== 'Enter') return;
+  ev.preventDefault();
+  var input = document.getElementById(which==='fav'?'fQ':'bQ');
+  if(!input) return;
+  saveRecentSearch(input.value);
+  if(which==='fav'){
+    clearTimeout(fTmr);
+    input.blur();
+    renderFavs();
+  } else {
+    clearTimeout(bTmr);
+    bPg=0;
+    input.blur();
+    renderBrowse();
+  }
+}
+
+// "Did you mean: <em>vlave</em> → <strong>valve</strong>" — single source of
+// truth so Master List and Favorites render identically. Returns '' when
+// there are no corrections so callers can concatenate unconditionally.
+function didYouMeanHtml(corrections, opts){
+  if(!corrections || !corrections.length) return '';
+  var pad = (opts && opts.pad) || '4px 0 0';
+  var fixes = corrections.map(function(c){
+    return '<em>'+e(c.from)+'</em> → <strong style="color:var(--teal)">'+e(c.to)+'</strong>';
+  }).join(', ');
+  return '<div style="font-size:11px;color:var(--muted);letter-spacing:.5px;padding:'+pad+';">Did you mean: '+fixes+'</div>';
+}
 
 function renderBrowse(){
   const q=(document.getElementById('bQ').value||'').trim();
   const dept=document.getElementById('bDept').value;
 
   let results; // array of {part, highlights}
+  let meta=null; // {corrections, wasFuzzy} from smartSearch when q is set
 
   if(!q){
     // No query — show all, filtered by dept
@@ -1740,6 +1813,7 @@ function renderBrowse(){
     // Fuzzy search
     if(!fuseIndex)fuseIndex=buildFuse(PARTS);
     const raw=smartSearch(q,PARTS,fuseIndex);
+    meta={corrections: raw._corrections||[], wasFuzzy: !!raw._wasFuzzy};
     bFil=raw
       .map(r=>{return{part:PARTS[r.item.i],hl:null,score:r.score};})
       .filter(r=>dept===''||r.part[4]==dept);
@@ -1747,16 +1821,24 @@ function renderBrowse(){
 
   const tot=bFil.length;
   const s=bPg*PG, en=Math.min(s+PG,tot);
+  // Only call results "fuzzy" when the engine actually fell back to Fuse —
+  // tier/word-boundary hits are precise, not fuzzy.
+  const matchKind = (meta && meta.wasFuzzy) ? 'fuzzy matches' : 'matches';
   const label=q
-    ?`Found ${tot.toLocaleString()} fuzzy matches for "<strong style="color:var(--teal)">${e(q)}</strong>"`
+    ?`Found ${tot.toLocaleString()} ${matchKind} for "<strong style="color:var(--teal)">${e(q)}</strong>"`
     :`Showing ${(s+1).toLocaleString()} – ${en.toLocaleString()} of ${tot.toLocaleString()} parts`;
-  document.getElementById('bCount').innerHTML=label;
-  document.getElementById('bList').innerHTML=bFil.slice(s,en).map(r=>pCard(r.part,q)).join('');
+  let countHtml=label + didYouMeanHtml(meta && meta.corrections);
+  document.getElementById('bCount').innerHTML=countHtml;
+  const corrections = meta ? meta.corrections : null;
+  document.getElementById('bList').innerHTML=bFil.slice(s,en).map(r=>pCard(r.part,q,corrections)).join('');
   renderPag(Math.ceil(tot/PG));
 }
 
 // Bold matching chars — phrase-aware and synonym/stem-aware.
-function highlight(text, query){
+// `corrections` (optional) is the array returned by smartSearch as
+// `_corrections` — each {from, to} adds the corrected term so typo-fixed
+// queries still get visible highlights.
+function highlight(text, query, corrections){
   if(!query)return e(text);
   var trimmed=String(query).trim();
   if(!trimmed)return e(text);
@@ -1780,19 +1862,39 @@ function highlight(text, query){
   leftover.split(/\s+/).filter(Boolean).forEach(function(w){
     expandToken(w.toLowerCase()).forEach(addTerm);
   });
+  // Typo-corrected tokens: highlight what was actually searched, not what
+  // the user typed. Each correction's "to" word is also synonym-expanded.
+  if(corrections && corrections.length){
+    corrections.forEach(function(c){
+      if(!c||!c.to)return;
+      expandToken(String(c.to).toLowerCase()).forEach(addTerm);
+    });
+  }
   if(!terms.length)return e(text);
   // Sort longest first so alternation prefers longer matches when overlapping
   terms.sort(function(a,b){return b.length-a.length;});
   var safe=terms.map(function(t){return t.replace(/[-[\]{}()*+?.,\\^$|#\s]/g,'\\$&');});
-  var re=new RegExp('('+safe.join('|')+')','gi');
-  return e(text).replace(re,'<mark>$1</mark>');
+  var safeText=e(text);
+  // Two-pass: prefer word-boundary marks (so "valve" doesn't get marked
+  // inside "valved" when the text actually contains "VALVE" as its own
+  // word). Fall back to substring marking only if the boundary pass found
+  // nothing — that way mid-word matches (Tier 5) still get highlighted in
+  // results that have no clean word-boundary occurrence.
+  var alt='('+safe.join('|')+')';
+  // \b — word-boundary anchor — works in all browsers (no lookbehind needed,
+  // which older iOS Safari lacks). Treats hyphens/spaces as boundaries.
+  var boundaryRe=new RegExp('\\b'+alt+'\\b','gi');
+  var boundaryOut=safeText.replace(boundaryRe,'<mark>$1</mark>');
+  if(boundaryOut.indexOf('<mark>')!==-1) return boundaryOut;
+  var subRe=new RegExp(alt,'gi');
+  return safeText.replace(subRe,'<mark>$1</mark>');
 }
 
-function pCard(p,q=''){
+function pCard(p,q='',corrections){
   const o=p[0],io=!!order[o],iv=!!favs[o];
-  const descHtml=highlight(p[2].length>130?p[2].slice(0,130)+'…':p[2], q);
-  const oracleHtml=highlight(String(p[0]),q);
-  const sageHtml=highlight(String(p[1]),q);
+  const descHtml=highlight(p[2].length>130?p[2].slice(0,130)+'…':p[2], q, corrections);
+  const oracleHtml=highlight(String(p[0]),q,corrections);
+  const sageHtml=highlight(String(p[1]),q,corrections);
   const deptOpts=`<option value="0"${p[4]==0?' selected':''}>🔧 Mechanical</option><option value="1"${p[4]==1?' selected':''}>⚡ Electrical</option><option value="2"${p[4]==2?' selected':''}>💻 Datavan</option><option value="6"${p[4]==6?' selected':''}>🌀 Turbine</option><option value="3"${p[4]==3?' selected':''}>🔨 Tools</option><option value="4"${p[4]==4?' selected':''}>🔩 Hardware</option><option value="5"${p[4]==5?' selected':''}>📦 Miscellaneous</option>`;
   return`<div class="part-card d${p[4]}">
     <div class="pinfo">
@@ -1867,28 +1969,29 @@ function renderFavs(){
   if(!q){
     fp=favPool.filter(function(p){return dept===''||p[4]==dept;});
   } else {
-    // Search across the favorites pool itself (including orphans). A small
-    // dedicated Fuse index keeps the engine identical to Master List search.
-    var favFuse=buildFuse(favPool);
-    var raw=smartSearch(q, favPool, favFuse);
+    // Search across the favorites pool itself (including orphans). To make
+    // nickname matching benefit from the same engine semantics (synonyms,
+    // typo correction, quoted phrases), we build a "shadow" pool where each
+    // entry's description has the user's nickname (if any) prepended. The
+    // search runs against the shadow pool; indices map 1:1 back to favPool
+    // so the rendered cards still come from the canonical entries.
+    var shadowPool=favPool.map(function(p){
+      var nick=favNicks[p[0]];
+      if(!nick) return p;
+      // [oracle, sage, nick + ' ' + desc, uom, dept] — only desc is altered.
+      return [p[0], p[1], String(nick)+' '+String(p[2]||''), p[3], p[4]];
+    });
+    // Cache the Fuse index keyed by the pool's id+nick signature so renames
+    // and adds/removes both invalidate, but identical states reuse the cache.
+    var poolKey=favPool.map(function(p){return p[0]+':'+(favNicks[p[0]]||'');}).join('|');
+    if(_favFuse===null || _favFuseKey!==poolKey){
+      _favFuse=buildFuse(shadowPool);
+      _favFuseKey=poolKey;
+    }
+    var favFuse=_favFuse;
+    var raw=smartSearch(q, shadowPool, favFuse);
     meta={corrections: raw._corrections||[], wasFuzzy: !!raw._wasFuzzy};
     fp=raw.map(function(r){return favPool[r.item.i];}).filter(function(p){return dept===''||p[4]==dept;});
-    // Also match against user-edited nicknames (favNicks).
-    // Multi-word, case-insensitive — every word in the query must appear in the nickname.
-    var qWords=q.toLowerCase().split(/\s+/).filter(Boolean);
-    if(qWords.length){
-      var seen={};
-      fp.forEach(function(p){seen[p[0]]=true;});
-      favPool.forEach(function(p){
-        if(seen[p[0]])return;
-        if(dept!==''&&p[4]!=dept)return;
-        var nick=favNicks[p[0]];
-        if(!nick)return;
-        var nl=String(nick).toLowerCase();
-        var allMatch=qWords.every(function(w){return nl.indexOf(w)!==-1;});
-        if(allMatch){fp.push(p);seen[p[0]]=true;}
-      });
-    }
   }
   if(!fp.length){
     var emptyMsg = q
@@ -1918,12 +2021,7 @@ function renderFavs(){
       '</div>';
   }
   // Search-meta banner: show "Did you mean" when typo correction was applied
-  if(q && meta && meta.corrections && meta.corrections.length){
-    var fixes=meta.corrections.map(function(c){
-      return '<em>'+e(c.from)+'</em> → <strong style="color:var(--teal)">'+e(c.to)+'</strong>';
-    }).join(', ');
-    html+='<div style="font-size:11px;color:var(--muted);letter-spacing:.5px;padding:4px 0 8px;">Did you mean: '+fixes+'</div>';
-  }
+  if(q && meta) html += didYouMeanHtml(meta.corrections, {pad:'4px 0 8px'});
   var lastColor=null;
   fp.forEach(function(p){
     var ck=(typeof favColors!=='undefined'&&favColors[p[0]])||'none';
@@ -2092,17 +2190,22 @@ function confirmDatavan() {
 // Simple: only logs Add and Remove. Reads/writes directly to localStorage.
 var EL_KEY = 'f6_elog';
 
-function writeLog(action, partName, qty, who, role) {
+function writeLog(action, oracle, partName, qty, who, role) {
+  // Backwards-compat: if a caller still uses writeLog(action, partName, qty, who, role),
+  // shift args forward so partName isn't lost.
+  if(arguments.length === 5){
+    role = who; who = qty; qty = partName; partName = oracle; oracle = '';
+  }
   var arr = [];
   var existing = localStorage.getItem(EL_KEY);
   if(existing) { try { arr = JSON.parse(existing); } catch(x){ arr=[]; } }
-  arr.push({ a:action, p:partName, q:qty||'', w:who, r:role, t:new Date().toLocaleString() });
+  arr.push({ a:action, o:String(oracle||''), p:partName, q:qty||'', w:who, r:role, t:new Date().toLocaleString() });
   if(arr.length > 500) arr = arr.slice(-500);
   localStorage.setItem(EL_KEY, JSON.stringify(arr));
   if(typeof fbReady!=='undefined' && fbReady){
     try{ fbDb.ref('elog').set(arr); }catch(e){}
   }
-  console.log('[EWS Log] Wrote:', action, partName, '| Total entries:', arr.length);
+  console.log('[EWS Log] Wrote:', action, oracle, partName, '| Total entries:', arr.length);
 }
 
 // renderLog replaced by openEventLog/refreshEventLog modal approach
@@ -2143,10 +2246,37 @@ function refreshEventLog() {
   var body = document.getElementById('eventLogBody');
   var arr = [];
   try { arr = JSON.parse(localStorage.getItem(EL_KEY) || '[]'); } catch(x){}
-  
+
   if(!arr.length){
     body.innerHTML = '<p style="color:#888;font-size:13px;text-align:center;padding:40px 0;">No activity yet. Parts added or removed will appear here.</p>';
     return;
+  }
+
+  // Tiny HTML escaper so part numbers/descriptions can't break the table
+  function _esc(s){ s=(s==null?'':String(s)); return s.replace(/[&<>"']/g,function(c){
+    return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+  }); }
+
+  // Description → Oracle # lookup for back-filling legacy entries that were
+  // written before the `o` field existed. Built once per render; uses the
+  // currently active parts list when available.
+  var _activeParts = (typeof getActiveParts === 'function')
+    ? getActiveParts()
+    : (typeof PARTS !== 'undefined' ? PARTS : []);
+  var _descToOracle = Object.create(null);
+  for (var i = 0; i < _activeParts.length; i++) {
+    var pp = _activeParts[i];
+    if (pp && pp[2] && _descToOracle[pp[2]] === undefined) _descToOracle[pp[2]] = pp[0];
+  }
+  function _resolveOracle(ev) {
+    if (ev.o) return String(ev.o);
+    var name = String(ev.p || '');
+    // "Oracle #XYZ" prefix — used historically when the part wasn't in catalog.
+    var m = name.match(/^Oracle\s*#\s*(\S+)/i);
+    if (m) return m[1];
+    // Description match against current catalog.
+    if (_descToOracle[name]) return _descToOracle[name];
+    return '';
   }
 
   var rows = '';
@@ -2154,12 +2284,19 @@ function refreshEventLog() {
     var isAdd = ev.a === 'ADD';
     var color = isAdd ? '#1eb474' : '#d95f5f';
     var label = isAdd ? '+ Added' : '&times; Removed';
-    var qty   = (isAdd && ev.q) ? ' &nbsp;&middot;&nbsp; Qty: ' + ev.q : '';
+    var qty   = (isAdd && ev.q) ? ' &nbsp;&middot;&nbsp; Qty: ' + _esc(ev.q) : '';
+    // Oracle # — teal pill prefixed to the description. Recovered for legacy
+    // entries via prefix parse / catalog lookup; muted "—" when unrecoverable
+    // so every row still has a visible Oracle # slot.
+    var oracle = _resolveOracle(ev);
+    var oraclePill = oracle
+      ? '<span style="display:inline-block;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;font-weight:700;color:#1eb474;background:rgba(30,180,116,0.10);border:1px solid rgba(30,180,116,0.28);border-radius:2px;padding:1px 6px;margin-right:8px;letter-spacing:.3px;">' + _esc(oracle) + '</span>'
+      : '<span title="Oracle # not recorded for this entry" style="display:inline-block;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;font-weight:700;color:#666;background:rgba(255,255,255,0.04);border:1px dashed #444;border-radius:2px;padding:1px 6px;margin-right:8px;letter-spacing:.3px;">—</span>';
     rows += '<tr style="border-bottom:1px solid #2a2a2a;">';
     rows += '<td style="padding:10px 14px;white-space:nowrap;font-size:12px;font-weight:700;color:' + color + ';vertical-align:top;">' + label + qty + '</td>';
-    rows += '<td style="padding:10px 14px;font-size:12px;color:#e0e0e0;vertical-align:top;max-width:400px;word-break:break-word;">' + ev.p + '</td>';
-    rows += '<td style="padding:10px 14px;font-size:11px;color:#aaa;vertical-align:top;white-space:nowrap;">' + ev.w + '<br><span style="color:#666;">' + ev.r + '</span></td>';
-    rows += '<td style="padding:10px 14px;font-size:10px;color:#666;vertical-align:top;white-space:nowrap;">' + ev.t + '</td>';
+    rows += '<td style="padding:10px 14px;font-size:12px;color:#e0e0e0;vertical-align:top;max-width:400px;word-break:break-word;">' + oraclePill + _esc(ev.p) + '</td>';
+    rows += '<td style="padding:10px 14px;font-size:11px;color:#aaa;vertical-align:top;white-space:nowrap;">' + _esc(ev.w) + '<br><span style="color:#666;">' + _esc(ev.r) + '</span></td>';
+    rows += '<td style="padding:10px 14px;font-size:10px;color:#666;vertical-align:top;white-space:nowrap;">' + _esc(ev.t) + '</td>';
     rows += '</tr>';
   });
 
@@ -2243,7 +2380,7 @@ var HELP_CONTENT = {
           "Search Oracle #, SAGE #, or description in one box. <strong>Exact ID matches always come first.</strong>",
           "<strong>Word matches rank higher than partial matches</strong> — searching <code>valve</code> puts \"BALL VALVE\" above \"DEADBOLT VALVED\".",
           "Multi-word searches require <strong>all words</strong> to match. <code>valve seat 4.5</code> finds parts that contain all three.",
-          "Wrap a phrase in quotes to search it literally: <code>\"check valve\"</code> only matches that exact phrase.",
+          "Wrap a phrase in quotes for a contiguous match: <code>\"check valve\"</code> only matches when those words appear together in that order. <em>Note:</em> hyphens are ignored, so <code>\"o-ring\"</code> and <code>\"o ring\"</code> both find <code>O-RING</code>.",
           "Plurals work both ways: <code>valves</code> finds VALVE, and <code>valve</code> finds VALVES.",
           "Abbreviations work: <code>blt</code> finds BOLT, <code>wshr</code> finds WASHER, <code>oring</code> finds O-RING. ~40 industrial shorthand terms recognized.",
           "Typos are auto-corrected per word (e.g. <code>vlave</code> → <code>valve</code>). The correction is shown above the results so you know what was searched.",
@@ -2469,7 +2606,7 @@ function restoreCatalogBackup(){
       if(typeof fbReady!=='undefined' && fbReady){ try{ fbDb.ref('customPartsBackup').set(beforeRestore); }catch(e){} }
     }catch(e){}
   }
-  fuseIndex=null;
+  fuseIndex=null; _favFuse=null;
   if(typeof updateCustomPartsStatus==='function') updateCustomPartsStatus();
   if(typeof renderBrowse==='function') renderBrowse();
   if(typeof toast==='function') toast('✓ Catalog restored to '+when); else alert('✓ Restored');
@@ -2658,7 +2795,7 @@ function setDept(oracle, newDept){
     try{ fbDb.ref('deptOverrides').set(deptOverrides); }catch(e){}
   }
   // Rebuild fuse so dept-filtered searches reflect the change
-  fuseIndex = null;
+  fuseIndex = null; _favFuse = null;
   // Re-render current tab
   if(typeof _rerender==='function') _rerender();
 }
@@ -3220,7 +3357,7 @@ function _xlsxApply(){
   var plan=_xlsxMergePlan(currentParts, build.parts, st.mode);
   function commit(){
     _setCustomParts(plan.parts);
-    fuseIndex=null;
+    fuseIndex=null; _favFuse=null;
     var msg;
     if(st.mode==='replace')      msg='✓ Replaced catalog with '+plan.parts.length.toLocaleString()+' parts';
     else if(st.mode==='merge')   msg='✓ Merged: +'+plan.added+' new, ~'+plan.updated+' updated';
@@ -3268,7 +3405,7 @@ function manualAddPart() {
   parts.sort(function(a,b){return a[0].localeCompare(b[0]);});
 
   _setCustomParts(parts);
-  fuseIndex = null;
+  fuseIndex = null; _favFuse = null;
 
   // Clear form
   document.getElementById('manOraNum').value='';
@@ -3321,7 +3458,7 @@ function deletePart(oracle) {
   if(!confirm('Delete this part from the master list?\n\n' + partName + '\n\nThis cannot be undone unless you reset to default.')) return;
   var newParts = parts.filter(function(p){return p[0]!==oracle;});
   _setCustomParts(newParts);
-  fuseIndex = null;
+  fuseIndex = null; _favFuse = null;
   updateCustomPartsStatus();
   renderBrowse();
   renderDeleteSearch();
@@ -3332,7 +3469,7 @@ function deletePart(oracle) {
 function resetToDefaultParts() {
   if(!confirm('Reset to the original baked-in Oracle extract? All uploads and manual changes will be lost.')) return;
   _setCustomParts(null);
-  fuseIndex = null;
+  fuseIndex = null; _favFuse = null;
   updateCustomPartsStatus();
   renderBrowse();
   document.getElementById('delSearch').value='';
@@ -3535,7 +3672,7 @@ window.renderAdmin = function() {
   _origRenderAdmin();
   updateCustomPartsStatus();
   // Reset fuse to use active parts
-  fuseIndex = null;
+  fuseIndex = null; _favFuse = null;
 };
 
 // Init on page load
