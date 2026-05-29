@@ -720,7 +720,7 @@ input,select{outline:none;font-family:inherit;}
         <div id="adminStatusBar" style="margin-bottom:12px;padding:10px 12px;background:var(--nav);border:1px solid var(--border);border-radius:2px;"></div>
         <div class="sec-hd" style="flex-wrap:wrap;gap:8px;">
           <div class="sec-t">Current Week's Order</div>
-          <button class="btn-ghost" onclick="clearLastWeekPending()" title="Removes backorders the team no longer needs">🧹 Clear Old Backorders</button>
+          <button class="btn-ghost" onclick="openBackorderRemovalModal()" title="Open a list to pick which backorders to remove">🗑 Remove Backorders…</button>
           <button class="btn-primary" onclick="openEventLog()" style="background:#2f8cca;border:none;">📝 View Event Log</button>
           <button class="help-btn" onclick="openHelp('admin')" title="What does Admin do?" aria-label="Help">?</button>
         </div>
@@ -827,6 +827,20 @@ input,select{outline:none;font-family:inherit;}
 
 <!-- MODALS -->
 <!-- Force-reset modal removed — weekly reset is fully automatic on Monday 8 AM -->
+
+<!-- BACKORDER REMOVAL MODAL — admin picks which backorders to permanently delete -->
+<div class="mov" id="mBoRemove">
+  <div class="modal" style="max-width:640px;">
+    <h3>🗑 Remove Backorders</h3>
+    <p style="font-size:13px;color:var(--muted);line-height:1.55;margin-bottom:8px;">Check the backorder items you want to <strong>permanently delete</strong>. Current Week items are not shown — they're untouched.</p>
+    <p style="font-size:11px;color:var(--muted2);margin-bottom:14px;">Tip: items already marked Submitted or Received will clear themselves at the next Monday reset — you usually don't need to remove those manually.</p>
+    <div id="boRemoveList" style="max-height:380px;overflow-y:auto;border:1px solid var(--border);border-radius:2px;background:var(--nav);margin-bottom:14px;"></div>
+    <div class="mbtns">
+      <button class="btn-ghost" onclick="closeMod()">Cancel</button>
+      <button class="btn-danger" id="boRemoveConfirmBtn" onclick="confirmBackorderRemoval()" disabled>Remove Selected (<span id="boRemoveCount">0</span>)</button>
+    </div>
+  </div>
+</div>
 
 <!-- DATAVAN NOTICE MODAL -->
 <div class="mov" id="mDatavan">
@@ -2644,21 +2658,81 @@ function maybeAutoReset(){
   return true;
 }
 
-// Admin: remove backorder items the team no longer needs. Items added since
-// the most recent weekly reset (current-week items) are left alone.
-function clearLastWeekPending(){
+// Admin: open the bulk-removal modal listing every backorder item with a
+// checkbox so the admin can hand-pick which ones to permanently delete.
+// The old one-click "Clear Old Backorders" bulk action was removed in
+// favour of this explicit, confirmation-gated workflow.
+function openBackorderRemovalModal(){
   if(!user || user.role!=='Administrative'){ toast('Admin only'); return; }
-  if(!lastReset){ toast('No previous reset on record'); return; }
-  var toRemove=Object.keys(order).filter(function(o){ return isBackorder(o); });
-  if(!toRemove.length){ toast('No backorders to clear'); return; }
-  if(!confirm('Remove '+toRemove.length+' backorder'+(toRemove.length===1?'':'s')+' from the active order?\n\nThis cannot be undone. (Current-week items are NOT affected.)')) return;
-  toRemove.forEach(function(o){
-    var p=gp(o);
+  var items = Object.entries(order)
+    .filter(function(e){ return (e[1]||0)>0 && backorderFlag[e[0]]; });
+  var list = document.getElementById('boRemoveList');
+  if(!list) return;
+  if(!items.length){
+    list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">No backorders to remove.</div>';
+    document.getElementById('boRemoveConfirmBtn').disabled = true;
+    document.getElementById('boRemoveCount').textContent = '0';
+    document.getElementById('mBoRemove').classList.add('show');
+    return;
+  }
+  // Sort: pending first (most likely to need cleanup), then submitted, then received.
+  var statRank = { 'pending':0, 'submitted':1, 'received':2 };
+  items.sort(function(a,b){
+    var sa = statRank[stat(a[0])] || 3, sb = statRank[stat(b[0])] || 3;
+    if(sa !== sb) return sa - sb;
+    return (orderAdded[a[0]]||0) - (orderAdded[b[0]]||0); // older first
+  });
+  list.innerHTML = items.map(function(pair){
+    var oracle = pair[0], qty = pair[1];
+    var p = gp(oracle); if(!p) return '';
+    var s = stat(oracle);
+    var ageStr = orderAdded[oracle] ? fmtAge(Date.now() - orderAdded[oracle]) : '—';
+    var orderedOn = orderAdded[oracle] ? new Date(orderAdded[oracle]).toLocaleDateString() : 'unknown';
+    var stBadge = s==='submitted' ? '<span class="stbadge stbadge-sub">✓ Submitted</span>'
+                : s==='received'  ? '<span class="stbadge stbadge-rec">📦 Received</span>'
+                                  : '<span class="stbadge stbadge-pend">● Pending</span>';
+    var noteSnippet = orderNotes[oracle]
+      ? '<div style="font-size:11px;color:var(--muted2);margin-top:4px;font-style:italic;">Note: '+e(String(orderNotes[oracle]).slice(0,90))+(String(orderNotes[oracle]).length>90?'…':'')+'</div>'
+      : '';
+    return '<label class="bo-rm-row" style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;">'+
+      '<input type="checkbox" data-oracle="'+oracle+'" onchange="updateBoRemoveCount()" style="margin-top:3px;flex-shrink:0;" />'+
+      '<div style="flex:1;min-width:0;">'+
+        '<div style="font-size:13px;color:var(--text);font-weight:600;line-height:1.35;">'+e(p[2].slice(0,90))+(p[2].length>90?'…':'')+'</div>'+
+        '<div style="font-size:11px;color:var(--muted);margin-top:4px;">'+stBadge+' Qty: <strong>'+qty+'</strong> '+p[3]+' &nbsp;·&nbsp; Age: <strong>'+ageStr+'</strong> &nbsp;·&nbsp; Oracle: '+p[0]+' &nbsp;·&nbsp; Ordered '+orderedOn+'</div>'+
+        noteSnippet+
+      '</div>'+
+    '</label>';
+  }).join('');
+  updateBoRemoveCount();
+  document.getElementById('mBoRemove').classList.add('show');
+}
+
+// Live-update the "Remove Selected (N)" button label as checkboxes change.
+function updateBoRemoveCount(){
+  var checked = document.querySelectorAll('#boRemoveList input[type=checkbox]:checked');
+  var n = checked.length;
+  var btn = document.getElementById('boRemoveConfirmBtn');
+  var lbl = document.getElementById('boRemoveCount');
+  if(lbl) lbl.textContent = n;
+  if(btn) btn.disabled = (n === 0);
+}
+
+// Final confirm and execute — deletes each checked backorder permanently.
+function confirmBackorderRemoval(){
+  if(!user || user.role!=='Administrative'){ toast('Admin only'); return; }
+  var checked = Array.from(document.querySelectorAll('#boRemoveList input[type=checkbox]:checked'));
+  if(!checked.length) return;
+  var oracles = checked.map(function(c){ return c.dataset.oracle; });
+  if(!confirm('Permanently delete '+oracles.length+' backorder item'+(oracles.length===1?'':'s')+'?\n\nThis cannot be undone. (Items already marked Submitted or Received will close out at the next Monday reset on their own — you usually do not need to remove those here.)')) return;
+  oracles.forEach(function(o){
+    var p = gp(o);
     _forgetItem(o);
     if(p) writeLog('REMOVE', o, p[2], '', user.name, user.role);
   });
-  save(); renderAll(); renderAdmin(); badges();
-  toast('Cleared '+toRemove.length+' backorder'+(toRemove.length===1?'':'s'));
+  save();
+  closeMod();
+  renderAll(); renderAdmin(); badges();
+  toast('Removed '+oracles.length+' backorder'+(oracles.length===1?'':'s'));
 }
 
 // openReset/confReset removed — weekly reset is fully automatic on Monday 8 AM.
@@ -2942,20 +3016,36 @@ var HELP_CONTENT = {
     sections: [
       { heading: "What this tab is",
         items: [
-          "This is the <strong>shared weekly order</strong> for Fleet 6 — everyone on every dept profile sees and edits the same list.",
-          "The order resets weekly from the Admin tab. Items marked <strong>Keep</strong> survive the reset.",
+          "This is the <strong>shared weekly order</strong> for Fleet 6 — everyone on every dept profile sees and edits the same list. Changes sync in real time across machines.",
+          "The order <strong>closes out automatically every Monday at 8:00 AM</strong>. Items the admin has marked Submitted or Received move to Reset History. Items still pending become Backorders and roll forward to the new week.",
+        ]
+      },
+      { heading: "Status badges on each item",
+        items: [
+          "<strong>● Pending</strong> (orange) — waiting on the admin to act. The default state when you add a new part.",
+          "<strong>✓ Submitted</strong> (teal) — admin has ordered the part from the vendor.",
+          "<strong>📦 Received</strong> (mint) — admin has the part physically in hand.",
+          "Submitted and Received items both clear at the next Monday reset and go to Reset History.",
+        ]
+      },
+      { heading: "Backorders section",
+        items: [
+          "If a pending item survives a Monday reset, it appears in the orange <strong>📦 Backorders</strong> section at the top of this tab. Its original \"ordered X days/weeks ago\" age is preserved so you can see how stale a request is.",
+          "Once an item has ever been a backorder, it <strong>keeps the 📦 Backorder badge forever</strong> — even after it's filled and archived to History. Helps you spot historically tricky parts at a glance.",
+          "Backorders may have an <strong>Admin note</strong> below them — that's the admin telling the team why a part hasn't shipped yet (vendor delay, ETA, alternative source, etc.).",
         ]
       },
       { heading: "Reading the stats boxes",
         items: [
-          "<strong>Total Items</strong> counts everything in the order.",
+          "<strong>Total Items</strong> counts everything in the order (current week + backorders).",
           "<strong>Mechanical / Electrical / Datavan / Turbine</strong> count items by which dept profile <em>added</em> them — not by item type. So a hardware item added by a Mechanical user shows in the Mechanical box.",
         ]
       },
       { heading: "Adjusting items",
         items: [
-          "Adjust quantities with <code>+</code> / <code>−</code> or type into the number field directly.",
-          "Setting qty to <code>0</code> removes the item from the order.",
+          "Adjust quantities with <code>+</code> / <code>−</code> or type into the number field directly. Every change is recorded in the Event Log.",
+          "Bumping qty on an existing item flips its status back to <strong>● Pending</strong> — the admin needs to know there's more to order.",
+          "Setting qty to <code>0</code>, or clicking the <code>×</code> button, removes the item entirely.",
           "The <strong>Classifications</strong> filter shows only one item type at a time (Tools, Hardware, etc.). It resets to \"All\" every time you open the tab.",
         ]
       }
@@ -3022,8 +3112,16 @@ var HELP_CONTENT = {
     sections: [
       { heading: "What you're looking at",
         items: [
-          "Each entry is a <strong>snapshot of the weekly order</strong>, taken right before an Admin reset.",
-          "Most recent reset at the top.",
+          "Each entry is a <strong>weekly closeout snapshot</strong>, stamped with the Monday 8:00 AM cutoff. Most recent at the top.",
+          "Only items the admin has marked <strong>✓ Submitted</strong> or <strong>📦 Received</strong> show up here. Items that were still Pending at the reset are <em>not</em> archived — they stay live as Backorders on My Order.",
+          "Older entries from before this system was added may show items as Pending — that's just legacy data with no status recorded at the time.",
+        ]
+      },
+      { heading: "Reading an entry",
+        items: [
+          "The header tally shows the breakdown for that week — e.g. <em>\"5 submitted · 2 received · 1 were backorders\"</em>.",
+          "Each item carries its <strong>status badge</strong> (Submitted vs Received) so you know how it closed out.",
+          "Items that were a backorder at any point keep the <strong>📦 Backorder</strong> badge in history — useful for spotting which weeks had a lot of carried-over orders.",
         ]
       },
       { heading: "Expanding entries",
@@ -3038,17 +3136,34 @@ var HELP_CONTENT = {
   admin: {
     title: "🔐 Admin — Help",
     sections: [
-      { heading: "Carrying items into next week",
+      { heading: "Weekly cycle (automatic)",
         items: [
-          "Check <strong>Keep</strong> on items that should survive the next reset (e.g. recurring weekly needs).",
-          "<strong>🗑️ Reset Weekly Order</strong> archives the current order into History and clears the slate. Items marked Keep stay.",
-          "Resets <strong>can't be undone</strong> — but the snapshot is always preserved in History.",
+          "Every <strong>Monday at 8:00 AM local time</strong>, the app automatically closes the week. Items marked Submitted or Received move to Reset History; items still Pending become Backorders.",
+          "The reset is fully automatic — there is no manual \"reset\" button. Just keep pulling items as they go out.",
+          "If no one opens the app right at 8 AM, the close-out fires the next time someone loads it. The history entry is still stamped with the 8:00 AM cutoff for accurate weekly accounting.",
+        ]
+      },
+      { heading: "Pulling items (Current Week)",
+        items: [
+          "Each current-week row has a <strong>📤 Submit</strong> button. Click it as you order the part from the vendor — the item's badge changes to ✓ Submitted and users can see it's been handled (so they don't re-add it).",
+          "Click the same button again (now labeled <strong>↩ Revert</strong>) to undo back to Pending.",
+          "Current-week items only have Submit/Revert — the Received option lives on Backorders, where the distinction matters more.",
+        ]
+      },
+      { heading: "Managing Backorders",
+        items: [
+          "Backorders are pending items that survived a Monday reset. They have a <strong>permanent 📦 badge</strong> and a preserved age (\"ordered N weeks ago\").",
+          "Each backorder row has a <strong>status dropdown</strong>: Pending / Submitted / Received. Use it to set the right status as the part moves through your workflow.",
+          "Backorders <strong>stay in the Backorders section</strong> even after you mark them Submitted/Received — they only leave when the next Monday reset closes them out into History.",
+          "Each backorder has an editable <strong>note field</strong> — type the reason for delay, vendor ETA, or anything else the team should see. Notes are visible to everyone.",
+          "<strong>🗑 Remove Backorders…</strong> opens a modal with checkboxes — pick exactly which backorders to permanently delete (e.g. stale requests the team no longer needs). Submitted/Received backorders will clear themselves at the next Monday reset, so you usually don't need to delete those manually.",
         ]
       },
       { heading: "Event Log",
         items: [
-          "<strong>📝 View Event Log</strong> shows every parts add and remove with timestamps, the user who did it, and their dept profile. Use it to investigate \"who changed what and when.\"",
-          "<strong>Clear Log</strong> wipes the entire log. Like resets, this can't be undone.",
+          "<strong>📝 View Event Log</strong> shows every parts action with timestamps, the user, and their dept profile.",
+          "Tracked actions: <strong>+ Added</strong>, <strong>× Removed</strong>, <strong>⇅ Qty change</strong> (e.g. \"5 → 8\"), <strong>📤 Submitted</strong>, <strong>📦 Received</strong>, <strong>● Reverted to Pending</strong>.",
+          "<strong>Clear Log</strong> wipes the entire log. This can't be undone.",
         ]
       },
       { heading: "Uploading a new XLSX",
