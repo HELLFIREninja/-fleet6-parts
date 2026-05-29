@@ -179,7 +179,11 @@ input,select{outline:none;font-family:inherit;}
 .qwrap{display:flex;align-items:center;gap:4px;}
 .qb{width:26px;height:26px;border-radius:2px;background:var(--card2);color:var(--text);font-size:15px;font-weight:800;display:flex;align-items:center;justify-content:center;transition:all .12s;border:1px solid var(--border);}
 .qb:hover{border-color:var(--teal);color:var(--teal);}
-.qi{width:42px;text-align:center;padding:4px 2px;border:1px solid var(--border);border-radius:2px;font-size:13px;font-weight:700;background:var(--nav);color:var(--text);}
+.qi{width:42px;text-align:center;padding:4px 2px;border:1px solid var(--border);border-radius:2px;font-size:13px;font-weight:700;background:var(--nav);color:var(--text);
+  /* Suppress browser-native number-input spinner arrows; +/− buttons are the
+     only qty controls we want users to see. */
+  -moz-appearance:textfield;appearance:textfield;}
+.qi::-webkit-inner-spin-button,.qi::-webkit-outer-spin-button{-webkit-appearance:none;appearance:none;margin:0;}
 .qi:focus{border-color:var(--teal);}
 .fb{width:28px;height:28px;border-radius:2px;background:transparent;font-size:16px;transition:transform .2s;line-height:1;}
 .fb:hover{transform:scale(1.2);}
