@@ -208,6 +208,18 @@ input,select{outline:none;font-family:inherit;}
 /* Two-button action cluster (Submit / Received), compact for crowded rows */
 .act-cluster{display:flex;gap:4px;flex-shrink:0;}
 .act-cluster .pullb{padding:5px 9px;font-size:9px;}
+/* Three-pill segmented status toggle — Pending / Submitted / Received.
+   Current state is the highlighted segment. One click sets that state. */
+.seg-status{display:inline-flex;align-items:stretch;border:1px solid var(--border);border-radius:2px;overflow:hidden;flex-shrink:0;background:var(--card);}
+.seg-status button{padding:7px 10px;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;background:transparent;color:var(--muted);border:none;border-right:1px solid var(--border);cursor:pointer;transition:background .12s,color .12s;white-space:nowrap;display:flex;align-items:center;gap:5px;line-height:1;}
+.seg-status button:last-child{border-right:none;}
+.seg-status button:hover:not(.active){background:rgba(255,255,255,.05);color:var(--text);}
+.seg-status .seg-pend.active{background:rgba(212,137,10,.18);color:#d4890a;box-shadow:inset 0 -2px 0 #d4890a;}
+.seg-status .seg-sub.active {background:rgba(30,180,116,.18);color:#1eb474;box-shadow:inset 0 -2px 0 #1eb474;}
+.seg-status .seg-rec.active {background:rgba(86,184,163,.22);color:#56b8a3;box-shadow:inset 0 -2px 0 #56b8a3;}
+@media(max-width:620px){
+  .seg-status button{padding:6px 7px;font-size:9px;letter-spacing:.3px;gap:3px;}
+}
 /* Admin "Pull" / per-row mark button */
 .pullb{background:var(--teal);color:#fff;border-radius:2px;padding:6px 12px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;transition:all .12s;border:none;cursor:pointer;}
 .pullb:hover{background:var(--teal-d);}
@@ -1988,12 +2000,7 @@ function renderOrder(){
         : (note
             ? `<div class="bo-note"><span class="bo-note-label">Note</span>${e(note)}</div>`
             : `<div class="bo-note bo-note-empty"><span class="bo-note-label">Note</span>No note from admin yet</div>`);
-      const adminActions = isAdmin
-        ? `<div class="act-cluster">
-             <button class="pullb" onclick="pullPart('${oracle}')" title="Mark Submitted (ordered from vendor)">📤 Submit</button>
-             <button class="pullb" style="background:#56b8a3;" onclick="receivePart('${oracle}')" title="Mark Received (part is in hand)">📦 Received</button>
-           </div>`
-        : '';
+      const adminActions = isAdmin ? statusSegHtml(oracle) : '';
       return `<div class="bo-card">
         <div class="bo-row">
           <div class="odot" style="background:${DC[p[4]]}"></div>
@@ -2036,19 +2043,7 @@ function renderOrder(){
     else                      badge = `<span class="stbadge stbadge-pend" title="Waiting for admin to pull">● Pending</span>`;
     // Persistent "was a backorder" marker — sticks on the item even after pull.
     const boMark = backorderFlag[oracle] ? `<span class="stbadge stbadge-bo" title="This item was a backorder at some point">📦 Backorder</span>` : '';
-    // Each button has its own forward/reverse label tracking that button's
-    // own status. Submit-button reverts when item is already submitted;
-    // Received-button reverts when item is already received. Independent.
-    const submitLabel  = st==='submitted' ? '↩ Revert' : '📤 Submit';
-    const receiveLabel = st==='received'  ? '↩ Revert' : '📦 Received';
-    const submitTitle  = st==='submitted' ? 'Click to revert this item to Pending' : 'Mark Submitted (ordered from vendor)';
-    const receiveTitle = st==='received'  ? 'Click to revert this item to Pending' : 'Mark Received (part in hand)';
-    const adminActions = isAdmin
-      ? `<div class="act-cluster">
-           <button class="pullb${st==='submitted'?' pullb-done':''}" onclick="pullPart('${oracle}')" title="${submitTitle}">${submitLabel}</button>
-           <button class="pullb${st==='received'?' pullb-done':''}" style="${st==='received'?'':'background:#56b8a3;'}" onclick="receivePart('${oracle}')" title="${receiveTitle}">${receiveLabel}</button>
-         </div>`
-      : '';
+    const adminActions = isAdmin ? statusSegHtml(oracle) : '';
     return`<div class="ord-item ord-${st}">
       <div class="odot" style="background:${DC[p[4]]}"></div>
       <div class="oinfo">
@@ -2490,23 +2485,12 @@ function renderAdmin(){
     const p=gp(oracle);if(!p)return'';
     const st=stat(oracle);
     const boFlag = !!backorderFlag[oracle];
-    const submitLabel  = st==='submitted' ? '↩ Revert' : '📤 Submit';
-    const receiveLabel = st==='received'  ? '↩ Revert' : '📦 Received';
-    const submitTitle  = st==='submitted' ? 'Click to revert this item to Pending' : 'Mark Submitted (ordered)';
-    const receiveTitle = st==='received'  ? 'Click to revert this item to Pending' : 'Mark Received (in hand)';
-    const actCluster = `<div class="act-cluster">
-      <button class="pullb${st==='submitted'?' pullb-done':''}" onclick="pullPart('${oracle}')" title="${submitTitle}">${submitLabel}</button>
-      <button class="pullb${st==='received'?' pullb-done':''}" style="${st==='received'?'':'background:#56b8a3;'}" onclick="receivePart('${oracle}')" title="${receiveTitle}">${receiveLabel}</button>
-    </div>`;
-    let stBadge;
-    if(st==='submitted')      stBadge = '<span class="stbadge stbadge-sub">✓ Submitted</span>';
-    else if(st==='received')  stBadge = '<span class="stbadge stbadge-rec">📦 Received</span>';
-    else                      stBadge = '<span class="stbadge stbadge-pend">● Pending</span>';
+    const actCluster = statusSegHtml(oracle);
     const boTag = boFlag ? '<span class="stbadge stbadge-bo">📦 Backorder</span>' : '';
     return`<div class="krow">
       <div class="kinfo">
         <div class="kdesc">${boTag} ${DI[p[4]]} ${e(p[2].slice(0,90))}${p[2].length>90?'…':''}</div>
-        <div class="kmeta">${stBadge} Oracle: ${p[0]} &nbsp;·&nbsp; SAGE: ${p[1]} &nbsp;·&nbsp; Qty: ${qty} ${p[3]}</div>
+        <div class="kmeta">Oracle: ${p[0]} &nbsp;·&nbsp; SAGE: ${p[1]} &nbsp;·&nbsp; Qty: ${qty} ${p[3]}</div>
       </div>
       ${actCluster}
     </div>`;
@@ -2516,31 +2500,37 @@ function renderAdmin(){
 // (Pull-toggle wrapper removed — setItemStatus handles toggle-back-to-pending natively.)
 
 // ── PULL / STATUS ─────────────────────────────────────────────
-// Admin sets an item's status — 'submitted' (ordered from vendor) or
-// 'received' (in hand). Both are end-states that clear at the next Monday
-// reset. Clicking the same status twice reverts to 'pending'.
+// Admin sets an item's status directly via the segmented toggle — any of
+// 'pending', 'submitted' (ordered from vendor), or 'received' (in hand) is
+// a valid target. Submitted + Received are end-states that clear at the
+// next Monday reset; Pending stays put.
 function setItemStatus(oracle, newStatus){
   if(!user || user.role!=='Administrative'){ toast('Admin only'); return; }
   if(!(oracle in order)) return;
-  if(newStatus!=='submitted' && newStatus!=='received'){ return; }
+  if(newStatus!=='pending' && newStatus!=='submitted' && newStatus!=='received') return;
   var current = stat(oracle);
-  var p = gp(oracle);
-  var toggleOff = (current === newStatus);
-  if(toggleOff){
-    orderStatus[oracle] = 'pending';
-    save(); renderOrder(); renderAdmin(); badges();
-    writeLog('QTY', oracle, p?p[2]:'Oracle #'+oracle, current+' → pending', user.name, user.role);
-    toast('Reverted to pending');
-    return;
-  }
+  if(current === newStatus) return; // no-op
   orderStatus[oracle] = newStatus;
   save(); renderOrder(); renderAdmin(); badges();
-  var act = (newStatus === 'received') ? 'RECEIVE' : 'SUBMIT';
-  writeLog(act, oracle, p?p[2]:'Oracle #'+oracle, order[oracle], user.name, user.role);
-  toast(newStatus === 'received' ? 'Marked received' : 'Marked submitted');
+  var p = gp(oracle);
+  var actMap = { 'pending':'PENDING', 'submitted':'SUBMIT', 'received':'RECEIVE' };
+  writeLog(actMap[newStatus], oracle, p?p[2]:'Oracle #'+oracle, order[oracle], user.name, user.role);
+  var toastMap = { 'pending':'Reverted to pending', 'submitted':'Marked submitted', 'received':'Marked received' };
+  toast(toastMap[newStatus]);
 }
 function pullPart(oracle){ setItemStatus(oracle, 'submitted'); }
 function receivePart(oracle){ setItemStatus(oracle, 'received'); }
+
+// Render the three-pill segmented status toggle for an oracle. Admin only —
+// non-admin views show just the status badge.
+function statusSegHtml(oracle){
+  var s = stat(oracle);
+  return '<div class="seg-status">'+
+    '<button type="button" class="seg-pend'+(s==='pending'  ?' active':'')+'" onclick="setItemStatus(\''+oracle+'\',\'pending\')"   title="Mark Pending (waiting on action)">● Pending</button>'+
+    '<button type="button" class="seg-sub' +(s==='submitted'?' active':'')+'" onclick="setItemStatus(\''+oracle+'\',\'submitted\')" title="Mark Submitted (ordered from vendor)">✓ Submit</button>'+
+    '<button type="button" class="seg-rec' +(s==='received' ?' active':'')+'" onclick="setItemStatus(\''+oracle+'\',\'received\')"  title="Mark Received (part is in hand)">📦 Receive</button>'+
+  '</div>';
+}
 // pullAllPending removed — admin works through items one at a time so they
 // can be intentional about marking each as Submitted vs Received.
 
@@ -2838,6 +2828,7 @@ function refreshEventLog() {
     'QTY':     { color:'#d4890a', label:'⇅ Qty change' },
     'SUBMIT':  { color:'#1eb474', label:'📤 Submitted' },
     'RECEIVE': { color:'#56b8a3', label:'📦 Received' },
+    'PENDING': { color:'#d4890a', label:'● Reverted to Pending' },
     'PULL':    { color:'#1eb474', label:'📤 Pulled' },
   };
   var rows = '';
