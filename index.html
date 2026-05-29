@@ -2036,10 +2036,17 @@ function renderOrder(){
     else                      badge = `<span class="stbadge stbadge-pend" title="Waiting for admin to pull">● Pending</span>`;
     // Persistent "was a backorder" marker — sticks on the item even after pull.
     const boMark = backorderFlag[oracle] ? `<span class="stbadge stbadge-bo" title="This item was a backorder at some point">📦 Backorder</span>` : '';
+    // Each button has its own forward/reverse label tracking that button's
+    // own status. Submit-button reverts when item is already submitted;
+    // Received-button reverts when item is already received. Independent.
+    const submitLabel  = st==='submitted' ? '↩ Revert' : '📤 Submit';
+    const receiveLabel = st==='received'  ? '↩ Revert' : '📦 Received';
+    const submitTitle  = st==='submitted' ? 'Click to revert this item to Pending' : 'Mark Submitted (ordered from vendor)';
+    const receiveTitle = st==='received'  ? 'Click to revert this item to Pending' : 'Mark Received (part in hand)';
     const adminActions = isAdmin
       ? `<div class="act-cluster">
-           <button class="pullb${st==='submitted'?' pullb-done':''}" onclick="pullPart('${oracle}')" title="${st==='submitted'?'Click to revert to Pending':'Mark Submitted (ordered from vendor)'}">${st==='submitted'?'✓ Submitted':'📤 Submit'}</button>
-           <button class="pullb${st==='received'?' pullb-done':''}" style="${st==='received'?'':'background:#56b8a3;'}" onclick="receivePart('${oracle}')" title="${st==='received'?'Click to revert to Pending':'Mark Received (part in hand)'}">${st==='received'?'✓ Received':'📦 Received'}</button>
+           <button class="pullb${st==='submitted'?' pullb-done':''}" onclick="pullPart('${oracle}')" title="${submitTitle}">${submitLabel}</button>
+           <button class="pullb${st==='received'?' pullb-done':''}" style="${st==='received'?'':'background:#56b8a3;'}" onclick="receivePart('${oracle}')" title="${receiveTitle}">${receiveLabel}</button>
          </div>`
       : '';
     return`<div class="ord-item ord-${st}">
@@ -2483,9 +2490,13 @@ function renderAdmin(){
     const p=gp(oracle);if(!p)return'';
     const st=stat(oracle);
     const boFlag = !!backorderFlag[oracle];
+    const submitLabel  = st==='submitted' ? '↩ Revert' : '📤 Submit';
+    const receiveLabel = st==='received'  ? '↩ Revert' : '📦 Received';
+    const submitTitle  = st==='submitted' ? 'Click to revert this item to Pending' : 'Mark Submitted (ordered)';
+    const receiveTitle = st==='received'  ? 'Click to revert this item to Pending' : 'Mark Received (in hand)';
     const actCluster = `<div class="act-cluster">
-      <button class="pullb${st==='submitted'?' pullb-done':''}" onclick="pullPart('${oracle}')" title="${st==='submitted'?'Click to revert to Pending':'Mark Submitted (ordered)'}">${st==='submitted'?'✓ Submitted':'📤 Submit'}</button>
-      <button class="pullb${st==='received'?' pullb-done':''}" style="${st==='received'?'':'background:#56b8a3;'}" onclick="receivePart('${oracle}')" title="${st==='received'?'Click to revert to Pending':'Mark Received (in hand)'}">${st==='received'?'✓ Received':'📦 Received'}</button>
+      <button class="pullb${st==='submitted'?' pullb-done':''}" onclick="pullPart('${oracle}')" title="${submitTitle}">${submitLabel}</button>
+      <button class="pullb${st==='received'?' pullb-done':''}" style="${st==='received'?'':'background:#56b8a3;'}" onclick="receivePart('${oracle}')" title="${receiveTitle}">${receiveLabel}</button>
     </div>`;
     let stBadge;
     if(st==='submitted')      stBadge = '<span class="stbadge stbadge-sub">✓ Submitted</span>';
