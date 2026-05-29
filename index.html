@@ -196,12 +196,18 @@ input,select{outline:none;font-family:inherit;}
 .ometa{font-size:11px;color:var(--muted);}
 .rm{background:transparent;color:var(--danger);border:1px solid rgba(217,95,95,.25);border-radius:2px;padding:6px 10px;font-size:12px;font-weight:700;transition:all .15s;}
 .rm:hover{background:rgba(217,95,95,.12);}
-/* Status badges — pending vs submitted on each order item */
+/* Status badges — pending vs submitted vs received on each order item */
 .stbadge{display:inline-block;font-size:9px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;padding:2px 7px;border-radius:2px;margin-right:6px;vertical-align:1px;white-space:nowrap;}
 .stbadge-pend{color:#d4890a;background:rgba(212,137,10,.10);border:1px solid rgba(212,137,10,.35);}
 .stbadge-sub{color:#1eb474;background:rgba(30,180,116,.10);border:1px solid rgba(30,180,116,.4);}
+.stbadge-rec{color:#56b8a3;background:rgba(86,184,163,.12);border:1px solid rgba(86,184,163,.45);}
+.stbadge-bo {color:#d4890a;background:rgba(212,137,10,.10);border:1px solid rgba(212,137,10,.4);}
 .ord-submitted{border-left:3px solid #1eb474;}
 .ord-pending{border-left:3px solid #d4890a;}
+.ord-received{border-left:3px solid #56b8a3;}
+/* Two-button action cluster (Submit / Received), compact for crowded rows */
+.act-cluster{display:flex;gap:4px;flex-shrink:0;}
+.act-cluster .pullb{padding:5px 9px;font-size:9px;}
 /* Admin "Pull" / per-row mark button */
 .pullb{background:var(--teal);color:#fff;border-radius:2px;padding:6px 12px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;transition:all .12s;border:none;cursor:pointer;}
 .pullb:hover{background:var(--teal-d);}
@@ -699,9 +705,7 @@ input,select{outline:none;font-family:inherit;}
         <div id="adminStatusBar" style="margin-bottom:12px;padding:10px 12px;background:var(--nav);border:1px solid var(--border);border-radius:2px;"></div>
         <div class="sec-hd" style="flex-wrap:wrap;gap:8px;">
           <div class="sec-t">Current Week's Order</div>
-          <button class="btn-primary" onclick="pullAllPending()" style="background:var(--teal);">📤 Pull All Pending</button>
           <button class="btn-ghost" onclick="clearLastWeekPending()" title="Removes backorders the team no longer needs">🧹 Clear Old Backorders</button>
-          <button class="btn-danger" onclick="openReset()" title="Force a weekly snapshot now instead of waiting for Monday 8am">🗑️ Force Weekly Reset Now</button>
           <button class="btn-primary" onclick="openEventLog()" style="background:#2f8cca;border:none;">📝 View Event Log</button>
           <button class="help-btn" onclick="openHelp('admin')" title="What does Admin do?" aria-label="Help">?</button>
         </div>
@@ -807,15 +811,7 @@ input,select{outline:none;font-family:inherit;}
 </div>
 
 <!-- MODALS -->
-<div class="mov" id="mRes">
-  <div class="modal">
-    <h3>⚠️ Force Weekly Reset</h3>
-    <p style="font-size:13px;color:var(--muted);line-height:1.55;">Moves all <strong>submitted</strong> items to history (closing out this week's order). <strong>Pending</strong> items stay in the active order and appear as Backorders, with the original "ordered N days ago" age preserved.</p>
-    <p style="font-size:11px;color:var(--muted2);">This happens automatically every Monday at 8am — use this only if you need to start a new week early.</p>
-    <div class="msum" id="resSum"></div>
-    <div class="mbtns"><button class="btn-ghost" onclick="closeMod()">Cancel</button><button class="btn-danger" onclick="confReset()">Snapshot &amp; Start New Week</button></div>
-  </div>
-</div>
+<!-- Force-reset modal removed — weekly reset is fully automatic on Monday 8 AM -->
 
 <!-- DATAVAN NOTICE MODAL -->
 <div class="mov" id="mDatavan">
@@ -1316,16 +1312,19 @@ let bFil=[], bPg=0, bTmr=null;
 let fTmr=null;                 // debounce handle for favorites search
 let _favFuse=null, _favFuseKey=''; // cached Fuse for favorites pool
 const PG=50;
-// Storage keys. New (2026-05): s=item status (pending/submitted), a=added-at ms,
-// lr=lastReset ms (timestamp of most recent Monday-8am snapshot), n=order notes
-// (admin's per-item comment explaining why a backorder hasn't shipped yet).
-const SK={o:'f6_ord',k:'f6_kp',h:'f6_hi',b:'f6_ob',s:'f6_os',a:'f6_oa',lr:'f6_lr',n:'f6_on'};
+// Storage keys. New (2026-05): s=item status (pending/submitted/received),
+// a=added-at ms, lr=lastReset ms (timestamp of most recent Monday-8am
+// snapshot), n=order notes (admin's per-item comment), bf=backorderFlag
+// (sticky once an item has lived through any weekly reset while pending).
+const SK={o:'f6_ord',k:'f6_kp',h:'f6_hi',b:'f6_ob',s:'f6_os',a:'f6_oa',lr:'f6_lr',n:'f6_on',bf:'f6_bf'};
 // Parallel maps that travel alongside `order`. orderStatus keeps the
-// pending/submitted state per oracle. orderAdded keeps the ms timestamp the
-// item was first added (preserved across qty bumps so backorder age is true).
-// orderNotes holds an admin comment per oracle, surfaced in the Backorders
-// section so the whole team can see why an item hasn't shipped yet.
-var orderStatus={}, orderAdded={}, orderNotes={};
+// pending/submitted/received state per oracle. orderAdded keeps the ms
+// timestamp the item was first added (preserved across qty bumps so backorder
+// age is true). orderNotes holds an admin comment per oracle. backorderFlag
+// is sticky — once set on an oracle it stays set even after that item is
+// pulled, snapshotted into history, and beyond, so the "📦 was backordered"
+// marker is permanent.
+var orderStatus={}, orderAdded={}, orderNotes={}, backorderFlag={};
 // Last weekly-reset timestamp in ms (Monday 08:00 local). 0 = never reset.
 var lastReset=0;
 // Resolves a status, falling back to 'pending' for any legacy item that
@@ -1479,6 +1478,12 @@ function fbInit(){
       try{ localStorage.setItem(SK.n, JSON.stringify(orderNotes)); }catch(e){}
       _rerender();
     });
+    fbDb.ref('backorderFlag').on('value', function(snap){
+      var v = snap.val() || {};
+      backorderFlag = v;
+      try{ localStorage.setItem(SK.bf, JSON.stringify(backorderFlag)); }catch(e){}
+      _rerender();
+    });
     fbDb.ref('hist').on('value', function(snap){
       var v = snap.val() || [];
       hist = Array.isArray(v) ? v : Object.values(v);
@@ -1595,6 +1600,7 @@ function _fbFlush(){
     fbDb.ref('orderStatus').set(orderStatus || {});
     fbDb.ref('orderAdded').set(orderAdded || {});
     fbDb.ref('orderNotes').set(orderNotes || {});
+    fbDb.ref('backorderFlag').set(backorderFlag || {});
     fbDb.ref('lastReset').set(lastReset || 0);
     fbDb.ref('hist').set(hist || []);
     var role = user.role;
@@ -1615,6 +1621,7 @@ function save(){
     localStorage.setItem(SK.s,JSON.stringify(orderStatus));
     localStorage.setItem(SK.a,JSON.stringify(orderAdded));
     localStorage.setItem(SK.n,JSON.stringify(orderNotes));
+    localStorage.setItem(SK.bf,JSON.stringify(backorderFlag));
     localStorage.setItem(SK.lr,String(lastReset||0));
     localStorage.setItem(favsKey(),JSON.stringify(favs));
     localStorage.setItem(nickKey(),JSON.stringify(favNicks));
@@ -1636,6 +1643,7 @@ function load(){
     orderStatus=JSON.parse(localStorage.getItem(SK.s)||'{}');
     orderAdded=JSON.parse(localStorage.getItem(SK.a)||'{}');
     orderNotes=JSON.parse(localStorage.getItem(SK.n)||'{}');
+    backorderFlag=JSON.parse(localStorage.getItem(SK.bf)||'{}');
     lastReset=parseInt(localStorage.getItem(SK.lr)||'0',10)||0;
     favs=JSON.parse(localStorage.getItem(favsKey())||'{}');
     favNicks=JSON.parse(localStorage.getItem(nickKey())||'{}');
@@ -1645,7 +1653,7 @@ function load(){
     hist=JSON.parse(localStorage.getItem(SK.h)||'[]');
     deptOverrides=JSON.parse(localStorage.getItem('f6_dept_overrides')||'{}');
     uomOverrides=JSON.parse(localStorage.getItem('f6_uom_overrides')||'{}');
-  }catch(e){order={};orderBy={};keep={};orderStatus={};orderAdded={};orderNotes={};lastReset=0;favs={};favGroups={};favSnapshots={};hist=[];deptOverrides={};uomOverrides={};}
+  }catch(e){order={};orderBy={};keep={};orderStatus={};orderAdded={};orderNotes={};backorderFlag={};lastReset=0;favs={};favGroups={};favSnapshots={};hist=[];deptOverrides={};uomOverrides={};}
   // Backfill: any existing order item missing a status/addedAt becomes
   // pending and is dated to the last reset (so it's treated as "from last
   // week" and the admin can clear it explicitly if needed).
@@ -1829,26 +1837,38 @@ function addP(oracle,qty){
 function setQ(oracle,v){
   const prev=order[oracle]||0;
   const n=parseInt(v)||0;
-  if(n<=0){_forgetItem(oracle);}
+  const p=gp(oracle);
+  if(n<=0){
+    _forgetItem(oracle);
+    if(user) writeLog('REMOVE', oracle, p?p[2]:'Oracle #'+oracle, '', user.name, user.role);
+  }
   else{
     order[oracle]=n;
     // Qty increase: treat as fresh activity (back to pending). Qty decrease
     // doesn't disturb status — the part was already pulled or already pending.
     if(n>prev) _markPending(oracle);
+    if(n!==prev && user){
+      writeLog('QTY', oracle, p?p[2]:'Oracle #'+oracle, prev+' → '+n, user.name, user.role);
+    }
   }
   save();badges();
-
 }
 function adjQ(oracle,d){
   const prev=order[oracle]||0;
   const n=prev+d;
-  if(n<=0){_forgetItem(oracle);}
+  const p=gp(oracle);
+  if(n<=0){
+    _forgetItem(oracle);
+    if(user) writeLog('REMOVE', oracle, p?p[2]:'Oracle #'+oracle, '', user.name, user.role);
+  }
   else{
     order[oracle]=n;
     if(d>0) _markPending(oracle);
+    if(n!==prev && user){
+      writeLog('QTY', oracle, p?p[2]:'Oracle #'+oracle, prev+' → '+n, user.name, user.role);
+    }
   }
   save();badges();renderOrder();
-  if(n<=0){var pd=gp(oracle);if(user)writeLog('REMOVE',oracle,pd?pd[2]:'Oracle #'+oracle,'',user.name,user.role);}
 }
 function rmP(oracle){
   const p=gp(oracle);
@@ -1940,7 +1960,9 @@ function renderOrder(){
     `<div class="stat-box sd"><div class="sn">${c[2]}</div><div class="sl">Datavan</div></div>`+
     `<div class="stat-box sg"><div class="sn">${c[3]}</div><div class="sl">Turbine</div></div>`;
 
-  // Split into backorders (pending + carried over from prior week) and current week.
+  // Split into backorders (pending + flagged as backorder) and current week.
+  // Anything previously flagged that's been pulled (submitted/received) goes
+  // to the Current Week section but still shows the "was backorder" badge.
   const filtered = items.filter(([o])=>{const p=gp(o);return p&&(df===''||p[4]==df);});
   const backorders = filtered.filter(([o])=> isBackorder(o));
   const currentWk  = filtered.filter(([o])=>!isBackorder(o));
@@ -1966,6 +1988,12 @@ function renderOrder(){
         : (note
             ? `<div class="bo-note"><span class="bo-note-label">Note</span>${e(note)}</div>`
             : `<div class="bo-note bo-note-empty"><span class="bo-note-label">Note</span>No note from admin yet</div>`);
+      const adminActions = isAdmin
+        ? `<div class="act-cluster">
+             <button class="pullb" onclick="pullPart('${oracle}')" title="Mark Submitted (ordered from vendor)">📤 Submit</button>
+             <button class="pullb" style="background:#56b8a3;" onclick="receivePart('${oracle}')" title="Mark Received (part is in hand)">📦 Received</button>
+           </div>`
+        : '';
       return `<div class="bo-card">
         <div class="bo-row">
           <div class="odot" style="background:${DC[p[4]]}"></div>
@@ -1978,6 +2006,7 @@ function renderOrder(){
             <input class="qi" type="number" value="${qty}" min="1" onchange="setQ('${oracle}',this.value)" onblur="renderOrder()" />
             <button class="qb" onclick="adjQ('${oracle}',1)">+</button>
           </div>
+          ${adminActions}
           <button class="rm" onclick="rmP('${oracle}')">✕</button>
         </div>
         ${noteHtml}
@@ -1997,16 +2026,26 @@ function renderOrder(){
     document.getElementById('oList').innerHTML='<div class="empty"><div class="ei">✨</div><p style="font-size:13px;">No new items this week yet — just backorders above.<br>Browse the Master List to add fresh parts.</p></div>';
     return;
   }
+  const isAdmin = user && user.role==='Administrative';
   document.getElementById('oList').innerHTML=currentWk.map(([oracle,qty])=>{
     const p=gp(oracle);if(!p)return'';
     const st=stat(oracle);
-    const badge=st==='submitted'
-      ? `<span class="stbadge stbadge-sub" title="Pulled by admin — counted on this week's order, will move to history on Monday at 8am">✓ Submitted</span>`
-      : `<span class="stbadge stbadge-pend" title="Waiting for admin to pull">● Pending</span>`;
+    let badge;
+    if(st==='submitted')      badge = `<span class="stbadge stbadge-sub" title="Admin has ordered this — will move to history on Monday at 8am">✓ Submitted</span>`;
+    else if(st==='received')  badge = `<span class="stbadge stbadge-rec" title="Admin has the part in hand — will move to history on Monday at 8am">📦 Received</span>`;
+    else                      badge = `<span class="stbadge stbadge-pend" title="Waiting for admin to pull">● Pending</span>`;
+    // Persistent "was a backorder" marker — sticks on the item even after pull.
+    const boMark = backorderFlag[oracle] ? `<span class="stbadge stbadge-bo" title="This item was a backorder at some point">📦 Backorder</span>` : '';
+    const adminActions = isAdmin
+      ? `<div class="act-cluster">
+           <button class="pullb${st==='submitted'?' pullb-done':''}" onclick="pullPart('${oracle}')" title="${st==='submitted'?'Click to revert to Pending':'Mark Submitted (ordered from vendor)'}">${st==='submitted'?'✓ Submitted':'📤 Submit'}</button>
+           <button class="pullb${st==='received'?' pullb-done':''}" style="${st==='received'?'':'background:#56b8a3;'}" onclick="receivePart('${oracle}')" title="${st==='received'?'Click to revert to Pending':'Mark Received (part in hand)'}">${st==='received'?'✓ Received':'📦 Received'}</button>
+         </div>`
+      : '';
     return`<div class="ord-item ord-${st}">
       <div class="odot" style="background:${DC[p[4]]}"></div>
       <div class="oinfo">
-        <div class="odesc">${badge} ${e(p[2])}</div>
+        <div class="odesc">${badge}${boMark} ${e(p[2])}</div>
         <div class="ometa">${DI[p[4]]} ${DN[p[4]]} &nbsp;·&nbsp; Oracle: ${p[0]} &nbsp;·&nbsp; SAGE: ${p[1]} &nbsp;·&nbsp; UOM: ${p[3]}</div>
       </div>
       <div class="qwrap">
@@ -2014,6 +2053,7 @@ function renderOrder(){
         <input class="qi" type="number" value="${qty}" min="1" onchange="setQ('${oracle}',this.value)" onblur="renderOrder()" />
         <button class="qb" onclick="adjQ('${oracle}',1)">+</button>
       </div>
+      ${adminActions}
       <button class="rm" onclick="rmP('${oracle}')">✕</button>
     </div>`;
   }).join('');
@@ -2351,31 +2391,43 @@ function renderHistory(){
     return;
   }
   document.getElementById('hList').innerHTML=[...resets].reverse().map((h,i)=>{
-    // Tally submitted vs pending for this weekly snapshot
-    var sCount=0, pCount=0;
+    // Tally submitted / received / pending / backorder for this snapshot
+    var sCount=0, rCount=0, pCount=0, boCount=0;
     (h.items||[]).forEach(function(it){
       var s=it.status||'pending';
-      if(s==='submitted') sCount++; else pCount++;
+      if(s==='submitted')      sCount++;
+      else if(s==='received')  rCount++;
+      else                     pCount++;
+      if(it.backorder)         boCount++;
     });
     const itemsHtml=h.items.map(it=>{
       const p=gp(it.oracle);
       const itStatus=it.status||'pending';
-      const badge=itStatus==='submitted'
-        ? `<span class="stbadge stbadge-sub">✓ Submitted</span>`
-        : `<span class="stbadge stbadge-pend">● Pending</span>`;
+      let badge;
+      if(itStatus==='submitted')      badge = '<span class="stbadge stbadge-sub">✓ Submitted</span>';
+      else if(itStatus==='received')  badge = '<span class="stbadge stbadge-rec">📦 Received</span>';
+      else                            badge = '<span class="stbadge stbadge-pend">● Pending</span>';
+      const boMark = it.backorder ? '<span class="stbadge stbadge-bo">📦 Backorder</span>' : '';
       const desc = p ? e(p[2]) : `Oracle #${it.oracle} (not in current catalog)`;
       const meta = p
         ? `Qty: ${it.qty} ${p[3]} &nbsp;·&nbsp; Oracle: ${p[0]} &nbsp;·&nbsp; SAGE: ${p[1]}`
         : `Qty: ${it.qty}`;
       const ic = p ? DI[p[4]] : '📦';
-      return `<div class="hitem"><div class="hidesc">${badge} ${ic} ${desc}</div><div class="himeta">${meta}</div></div>`;
+      return `<div class="hitem"><div class="hidesc">${badge}${boMark} ${ic} ${desc}</div><div class="himeta">${meta}</div></div>`;
     }).join('');
     const label = h.date.includes('weekly-reset') ? 'Week ended' : 'Reset';
+    // Header tally text — show whatever's nonzero.
+    var parts=[];
+    if(sCount)  parts.push(`<strong style="color:var(--teal)">${sCount}</strong> submitted`);
+    if(rCount)  parts.push(`<strong style="color:#56b8a3">${rCount}</strong> received`);
+    if(pCount)  parts.push(`<strong style="color:var(--mech)">${pCount}</strong> pending`);
+    if(boCount) parts.push(`<strong style="color:#d4890a">${boCount}</strong> were backorder${boCount===1?'':'s'}`);
+    const tally = parts.length ? parts.join(' · ') : '—';
     return`<div class="hcard" id="hcard-${i}">
       <div class="htop" onclick="toggleHist(${i})" style="cursor:pointer;user-select:none;">
         <div>
           <div class="hdate">📅 ${label} — ${h.date.replace(' (weekly-reset)','').replace(' (pre-reset)','')}</div>
-          <div class="hby">${h.submittedBy||'—'} &nbsp;·&nbsp; ${h.role||''} &nbsp;·&nbsp; <strong style="color:var(--teal)">${sCount}</strong> submitted, <strong style="color:var(--mech)">${pCount}</strong> pending &nbsp;·&nbsp; ${h.items.length} total</div>
+          <div class="hby">${h.submittedBy||'—'} &nbsp;·&nbsp; ${h.role||''} &nbsp;·&nbsp; ${tally} &nbsp;·&nbsp; ${h.items.length} total</div>
         </div>
         <span class="hchev" style="font-size:14px;color:var(--teal);transition:transform .2s;">▼</span>
       </div>
@@ -2402,11 +2454,13 @@ function renderAdmin(){
   // and reflect the current backup timestamp every time the admin tab opens.
   if(typeof updateCustomPartsStatus==='function') updateCustomPartsStatus();
   const items=Object.entries(order).filter(([o,q])=>q>0);
-  // Update header counts for pending / submitted / backorders
-  var pendCount=0, subCount=0, boCount=0;
+  // Update header counts for pending / submitted / received / backorders
+  var pendCount=0, subCount=0, recCount=0, boCount=0;
   items.forEach(function(it){
     var st=stat(it[0]);
-    if(st==='submitted') subCount++; else pendCount++;
+    if(st==='submitted')      subCount++;
+    else if(st==='received')  recCount++;
+    else                      pendCount++;
     if(isBackorder(it[0])) boCount++;
   });
   var hdr=document.getElementById('adminStatusBar');
@@ -2416,7 +2470,8 @@ function renderAdmin(){
       `<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:11px;color:var(--muted);">`+
       `<span><strong style="color:var(--mech)">${pendCount}</strong> pending</span>`+
       `<span><strong style="color:var(--teal)">${subCount}</strong> submitted</span>`+
-      `<span><strong style="color:#d4890a">${boCount}</strong> backorder${boCount===1?'':'s'}</span>`+
+      `<span><strong style="color:#56b8a3">${recCount}</strong> received</span>`+
+      `<span><strong style="color:#d4890a">${boCount}</strong> backorder${boCount===1?'':'s'} active</span>`+
       `<span style="margin-left:auto;color:var(--muted2);">Last reset: ${lrTxt}</span>`+
       `</div>`;
   }
@@ -2427,65 +2482,56 @@ function renderAdmin(){
   document.getElementById('kList').innerHTML=items.map(([oracle,qty])=>{
     const p=gp(oracle);if(!p)return'';
     const st=stat(oracle);
-    const isCarried = isBackorder(oracle);
-    const pullBtn = st==='submitted'
-      ? `<button class="pullb pullb-done" onclick="pullPart('${oracle}')" title="Already submitted — click to unmark (toggles back to pending)" style="opacity:.85;">✓ Submitted</button>`
-      : `<button class="pullb" onclick="pullPart('${oracle}')" title="Mark this item as pulled / submitted">📤 Pull</button>`;
-    const carriedTag = isCarried ? `<span class="stbadge" style="color:#d4890a;background:rgba(212,137,10,.10);border:1px solid rgba(212,137,10,.4);">📦 Backorder</span>` : '';
+    const boFlag = !!backorderFlag[oracle];
+    const actCluster = `<div class="act-cluster">
+      <button class="pullb${st==='submitted'?' pullb-done':''}" onclick="pullPart('${oracle}')" title="${st==='submitted'?'Click to revert to Pending':'Mark Submitted (ordered)'}">${st==='submitted'?'✓ Submitted':'📤 Submit'}</button>
+      <button class="pullb${st==='received'?' pullb-done':''}" style="${st==='received'?'':'background:#56b8a3;'}" onclick="receivePart('${oracle}')" title="${st==='received'?'Click to revert to Pending':'Mark Received (in hand)'}">${st==='received'?'✓ Received':'📦 Received'}</button>
+    </div>`;
+    let stBadge;
+    if(st==='submitted')      stBadge = '<span class="stbadge stbadge-sub">✓ Submitted</span>';
+    else if(st==='received')  stBadge = '<span class="stbadge stbadge-rec">📦 Received</span>';
+    else                      stBadge = '<span class="stbadge stbadge-pend">● Pending</span>';
+    const boTag = boFlag ? '<span class="stbadge stbadge-bo">📦 Backorder</span>' : '';
     return`<div class="krow">
       <div class="kinfo">
-        <div class="kdesc">${carriedTag} ${DI[p[4]]} ${e(p[2].slice(0,90))}${p[2].length>90?'…':''}</div>
-        <div class="kmeta">${st==='submitted'?'<span class="stbadge stbadge-sub">✓ Submitted</span>':'<span class="stbadge stbadge-pend">● Pending</span>'} Oracle: ${p[0]} &nbsp;·&nbsp; SAGE: ${p[1]} &nbsp;·&nbsp; Qty: ${qty} ${p[3]}</div>
+        <div class="kdesc">${boTag} ${DI[p[4]]} ${e(p[2].slice(0,90))}${p[2].length>90?'…':''}</div>
+        <div class="kmeta">${stBadge} Oracle: ${p[0]} &nbsp;·&nbsp; SAGE: ${p[1]} &nbsp;·&nbsp; Qty: ${qty} ${p[3]}</div>
       </div>
-      ${pullBtn}
+      ${actCluster}
     </div>`;
   }).join('');
 }
 
-// Toggle Pull back to Pending if admin clicked on an already-submitted row.
-// pullPart sets it submitted; this override flips the other direction.
-(function(){
-  var _origPull=pullPart;
-  pullPart=function(oracle){
-    if(!user || user.role!=='Administrative'){ toast('Admin only'); return; }
-    if(stat(oracle)==='submitted'){
-      orderStatus[oracle]='pending';
-      save(); renderOrder(); renderAdmin(); badges();
-      toast('Reverted to pending');
-      return;
-    }
-    _origPull(oracle);
-  };
-})();
+// (Pull-toggle wrapper removed — setItemStatus handles toggle-back-to-pending natively.)
 
-// ── PULL / RESET ──────────────────────────────────────────────
-// Pull = admin marks a part (or all pending parts) as submitted. The item
-// stays visible on the weekly order so users can see it was received and
-// don't try to re-add it. Submitted items are auto-cleared at the next
-// Monday-8am reset.
-function pullPart(oracle){
+// ── PULL / STATUS ─────────────────────────────────────────────
+// Admin sets an item's status — 'submitted' (ordered from vendor) or
+// 'received' (in hand). Both are end-states that clear at the next Monday
+// reset. Clicking the same status twice reverts to 'pending'.
+function setItemStatus(oracle, newStatus){
   if(!user || user.role!=='Administrative'){ toast('Admin only'); return; }
   if(!(oracle in order)) return;
-  orderStatus[oracle]='submitted';
-  save();
-  renderOrder();renderAdmin();badges();
-  var p=gp(oracle);
-  writeLog('PULL', oracle, p?p[2]:'Oracle #'+oracle, order[oracle], user.name, user.role);
-  toast('Marked submitted');
-}
-function pullAllPending(){
-  if(!user || user.role!=='Administrative'){ toast('Admin only'); return; }
-  var n=0;
-  Object.keys(order).forEach(function(o){
-    if((order[o]||0)>0 && stat(o)!=='submitted'){
-      orderStatus[o]='submitted'; n++;
-    }
-  });
-  if(!n){ toast('Nothing pending to pull'); return; }
+  if(newStatus!=='submitted' && newStatus!=='received'){ return; }
+  var current = stat(oracle);
+  var p = gp(oracle);
+  var toggleOff = (current === newStatus);
+  if(toggleOff){
+    orderStatus[oracle] = 'pending';
+    save(); renderOrder(); renderAdmin(); badges();
+    writeLog('QTY', oracle, p?p[2]:'Oracle #'+oracle, current+' → pending', user.name, user.role);
+    toast('Reverted to pending');
+    return;
+  }
+  orderStatus[oracle] = newStatus;
   save(); renderOrder(); renderAdmin(); badges();
-  writeLog('PULL', '', 'All pending ('+n+' items)', n, user.name, user.role);
-  toast('Pulled '+n+' item'+(n===1?'':'s'));
+  var act = (newStatus === 'received') ? 'RECEIVE' : 'SUBMIT';
+  writeLog(act, oracle, p?p[2]:'Oracle #'+oracle, order[oracle], user.name, user.role);
+  toast(newStatus === 'received' ? 'Marked received' : 'Marked submitted');
 }
+function pullPart(oracle){ setItemStatus(oracle, 'submitted'); }
+function receivePart(oracle){ setItemStatus(oracle, 'received'); }
+// pullAllPending removed — admin works through items one at a time so they
+// can be intentional about marking each as Submitted vs Received.
 
 // Compute the most recent Monday 08:00 in local time that has already passed.
 // Used to decide whether an auto-reset is overdue.
@@ -2506,44 +2552,50 @@ function currentResetCutoff(){
 }
 
 // Auto-reset hook. Called on app load (after data is loaded). If we haven't
-// reset since the most recent Monday 8am, snapshot ONLY THE SUBMITTED items
-// into history and remove them from the active order. Pending items stay put
-// (they become "backorders" — visible in the Backorders section on My Order).
+// reset since the most recent Monday 8am: (1) snapshot all submitted AND
+// received items into history (both are end-states), (2) flag any item that
+// is still pending as a permanent "was a backorder" — that flag rides with
+// the item forever, even after it's eventually pulled and archived.
 function maybeAutoReset(){
   var cutoff=currentResetCutoff();
   if(lastReset>=cutoff) return false;
-  // Pull just the submitted items — that's what we promised users we'd ship.
-  var subItems=Object.entries(order)
-    .filter(function(e){return (e[1]||0)>0 && stat(e[0])==='submitted';})
+  // Submitted AND received both close out — both move to history.
+  var closeoutItems=Object.entries(order)
+    .filter(function(e){ var s=stat(e[0]); return (e[1]||0)>0 && (s==='submitted'||s==='received'); })
     .map(function(e){
       var o=e[0];
-      return { oracle:o, qty:e[1], status:'submitted', addedAt:orderAdded[o]||0 };
+      return { oracle:o, qty:e[1], status:stat(o), addedAt:orderAdded[o]||0, backorder: !!backorderFlag[o] };
     });
   // First-ever load with an empty order: silently set the marker, don't
   // snapshot an empty week and don't toast.
-  if(!subItems.length && !Object.keys(order).length && !lastReset){
+  if(!closeoutItems.length && !Object.keys(order).length && !lastReset){
     lastReset=cutoff;
     try{ localStorage.setItem(SK.lr, String(lastReset)); }catch(e){}
     if(fbReady){ try{ fbDb.ref('lastReset').set(lastReset); }catch(e){} }
     return false;
   }
-  if(subItems.length){
+  // Stick the backorder flag on every item that survives this reset still
+  // pending — the flag is permanent from this moment on for that oracle.
+  Object.keys(order).forEach(function(o){
+    if((order[o]||0)>0 && stat(o)==='pending') backorderFlag[o]=true;
+  });
+  if(closeoutItems.length){
     // History entry is stamped with the *cutoff* time (Mon 8:00 AM), not the
     // wall-clock moment the code ran. firedAt records actual execution time
-    // for auditing.
+    // for auditing. Per-item `backorder:true` is preserved into the snapshot.
     hist.push({
       date:new Date(cutoff).toLocaleString()+' (weekly-reset)',
       submittedBy:'Auto (Monday 8am)',
       role:'System',
-      items:subItems,
+      items:closeoutItems,
       weekEnded:cutoff,
       firedAt:Date.now()
     });
   }
-  // Remove just the submitted items from the active order. Pending items
-  // are left exactly as they are — same qty, same orderAdded — so they
+  // Remove the closed-out items from the active order. Pending items are
+  // left exactly as they are — same qty, same orderAdded — so they
   // automatically become backorders without any extra bookkeeping.
-  subItems.forEach(function(it){ _forgetItem(it.oracle); });
+  closeoutItems.forEach(function(it){ _forgetItem(it.oracle); });
   // Stamp lastReset with the *cutoff* so it semantically represents "we have
   // processed up to this Monday-8am boundary".
   lastReset=cutoff;
@@ -2551,8 +2603,8 @@ function maybeAutoReset(){
   if(typeof renderAll==='function') renderAll();
   if(typeof renderAdmin==='function') renderAdmin();
   if(typeof badges==='function') badges();
-  if(subItems.length){
-    toast('Weekly reset: '+subItems.length+' submitted item'+(subItems.length===1?'':'s')+' moved to history');
+  if(closeoutItems.length){
+    toast('Weekly reset: '+closeoutItems.length+' item'+(closeoutItems.length===1?'':'s')+' closed out to history');
   }
   return true;
 }
@@ -2574,43 +2626,7 @@ function clearLastWeekPending(){
   toast('Cleared '+toRemove.length+' backorder'+(toRemove.length===1?'':'s'));
 }
 
-// Manual "Force reset now" — same as the auto reset but admin-triggered.
-function openReset(){
-  const pendingCount=Object.entries(order).filter(([o,q])=>q>0 && stat(o)==='pending').length;
-  const subCount=Object.entries(order).filter(([o,q])=>q>0 && stat(o)==='submitted').length;
-  document.getElementById('resSum').innerHTML=
-    `<span style="color:var(--teal)"><strong>${subCount}</strong> submitted item${subCount===1?'':'s'} will move to history</span><br>`+
-    `<span style="color:var(--mech)"><strong>${pendingCount}</strong> pending item${pendingCount===1?'':'s'} will stay as Backorders</span>`;
-  document.getElementById('mRes').classList.add('show');
-}
-function confReset(){
-  if(!user || user.role!=='Administrative'){ toast('Admin only'); closeMod(); return; }
-  // Same logic as the auto path: snapshot only submitted items, leave pending.
-  var subItems=Object.entries(order)
-    .filter(function(e){return (e[1]||0)>0 && stat(e[0])==='submitted';})
-    .map(function(e){
-      var o=e[0];
-      return { oracle:o, qty:e[1], status:'submitted', addedAt:orderAdded[o]||0 };
-    });
-  if(subItems.length){
-    hist.push({
-      date:new Date().toLocaleString()+' (weekly-reset)',
-      submittedBy:user.name,
-      role:user.role,
-      items:subItems,
-      weekEnded:Date.now(),
-      firedAt:Date.now()
-    });
-  }
-  subItems.forEach(function(it){ _forgetItem(it.oracle); });
-  // Set lastReset to the most recent cutoff so it semantically represents
-  // "we've processed through Monday 8am of this week"; max() guards against
-  // an admin forcing a reset before 8am Monday, which would otherwise let
-  // the auto-reset fire again a few hours later.
-  lastReset=Math.max(currentResetCutoff(), lastReset);
-  save();closeMod();renderAll();renderAdmin();badges();
-  toast('Weekly reset complete — '+subItems.length+' submitted item'+(subItems.length===1?'':'s')+' moved to history');
-}
+// openReset/confReset removed — weekly reset is fully automatic on Monday 8 AM.
 function closeMod(){document.querySelectorAll('.mov').forEach(m=>m.classList.remove('show'));}
 
 let tT;
@@ -2624,7 +2640,7 @@ function toast(msg){
 // (even users who previously dismissed it). Format: YYYY-MM-DD-shortname —
 // the date prefix is read by _bannerExpired() to auto-stop the banner after
 // BANNER_DAYS days, so a new version automatically resets the 21-day clock.
-const BANNER_VERSION = '2026-05-26-backorders';
+const BANNER_VERSION = '2026-05-26-received-status';
 const BANNER_KEY = 'f6_banner_dismissed';
 const BANNER_DAYS = 21;
 
@@ -2643,15 +2659,15 @@ function _bannerExpired(){
 // Two message variants — admins do the pulling, regular users do the requesting.
 const BANNER_MSGS = {
   admin: [
-    `<span class="upd-em">📦 NEW: BACKORDERS SECTION</span> on the My Order tab — any pending item that survives a Monday reset shows up there with the original "ordered X days/weeks ago" age preserved.`,
-    `<span class="upd-em">📝 ADD A NOTE:</span> On each backorder you'll see an editable note field. Type the reason for delay or an ETA — the whole crew sees it so they know status.`,
-    `<span class="upd-em">🗓️ WEEKLY HISTORY:</span> Only <strong>submitted</strong> items move to history now. Pending items stay live as backorders until you pull or clear them.`,
-    `<span class="upd-em">🧹 ADMIN TOOLS:</span> "Pull All Pending" closes out the week's new requests; "Clear Old Backorders" drops outstanding items the team no longer needs.`,
+    `<span class="upd-em">📦 NEW: RECEIVED STATUS</span> — every item now has two action buttons. <strong>📤 Submit</strong> = ordered from vendor. <strong>📦 Received</strong> = part is in hand. Pick whichever fits.`,
+    `<span class="upd-em">🏷️ STICKY BACKORDER TAG</span> — once an item survives a Monday reset while pending, it gets a permanent <strong>📦 Backorder</strong> badge that follows it everywhere, including into history.`,
+    `<span class="upd-em">⇅ QUANTITY CHANGES</span> are now recorded in the Event Log (e.g. "5 → 3"), so you have a full audit trail.`,
+    `<span class="upd-em">🗑️ NO MORE FORCE-RESET</span> or batch pull. Work down the list one row at a time — pick Submit or Received for each, and Monday 8 AM closes the week.`,
   ],
   user: [
-    `<span class="upd-em">📦 NEW: BACKORDERS</span> — items you ordered that weren't filled before Monday now stay visible at the top of My Order with a <strong>"X days/weeks"</strong> age tag, so nothing falls through the cracks.`,
-    `<span class="upd-em">💬 LOOK FOR NOTES:</span> The admin can attach a note to each backorder explaining the delay or ETA. Check there before re-asking.`,
-    `<span class="upd-em">● PENDING</span> = waiting on admin. <strong>✓ SUBMITTED</strong> = admin has ordered it. Submitted items clear automatically every <strong>Monday at 8 AM</strong>.`,
+    `<span class="upd-em">📦 RECEIVED STATUS</span> — when admin marks your part as <strong>Received</strong> (a new badge!), it means the part is physically in hand. <strong>Submitted</strong> still means it's been ordered from the vendor.`,
+    `<span class="upd-em">🏷️ BACKORDER BADGE</span> — items that survive a Monday reset keep a <strong>📦 Backorder</strong> tag forever, even after they're filled. Lets you spot historically-tricky parts at a glance.`,
+    `<span class="upd-em">● PENDING</span> = waiting on admin. <strong>✓ SUBMITTED</strong> or <strong>📦 RECEIVED</strong> = handled — clears Monday at 8 AM.`,
   ],
 };
 
@@ -2802,12 +2818,27 @@ function refreshEventLog() {
     return '';
   }
 
+  // Action → (color, label) lookup. ADD/REMOVE existed first; QTY logs
+  // quantity changes (e.g. "5 → 3"); SUBMIT/RECEIVE/PULL are admin pulls;
+  // unknown actions fall back to a neutral gray label.
+  var _actionMeta = {
+    'ADD':     { color:'#1eb474', label:'+ Added' },
+    'REMOVE':  { color:'#d95f5f', label:'&times; Removed' },
+    'QTY':     { color:'#d4890a', label:'⇅ Qty change' },
+    'SUBMIT':  { color:'#1eb474', label:'📤 Submitted' },
+    'RECEIVE': { color:'#56b8a3', label:'📦 Received' },
+    'PULL':    { color:'#1eb474', label:'📤 Pulled' },
+  };
   var rows = '';
   arr.slice().reverse().forEach(function(ev){
-    var isAdd = ev.a === 'ADD';
-    var color = isAdd ? '#1eb474' : '#d95f5f';
-    var label = isAdd ? '+ Added' : '&times; Removed';
-    var qty   = (isAdd && ev.q) ? ' &nbsp;&middot;&nbsp; Qty: ' + _esc(ev.q) : '';
+    var meta  = _actionMeta[ev.a] || { color:'#888', label:_esc(ev.a||'?') };
+    var color = meta.color;
+    var label = meta.label;
+    // For ADD show "Qty: N", for QTY show the "OLD → NEW" diff, for the rest skip qty.
+    var qty   = '';
+    if(ev.a === 'ADD' && ev.q)       qty = ' &nbsp;&middot;&nbsp; Qty: ' + _esc(ev.q);
+    else if(ev.a === 'QTY' && ev.q)  qty = ' &nbsp;&middot;&nbsp; '       + _esc(ev.q);
+    else if((ev.a==='SUBMIT'||ev.a==='RECEIVE'||ev.a==='PULL') && ev.q) qty = ' &nbsp;&middot;&nbsp; Qty: ' + _esc(ev.q);
     // Oracle # — teal pill prefixed to the description. Recovered for legacy
     // entries via prefix parse / catalog lookup; muted "—" when unrecoverable
     // so every row still has a visible Oracle # slot.
