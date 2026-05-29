@@ -208,16 +208,21 @@ input,select{outline:none;font-family:inherit;}
 /* Two-button action cluster (Submit / Received), compact for crowded rows */
 .act-cluster{display:flex;gap:4px;flex-shrink:0;}
 .act-cluster .pullb{padding:5px 9px;font-size:9px;}
-/* Icon-only segmented status toggle — Pending / Submitted / Received.
-   ~80px total. Active state has colored fill + accent bar + scale; hover
-   tooltips carry the full text label. */
-.seg-status{display:inline-flex;align-items:stretch;border:1px solid var(--border);border-radius:2px;overflow:hidden;flex-shrink:0;background:var(--card);}
-.seg-status button{width:28px;height:28px;padding:0;font-size:13px;background:transparent;color:var(--muted);border:none;border-right:1px solid var(--border);cursor:pointer;transition:background .12s,color .12s;display:flex;align-items:center;justify-content:center;line-height:1;}
-.seg-status button:last-child{border-right:none;}
-.seg-status button:hover:not(.active){background:rgba(255,255,255,.05);color:var(--text);}
-.seg-status .seg-pend.active{background:rgba(212,137,10,.20);color:#d4890a;box-shadow:inset 0 -2px 0 #d4890a;}
-.seg-status .seg-sub.active {background:rgba(30,180,116,.20);color:#1eb474;box-shadow:inset 0 -2px 0 #1eb474;}
-.seg-status .seg-rec.active {background:rgba(86,184,163,.22);color:#56b8a3;box-shadow:inset 0 -2px 0 #56b8a3;}
+/* Single-button status dropdown — Pending / Submitted / Received. Styled
+   native <select> so it gets the OS picker on mobile, the standard
+   dropdown on desktop, and full keyboard/screen-reader support for free.
+   Colored border + text track the current status. */
+.status-sel{appearance:none;-webkit-appearance:none;-moz-appearance:none;background:var(--card);color:var(--muted);border:1px solid var(--border);border-radius:2px;padding:5px 22px 5px 9px;font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;font-family:inherit;cursor:pointer;flex-shrink:0;line-height:1;height:28px;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'><path fill='%23888' d='M1 3l4 4 4-4z'/></svg>");
+  background-repeat:no-repeat;background-position:right 6px center;background-size:8px;
+  transition:border-color .12s,color .12s;}
+.status-sel:hover{border-color:var(--border2);}
+.status-sel:focus{outline:none;border-color:var(--teal);}
+.status-sel.is-pending  {border-color:rgba(212,137,10,.55);color:#d4890a;background-color:rgba(212,137,10,.08);}
+.status-sel.is-submitted{border-color:rgba(30,180,116,.55);color:#1eb474;background-color:rgba(30,180,116,.08);}
+.status-sel.is-received {border-color:rgba(86,184,163,.55);color:#56b8a3;background-color:rgba(86,184,163,.10);}
+/* Make the dropdown options readable in dark mode (browsers vary). */
+.status-sel option{background:#1a1a1a;color:#e0e0e0;}
 /* Admin "Pull" / per-row mark button */
 .pullb{background:var(--teal);color:#fff;border-radius:2px;padding:6px 12px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;transition:all .12s;border:none;cursor:pointer;}
 .pullb:hover{background:var(--teal-d);}
@@ -2547,17 +2552,18 @@ function setItemStatus(oracle, newStatus){
 function pullPart(oracle){ setItemStatus(oracle, 'submitted'); }
 function receivePart(oracle){ setItemStatus(oracle, 'received'); }
 
-// Render the icon-only three-pill segmented status toggle for an oracle.
-// Admin only — non-admin views show just the status badge. Tooltips on hover
-// carry the full label, since the icons themselves are: ● pending, ✓ submitted,
-// 📦 received.
+// Render the single-button status dropdown for an oracle. Admin only —
+// non-admin views show just the status badge. Uses a native <select> styled
+// as a button, so mobile users get their OS picker and keyboard users get
+// arrow-key navigation for free.
 function statusSegHtml(oracle){
   var s = stat(oracle);
-  return '<div class="seg-status" aria-label="Item status">'+
-    '<button type="button" class="seg-pend'+(s==='pending'  ?' active':'')+'" onclick="setItemStatus(\''+oracle+'\',\'pending\')"   title="Mark Pending — waiting on action"   aria-label="Pending">●</button>'+
-    '<button type="button" class="seg-sub' +(s==='submitted'?' active':'')+'" onclick="setItemStatus(\''+oracle+'\',\'submitted\')" title="Mark Submitted — ordered from vendor" aria-label="Submitted">✓</button>'+
-    '<button type="button" class="seg-rec' +(s==='received' ?' active':'')+'" onclick="setItemStatus(\''+oracle+'\',\'received\')"  title="Mark Received — part is in hand"     aria-label="Received">📦</button>'+
-  '</div>';
+  var cls = 'status-sel is-'+s;
+  return '<select class="'+cls+'" aria-label="Item status" title="Change status" onchange="setItemStatus(\''+oracle+'\', this.value)">'+
+    '<option value="pending"   '+(s==='pending'  ?'selected':'')+'>● Pending</option>'+
+    '<option value="submitted" '+(s==='submitted'?'selected':'')+'>✓ Submitted</option>'+
+    '<option value="received"  '+(s==='received' ?'selected':'')+'>📦 Received</option>'+
+  '</select>';
 }
 // pullAllPending removed — admin works through items one at a time so they
 // can be intentional about marking each as Submitted vs Received.
