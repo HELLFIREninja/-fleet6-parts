@@ -605,6 +605,7 @@ input,select{outline:none;font-family:inherit;}
 
     <button class="btn-login" id="loginBtn" onclick="doLogin()" disabled>Access Fleet 6 Portal</button>
     <div class="login-foot">Evolution Well Services® &nbsp;·&nbsp; Fleet 6 &nbsp;·&nbsp; Internal Use Only</div>
+    <div class="login-foot" style="margin-top:6px;opacity:.65;">Developed by Mason Columbine for Field Operations</div>
   </div>
 </div>
 
@@ -809,7 +810,7 @@ input,select{outline:none;font-family:inherit;}
 
         <!-- Search & Delete -->
         <div>
-          <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Search &amp; Delete Parts</div>
+          <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Search, Edit &amp; Delete Parts</div>
           <div style="display:flex;gap:8px;margin-bottom:10px;">
             <div class="sbox" style="flex:1;">
               <span class="sico">🔍</span>
@@ -842,6 +843,51 @@ input,select{outline:none;font-family:inherit;}
     <div class="mbtns">
       <button class="btn-ghost" onclick="closeMod()">Cancel</button>
       <button class="btn-danger" id="boRemoveConfirmBtn" onclick="confirmBackorderRemoval()" disabled>Remove Selected (<span id="boRemoveCount">0</span>)</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT PART MODAL — admin edits an individual catalog part -->
+<div class="mov" id="mEditPart">
+  <div class="modal" style="max-width:560px;border-top-color:#2f8cca;">
+    <h3>✏️ Edit Part</h3>
+    <p style="font-size:12px;color:var(--muted);line-height:1.55;margin-bottom:14px;">Update this part's details. Changes sync to everyone. <strong style="color:#d4890a;">Changing the Oracle #</strong> automatically carries over any orders, history and favorites to the new number.</p>
+    <input type="hidden" id="editOrigOracle" />
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+      <div>
+        <label style="display:block;font-size:10px;color:var(--muted2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.8px;">Oracle #</label>
+        <input id="editOraNum" type="text" placeholder="e.g. 10012345" style="width:100%;padding:9px 12px;background:var(--nav);color:var(--text);border:1px solid var(--border);border-radius:2px;font-size:13px;font-family:inherit;" />
+      </div>
+      <div>
+        <label style="display:block;font-size:10px;color:var(--muted2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.8px;">SAGE #</label>
+        <input id="editSageNum" type="text" placeholder="e.g. 12345" style="width:100%;padding:9px 12px;background:var(--nav);color:var(--text);border:1px solid var(--border);border-radius:2px;font-size:13px;font-family:inherit;" />
+      </div>
+    </div>
+    <div style="margin-bottom:8px;">
+      <label style="display:block;font-size:10px;color:var(--muted2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.8px;">Description</label>
+      <input id="editDesc" type="text" placeholder="Full part description..." style="width:100%;padding:9px 12px;background:var(--nav);color:var(--text);border:1px solid var(--border);border-radius:2px;font-size:13px;font-family:inherit;" />
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
+      <div>
+        <label style="display:block;font-size:10px;color:var(--muted2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.8px;">UOM</label>
+        <select id="editUom" style="width:100%;padding:9px 12px;background:var(--nav);color:var(--text);border:1px solid var(--border);border-radius:2px;font-size:13px;font-family:inherit;"></select>
+      </div>
+      <div>
+        <label style="display:block;font-size:10px;color:var(--muted2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.8px;">Department</label>
+        <select id="editDept" style="width:100%;padding:9px 12px;background:var(--nav);color:var(--text);border:1px solid var(--border);border-radius:2px;font-size:13px;font-family:inherit;">
+          <option value="0">🔧 Mechanical</option>
+          <option value="1">⚡ Electrical</option>
+          <option value="2">💻 Datavan</option>
+          <option value="6">🌀 Turbine</option>
+          <option value="3">🔨 Tools</option>
+          <option value="4">🔩 Hardware</option>
+          <option value="5">📦 Miscellaneous</option>
+        </select>
+      </div>
+    </div>
+    <div class="mbtns">
+      <button class="btn-ghost" onclick="closeMod()">Cancel</button>
+      <button class="btn-primary" onclick="saveEditPart()">Save Changes</button>
     </div>
   </div>
 </div>
@@ -1360,6 +1406,14 @@ const SK={o:'f6_ord',k:'f6_kp',h:'f6_hi',b:'f6_ob',s:'f6_os',a:'f6_oa',lr:'f6_lr
 var orderStatus={}, orderAdded={}, orderNotes={}, backorderFlag={};
 // Last weekly-reset timestamp in ms (Monday 08:00 local). 0 = never reset.
 var lastReset=0;
+// Admin part-edit notices, synced via Firebase 'partEdits'. Keyed by the
+// CURRENT (post-edit) Oracle #: {from,to,ts,by,changed:[...],desc}. Used to
+// tell each department when an admin altered a part they've favorited.
+var partEdits={};
+// Every login role that has its own favorites bucket in the cloud. Used to
+// carry a favorite across an Oracle # change for ALL departments, not just
+// the admin who made the edit.
+var ALL_FAV_ROLES=['Mechanical','Electrical','Datavan','Turbine','Administrative'];
 // Resolves a status, falling back to 'pending' for any legacy item that
 // existed before the status field was introduced.
 function stat(oracle){ return (orderStatus && orderStatus[oracle]) || 'pending'; }
@@ -1522,6 +1576,15 @@ function fbInit(){
       hist = Array.isArray(v) ? v : Object.values(v);
       try{ localStorage.setItem(SK.h, JSON.stringify(hist)); }catch(e){}
       _rerender();
+    });
+    fbDb.ref('partEdits').on('value', function(snap){
+      partEdits = snap.val() || {};
+      try{ localStorage.setItem('f6_part_edits', JSON.stringify(partEdits)); }catch(e){}
+      // Refresh favorites live if the user is looking at that tab.
+      try{
+        var ft=document.getElementById('tab-favorites');
+        if(ft && ft.classList.contains('active') && typeof renderFavs==='function') renderFavs();
+      }catch(e){}
     });
     fbDb.ref('elog').on('value', function(snap){
       var v = snap.val() || [];
@@ -1686,7 +1749,8 @@ function load(){
     hist=JSON.parse(localStorage.getItem(SK.h)||'[]');
     deptOverrides=JSON.parse(localStorage.getItem('f6_dept_overrides')||'{}');
     uomOverrides=JSON.parse(localStorage.getItem('f6_uom_overrides')||'{}');
-  }catch(e){order={};orderBy={};keep={};orderStatus={};orderAdded={};orderNotes={};backorderFlag={};lastReset=0;favs={};favGroups={};favSnapshots={};hist=[];deptOverrides={};uomOverrides={};}
+    partEdits=JSON.parse(localStorage.getItem('f6_part_edits')||'{}');
+  }catch(e){order={};orderBy={};keep={};orderStatus={};orderAdded={};orderNotes={};backorderFlag={};lastReset=0;favs={};favGroups={};favSnapshots={};hist=[];deptOverrides={};uomOverrides={};partEdits={};}
   // Backfill: any existing order item missing a status/addedAt becomes
   // pending and is dated to the last reset (so it's treated as "from last
   // week" and the admin can clear it explicitly if needed).
@@ -1755,6 +1819,12 @@ function doLogin(){
   setTimeout(function(){ try{ maybeAutoReset(); }catch(e){ console.error('autoReset',e); } }, 1500);
   // Update banner — shown once per dismissal-version per user.
   setTimeout(function(){ try{ showUpdateBanner(); }catch(e){ console.error('banner',e); } }, 600);
+  // One-time heads-up if an admin edited any of this user's favorited parts.
+  // Delayed so Firebase has time to sync favorites + edit notices first.
+  setTimeout(function(){ try{
+    var ue=(typeof unseenFavEdits==='function')?unseenFavEdits():[];
+    if(ue.length) toast('✏️ '+ue.length+' favorite'+(ue.length===1?'':'s')+' updated by an admin — open Favorites to review');
+  }catch(e){} }, 1900);
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('app').style.display='flex';
   document.getElementById('hName').textContent=name;
@@ -2357,6 +2427,22 @@ function renderFavs(){
       ' &nbsp;<button onclick="removeOrphanFavs()" style="background:transparent;border:1px solid rgba(212,150,10,0.6);color:#f0b040;padding:2px 8px;border-radius:2px;font-size:11px;cursor:pointer;">Remove all '+orphanCount+'</button>'+
       '</div>';
   }
+  // Banner: parts in THIS user's favorites that an admin recently edited
+  // (e.g. the Oracle # was corrected). Synced via Firebase 'partEdits'; the
+  // favorite itself was already carried over, this is just the heads-up.
+  var _favEdits = (typeof unseenFavEdits==='function') ? unseenFavEdits() : [];
+  if(_favEdits.length){
+    var _rows = _favEdits.map(function(ed){
+      var chg  = (ed.changed && ed.changed.length) ? ed.changed.join(', ') : 'details';
+      var from = (ed.from && ed.to && ed.from!==ed.to) ? ' &nbsp;·&nbsp; Oracle # '+e(String(ed.from))+' → '+e(String(ed.to)) : '';
+      return '<div style="margin-top:5px;">• <strong>'+e(String(ed.desc||ed.to||'').slice(0,70))+'</strong> <span style="opacity:.85;">('+e(chg)+')</span>'+from+'</div>';
+    }).join('');
+    html += '<div style="font-size:12px;background:rgba(47,140,202,0.12);border:1px solid rgba(47,140,202,0.45);border-radius:2px;padding:9px 11px;margin-bottom:8px;color:#7fb8e6;">'+
+      '✏️ An admin updated '+_favEdits.length+' part'+(_favEdits.length===1?'':'s')+' in your favorites. Your list was kept in sync automatically.'+
+      _rows+
+      '<div style="margin-top:9px;"><button onclick="dismissFavEdits()" style="background:transparent;border:1px solid rgba(47,140,202,0.6);color:#7fb8e6;padding:3px 12px;border-radius:2px;font-size:11px;cursor:pointer;">Got it</button></div>'+
+      '</div>';
+  }
   // Search-meta banner: show "Did you mean" when typo correction was applied
   if(q && meta) html += didYouMeanHtml(meta.corrections, {pad:'4px 0 8px'});
   var lastColor=null;
@@ -2536,12 +2622,13 @@ function renderAdmin(){
         : '<span class="stbadge stbadge-pend">● Pending</span>';
     }
     const boTag = boFlag ? '<span class="stbadge stbadge-bo">📦 Backorder</span>' : '';
+    const moveBtn = `<button onclick="moveToLastWeek('${oracle}')" title="Move this item into last week's order — use when a part was submitted after Monday's reset but belonged to the previous week" style="background:rgba(155,110,212,0.10);color:#9b6ed4;border:1px solid rgba(155,110,212,0.35);border-radius:2px;padding:5px 9px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;white-space:nowrap;flex-shrink:0;">↩ Last week</button>`;
     return`<div class="krow">
       <div class="kinfo">
         <div class="kdesc">${boTag} ${DI[p[4]]} ${e(p[2].slice(0,90))}${p[2].length>90?'…':''}</div>
         <div class="kmeta">${stBadge ? stBadge+' ' : ''}Oracle: ${p[0]} &nbsp;·&nbsp; SAGE: ${p[1]} &nbsp;·&nbsp; Qty: ${qty} ${p[3]}</div>
       </div>
-      ${actCluster}
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;">${actCluster}${moveBtn}</div>
     </div>`;
   }).join('');
 }
@@ -2737,6 +2824,53 @@ function confirmBackorderRemoval(){
   closeMod();
   renderAll(); renderAdmin(); badges();
   toast('Removed '+oracles.length+' backorder'+(oracles.length===1?'':'s'));
+}
+
+// Admin: move a current-order item BACK into the most recent weekly snapshot.
+// Use case: a part was added / submitted AFTER Monday's 8 AM reset but actually
+// belonged to the previous week (e.g. someone woke up late and missed the
+// refresh). This pulls it out of the current order non-destructively and
+// records it into last week's history entry — the record is preserved, it just
+// lives under the correct week. Only the single most-recent week is offered.
+function moveToLastWeek(oracle){
+  if(!user || user.role!=='Administrative'){ toast('Admin only'); return; }
+  if(!(oracle in order)){ toast('Not in current order'); return; }
+  // Find the most recent weekly-reset / pre-reset snapshot.
+  var idx=-1;
+  for(var i=hist.length-1;i>=0;i--){
+    var h=hist[i];
+    if(h && h.date && (String(h.date).indexOf('weekly-reset')>=0 || String(h.date).indexOf('pre-reset')>=0)){ idx=i; break; }
+  }
+  if(idx<0){
+    alert('There is no previous week to move this into yet.\n\nA week appears in History after the first Monday 8 AM reset.');
+    return;
+  }
+  var target=hist[idx];
+  var p=gp(oracle);
+  var qty=order[oracle]||0;
+  var st=(typeof stat==='function')?stat(oracle):(orderStatus[oracle]||'pending');
+  var weekLabel=String(target.date).replace(' (weekly-reset)','').replace(' (pre-reset)','');
+  if(!confirm('Move this part into the PREVIOUS week\'s order?\n\n'+
+      (p?p[2].slice(0,80):('Oracle #'+oracle))+'\n'+
+      'Qty: '+qty+'   ·   Status: '+st+'\n\n'+
+      'Week: '+weekLabel+'\n\n'+
+      'It will be removed from the current order and recorded in that week\'s history. This does NOT delete it.')) return;
+  if(!Array.isArray(target.items)) target.items=[];
+  var existing=target.items.find(function(it){return it.oracle===oracle;});
+  if(existing){
+    existing.qty=(parseInt(existing.qty)||0)+qty;
+  } else {
+    target.items.push({ oracle:oracle, qty:qty, status:st, addedAt:(orderAdded[oracle]||0), backorder: !!backorderFlag[oracle], movedBack:true });
+  }
+  _forgetItem(oracle);
+  delete backorderFlag[oracle];
+  save();
+  if(p) writeLog('MOVE', oracle, p[2], qty, user.name, user.role);
+  renderAll();
+  if(typeof renderAdmin==='function') renderAdmin();
+  if(typeof renderHistory==='function') renderHistory();
+  badges();
+  toast('Moved to previous week ('+weekLabel+')');
 }
 
 // openReset/confReset removed — weekly reset is fully automatic on Monday 8 AM.
@@ -2942,6 +3076,8 @@ function refreshEventLog() {
     'RECEIVE': { color:'#56b8a3', label:'📦 Received' },
     'PENDING': { color:'#d4890a', label:'● Reverted to Pending' },
     'PULL':    { color:'#1eb474', label:'📤 Pulled' },
+    'MOVE':    { color:'#9b6ed4', label:'↩ Moved to last week' },
+    'EDIT':    { color:'#2f8cca', label:'✏️ Edited part' },
   };
   var rows = '';
   arr.slice().reverse().forEach(function(ev){
@@ -4151,7 +4287,8 @@ function renderDeleteSearch() {
       + '<div style="font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + DI[p[4]] + ' ' + p[2] + '</div>'
       + '<div style="font-size:10px;color:var(--muted);margin-top:3px;">Oracle: ' + p[0] + ' &nbsp;·&nbsp; SAGE: ' + p[1] + ' &nbsp;·&nbsp; ' + DN[p[4]] + '</div>'
       + '</div>'
-      + '<button data-id="' + p[0] + '" onclick="delP(this)" style="background:rgba(217,95,95,0.1);color:var(--danger);border:1px solid rgba(217,95,95,0.2);border-radius:2px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;white-space:nowrap;">&#10005; Delete</button>'
+      + '<button onclick="editPart(\'' + p[0] + '\')" title="Edit this part\'s details" style="background:rgba(47,140,202,0.12);color:#3a9bd8;border:1px solid rgba(47,140,202,0.30);border-radius:2px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;white-space:nowrap;">&#9998; Edit</button>'
+      + '<button data-id="' + p[0] + '" onclick="delP(this)" title="Delete this part from the master list" style="background:rgba(217,95,95,0.1);color:var(--danger);border:1px solid rgba(217,95,95,0.2);border-radius:2px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;white-space:nowrap;">&#10005; Delete</button>'
       + '</div>';
   }).join('');
 }
@@ -4161,10 +4298,12 @@ function delP(btn) {
 }
 
 function deletePart(oracle) {
+  if(!user || user.role!=='Administrative'){ toast('Admin only'); return; }
   var parts = getActiveParts();
   var part = parts.find(function(p){return p[0]===oracle;});
   var partName = part ? part[2].slice(0,80) : oracle;
-  if(!confirm('Delete this part from the master list?\n\n' + partName + '\n\nThis cannot be undone unless you reset to default.')) return;
+  var sageTxt = part && part[1] ? ('\nSAGE #: ' + part[1]) : '';
+  if(!confirm('⚠ DELETE this part from the master list?\n\n' + partName + '\nOracle #: ' + oracle + sageTxt + '\n\nThis removes it for everyone and cannot be undone (unless you use "Restore Previous" or "Reset to Default List").\n\nClick OK to delete, or Cancel to keep it.')) return;
   var newParts = parts.filter(function(p){return p[0]!==oracle;});
   _setCustomParts(newParts);
   fuseIndex = null; _favFuse = null;
@@ -4172,6 +4311,211 @@ function deletePart(oracle) {
   renderBrowse();
   renderDeleteSearch();
   toast('Part deleted from master list');
+}
+
+// ── EDIT A PART ──────────────────────────────────────────────
+// Admin-only. Opens a modal pre-filled with the part's current values so the
+// office's continuous Oracle # / description changes can be applied in place.
+function editPart(oracle){
+  if(!user || user.role!=='Administrative'){ toast('Admin only'); return; }
+  var p = gp(oracle);
+  if(!p){ toast('Part not found'); return; }
+  document.getElementById('editOrigOracle').value = p[0];
+  document.getElementById('editOraNum').value     = p[0];
+  document.getElementById('editSageNum').value    = p[1] || '';
+  document.getElementById('editDesc').value       = p[2] || '';
+  document.getElementById('editUom').innerHTML     = (typeof uomOptionsHtml==='function')
+    ? uomOptionsHtml(p[3] || 'Ea')
+    : '<option selected>'+ (p[3]||'Ea') +'</option>';
+  var ds = document.getElementById('editDept'); if(ds) ds.value = String(p[4]);
+  document.getElementById('mEditPart').classList.add('show');
+}
+
+// Persist an edit. Handles the tricky case where the Oracle # itself changes:
+// the number is the key that orders, history and every department's favorites
+// reference, so we migrate all of those to the new number (see
+// _migrateOracleRefs) and leave a synced notice for the crews.
+function saveEditPart(){
+  if(!user || user.role!=='Administrative'){ toast('Admin only'); return; }
+  var oldO = (document.getElementById('editOrigOracle').value||'').trim();
+  var newO = (document.getElementById('editOraNum').value||'').trim();
+  var sage = (document.getElementById('editSageNum').value||'').trim();
+  var desc = (document.getElementById('editDesc').value||'').trim();
+  var uom  = ((document.getElementById('editUom').value)||'').trim() || 'Ea';
+  var dept = parseInt(document.getElementById('editDept').value); if(isNaN(dept)) dept = 5;
+  if(!oldO){ toast('Missing original part'); return; }
+  if(!newO){ alert('Oracle # is required.'); return; }
+  if(!desc){ alert('Description is required.'); return; }
+
+  var parts  = getActiveParts().slice();
+  var oldIdx = parts.findIndex(function(p){return p[0]===oldO;});
+  if(oldIdx<0){ alert('Original part not found in the catalog.'); return; }
+
+  var renaming = (newO !== oldO);
+  if(renaming){
+    var clash = parts.findIndex(function(p){return p[0]===newO;});
+    if(clash>=0){ alert('Oracle # '+newO+' already exists on another part.\n\nUse a different number, or delete that part first.'); return; }
+  }
+
+  var oldRow  = parts[oldIdx].slice();
+  var changed = [];
+  if(renaming)                              changed.push('Oracle #');
+  if((oldRow[1]||'') !== sage)              changed.push('SAGE #');
+  if((oldRow[2]||'') !== desc)              changed.push('Description');
+  if((oldRow[3]||'') !== uom)               changed.push('UOM');
+  if(String(oldRow[4]) !== String(dept))    changed.push('Department');
+  if(!changed.length){ toast('No changes made'); closeMod(); return; }
+
+  if(renaming && !confirm('Change the Oracle # from '+oldO+' to '+newO+'?\n\nAny current orders, history entries and favorites that use '+oldO+' will be carried over to '+newO+' automatically, and each department will see a note that this part was updated.\n\nContinue?')) return;
+
+  var newRow = [newO, sage, desc, uom, dept];
+  parts[oldIdx] = newRow;
+  parts.sort(function(a,b){return a[0].localeCompare(b[0]);});
+  _setCustomParts(parts);
+
+  // Clear any per-part dept/UOM overrides so the values typed here win.
+  _clearOverrides(oldO);
+  if(renaming) _clearOverrides(newO);
+
+  // If the key changed, carry every reference (orders / history / favorites
+  // across ALL departments) over to the new Oracle #.
+  if(renaming) _migrateOracleRefs(oldO, newO, newRow);
+
+  // Leave a synced notice so departments that favorited this part are told.
+  _recordPartEdit(oldO, newO, newRow, changed);
+
+  fuseIndex = null; _favFuse = null;
+  save();
+  writeLog('EDIT', newO, desc + (renaming ? ' (was Oracle #'+oldO+')' : ''), '', user.name, user.role);
+  if(typeof updateCustomPartsStatus==='function') updateCustomPartsStatus();
+  if(typeof renderBrowse==='function')  renderBrowse();
+  if(typeof renderFavs==='function')    renderFavs();
+  if(typeof renderAdmin==='function')   renderAdmin();
+  if(typeof renderHistory==='function') renderHistory();
+  if(typeof renderOrder==='function')   renderOrder();
+  badges();
+  closeMod();
+  renderDeleteSearch();
+  toast(renaming ? ('Saved — Oracle # is now '+newO) : 'Part updated ✓');
+}
+
+// Remove any per-part dept/UOM override for an Oracle # (local + cloud), so a
+// fresh edit isn't masked by an older reclassification.
+function _clearOverrides(oracle){
+  var touched = false;
+  if(typeof deptOverrides!=='undefined' && deptOverrides && (oracle in deptOverrides)){ delete deptOverrides[oracle]; touched = true; }
+  if(typeof uomOverrides!=='undefined'  && uomOverrides  && (oracle in uomOverrides)){  delete uomOverrides[oracle];  touched = true; }
+  if(touched){
+    try{ localStorage.setItem('f6_dept_overrides', JSON.stringify(deptOverrides||{})); }catch(e){}
+    try{ localStorage.setItem('f6_uom_overrides',  JSON.stringify(uomOverrides||{}));  }catch(e){}
+    if(typeof fbReady!=='undefined' && fbReady){
+      try{ fbDb.ref('deptOverrides').set(deptOverrides||{}); }catch(e){}
+      try{ fbDb.ref('uomOverrides').set(uomOverrides||{}); }catch(e){}
+    }
+  }
+}
+
+// Rename a single object key in place (no-op if absent or unchanged).
+function _renameKey(obj, oldK, newK){
+  if(obj && (oldK in obj) && oldK!==newK){ obj[newK] = obj[oldK]; delete obj[oldK]; }
+}
+
+// Carry every reference from an old Oracle # to a new one. Covers the shared
+// order/history structures (current session) and every department's favorites
+// buckets in Firebase, so a favorited part follows the rename for all crews.
+function _migrateOracleRefs(oldO, newO, newRow){
+  // Shared current-week order structures (this session — flushed by save()).
+  _renameKey(order, oldO, newO);
+  if(typeof orderBy!=='undefined')     _renameKey(orderBy, oldO, newO);
+  _renameKey(orderStatus, oldO, newO);
+  _renameKey(orderAdded, oldO, newO);
+  _renameKey(orderNotes, oldO, newO);
+  _renameKey(backorderFlag, oldO, newO);
+  if(typeof keep!=='undefined')        _renameKey(keep, oldO, newO);
+
+  // History line items.
+  if(Array.isArray(hist)){
+    hist.forEach(function(h){
+      if(h && Array.isArray(h.items)){
+        h.items.forEach(function(it){ if(it && it.oracle===oldO) it.oracle = newO; });
+      }
+    });
+  }
+
+  // This admin's own favorites (in memory; flushed by save()).
+  _renameKey(favs, oldO, newO);
+  if(typeof favColors!=='undefined') _renameKey(favColors, oldO, newO);
+  if(typeof favNicks!=='undefined')  _renameKey(favNicks, oldO, newO);
+  if(typeof favSnapshots!=='undefined' && favSnapshots){
+    if(oldO in favSnapshots) delete favSnapshots[oldO];
+    if(favs && (newO in favs)) favSnapshots[newO] = newRow.slice();
+  }
+
+  // Every OTHER department's favorites live under their own cloud buckets,
+  // which this session doesn't hold in memory. Patch them directly so the
+  // favorite follows the rename for all crews, not just this admin.
+  if(typeof fbReady!=='undefined' && fbReady && typeof ALL_FAV_ROLES!=='undefined'){
+    ALL_FAV_ROLES.forEach(function(role){
+      ['favs','nicks','colors','groups'].forEach(function(node){
+        var ref = fbDb.ref(node+'/'+role);
+        ref.once('value').then(function(snap){
+          var v = snap.val();
+          if(!v || !(oldO in v)) return;
+          v[newO] = v[oldO]; delete v[oldO];
+          ref.set(v);
+        }).catch(function(){});
+      });
+      // Favorite snapshot bucket — give the new key the corrected row.
+      var sref = fbDb.ref('snaps/'+role);
+      sref.once('value').then(function(snap){
+        var v = snap.val();
+        if(!v || !(oldO in v)) return;
+        v[newO] = newRow.slice(); delete v[oldO];
+        sref.set(v);
+      }).catch(function(){});
+    });
+  }
+}
+
+// Record a notice (synced) that an admin edited a part, so each department
+// gets a heads-up the next time they open Favorites. Keyed by current Oracle #.
+function _recordPartEdit(oldO, newO, newRow, changed){
+  if(!partEdits || typeof partEdits!=='object') partEdits = {};
+  var rec = { from:oldO, to:newO, ts:Date.now(), by:(user&&user.name)||'Admin', changed:changed||[], desc:newRow[2]||'' };
+  partEdits[newO] = rec;
+  if(oldO!==newO && (oldO in partEdits)) delete partEdits[oldO];
+  try{ localStorage.setItem('f6_part_edits', JSON.stringify(partEdits)); }catch(e){}
+  if(typeof fbReady!=='undefined' && fbReady){
+    try{ fbDb.ref('partEdits/'+newO).set(rec); }catch(e){}
+    if(oldO!==newO){ try{ fbDb.ref('partEdits/'+oldO).remove(); }catch(e){} }
+  }
+}
+
+// ── FAVORITE EDIT NOTICES ────────────────────────────────────
+// Per-user acknowledgement of admin part-edit notices (localStorage only).
+function _loadEditAcks(){ try{ return JSON.parse(localStorage.getItem('f6_partedit_ack')||'{}'); }catch(e){ return {}; } }
+function _saveEditAcks(a){ try{ localStorage.setItem('f6_partedit_ack', JSON.stringify(a||{})); }catch(e){} }
+// Notices for parts THIS user has favorited that they haven't acknowledged yet.
+function unseenFavEdits(){
+  if(!favs || !partEdits) return [];
+  var acks = _loadEditAcks();
+  var out = [];
+  Object.keys(favs).forEach(function(o){
+    var ed = partEdits[o];
+    if(ed && ed.ts && (!acks[o] || acks[o] < ed.ts)) out.push(ed);
+  });
+  return out;
+}
+// Mark every currently-visible notice as seen for this user.
+function dismissFavEdits(){
+  var acks = _loadEditAcks();
+  Object.keys(favs||{}).forEach(function(o){
+    var ed = partEdits[o];
+    if(ed && ed.ts) acks[o] = ed.ts;
+  });
+  _saveEditAcks(acks);
+  if(typeof renderFavs==='function') renderFavs();
+  toast('Got it — notices cleared');
 }
 
 // ── RESET TO DEFAULT ─────────────────────────────────────────
@@ -4469,7 +4813,7 @@ function exportPrint() {
     + '<thead><tr><th>Oracle #</th><th>SAGE #</th><th>Description</th><th>Qty</th><th>UOM</th><th>Dept</th></tr></thead>'
     + '<tbody>' + tableRows + '</tbody>'
     + '</table>'
-    + '<div class="print-footer">Evolution Well Services® &nbsp;·&nbsp; Fleet 6 &nbsp;·&nbsp; Printed ' + now + '</div>';
+    + '<div class="print-footer">Evolution Well Services® &nbsp;·&nbsp; Fleet 6 &nbsp;·&nbsp; Printed ' + now + '<br><span style="font-size:9px;color:#aaa;">Developed by Mason Columbine for Field Operations</span></div>';
 
   document.getElementById('printArea').style.display = 'block';
   window.print();
@@ -4485,6 +4829,7 @@ function exportExcel() {
   var wsData = [
     ['Evolution Well Services — Fleet 6 Weekly Parts Order'],
     ['Generated: ' + new Date().toLocaleString() + '   Submitted by: ' + (user ? user.name : '—')],
+    ['Developed by Mason Columbine for Field Operations'],
     [],
     ['Oracle #', 'SAGE #', 'Description', 'Qty', 'UOM', 'Department']
   ];
@@ -4501,10 +4846,10 @@ function exportExcel() {
     {wch:14}, {wch:10}, {wch:70}, {wch:6}, {wch:8}, {wch:14}
   ];
 
-  // Style header row (row index 3, zero-based)
+  // Style header row (row index 4, zero-based — shifted down by the credit line)
   var headerRange = XLSX.utils.decode_range(ws['!ref']);
   for(var c=0; c<=5; c++){
-    var cell = ws[XLSX.utils.encode_cell({r:3, c:c})];
+    var cell = ws[XLSX.utils.encode_cell({r:4, c:c})];
     if(cell) cell.s = { font:{bold:true}, fill:{fgColor:{rgb:'1EB474'}} };
   }
 
