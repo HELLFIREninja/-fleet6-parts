@@ -2633,7 +2633,12 @@ function renderHistory(){
     document.getElementById('hList').innerHTML='<div class="empty"><div class="ei">📜</div><p>No reset history yet.<br>The full weekly order is snapshotted here every Monday at 8am.</p></div>';
     return;
   }
-  document.getElementById('hList').innerHTML=resets.slice().reverse().map(function(rec){
+  var _isAdmH = user && user.role==='Administrative';
+  var _pendAudits = resets.filter(function(r){ return !_snapAudited(r.h); }).length;
+  var _topTools = (_isAdmH && _pendAudits>0)
+    ? '<div style="display:flex;justify-content:flex-end;margin-bottom:10px;"><button onclick="ignoreAllAudits()" title="Ignore every week still awaiting an audit (e.g. old pre-feature weeks)" style="background:rgba(155,110,212,0.12);border:1px solid rgba(155,110,212,0.5);color:#b48be0;border-radius:2px;padding:7px 13px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;cursor:pointer;">🚫 Ignore all '+_pendAudits+' awaiting audit</button></div>'
+    : '';
+  document.getElementById('hList').innerHTML=_topTools+resets.slice().reverse().map(function(rec){
     var h=rec.h, idx=rec.idx, items=h.items||[];
     // Tally received / not-received / awaiting-audit for this snapshot.
     var recvN=0, notRecvN=0, pendAudit=0;
@@ -2675,6 +2680,16 @@ function renderHistory(){
         ? '<div style="font-size:10px;color:var(--muted2);margin-top:3px;">📋 Last audit by <strong>'+e(la.by||'—')+'</strong> ('+e(la.role||'')+') · '+new Date(la.at).toLocaleString()+' · '+la.received+' received, '+la.notReceived+' not</div>'
         : '<div style="font-size:10px;color:#d4890a;margin-top:3px;">📋 No Parts Received Audit completed yet</div>');
     var auditBtn = '<button class="btn-primary" onclick="event.stopPropagation();openAudit('+idx+')" style="background:'+(audited?'#2d6a2d':'#c9842a')+';border:none;font-size:11px;padding:7px 12px;white-space:nowrap;">📋 '+(audited?'Review audit':'Parts Received Audit')+'</button>';
+    // Admin: per-week Ignore / Un-ignore exposed inside the expanded dropdown.
+    var _isAdm = user && user.role==='Administrative';
+    var adminAuditTools='';
+    if(_isAdm){
+      if(h.auditIgnored){
+        adminAuditTools='<div style="display:flex;justify-content:flex-end;padding:8px 12px;border-bottom:1px solid var(--border);background:rgba(155,110,212,0.06);"><button onclick="unignoreAuditWeek('+idx+')" style="background:transparent;border:1px solid rgba(155,110,212,0.5);color:#b48be0;border-radius:2px;padding:5px 11px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;cursor:pointer;">↩ Un-ignore (re-enable audit)</button></div>';
+      } else if(!audited){
+        adminAuditTools='<div style="display:flex;justify-content:flex-end;padding:8px 12px;border-bottom:1px solid var(--border);background:rgba(155,110,212,0.06);"><button onclick="ignoreAuditWeek('+idx+')" title="Ignore this week&#39;s audit — clears it from the awaiting list" style="background:transparent;border:1px solid rgba(155,110,212,0.5);color:#b48be0;border-radius:2px;padding:5px 11px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;cursor:pointer;">🚫 Ignore Audit</button></div>';
+      }
+    }
     return '<div class="hcard" id="hcard-'+idx+'">'+
       '<div class="htop" onclick="toggleHist('+idx+')" style="cursor:pointer;user-select:none;">'+
         '<div style="flex:1;min-width:0;">'+
@@ -2684,9 +2699,45 @@ function renderHistory(){
         '</div>'+
         '<div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">'+auditBtn+'<span class="hchev" style="font-size:14px;color:var(--teal);transition:transform .2s;">▼</span></div>'+
       '</div>'+
-      '<div class="hitems" style="display:none;">'+itemsHtml+'</div>'+
+      '<div class="hitems" style="display:none;">'+adminAuditTools+itemsHtml+'</div>'+
     '</div>';
   }).join('');
+}
+// Admin: ignore one week's audit directly from History (per-week, exposed in
+// the expanded dropdown) — separate from the live reminder banner.
+function ignoreAuditWeek(idx){
+  if(idx>=0 && idx<hist.length) _ignoreSnapshot(hist[idx]);
+}
+function unignoreAuditWeek(idx){
+  if(!user||user.role!=='Administrative'){ toast('Admin only'); return; }
+  var h=hist[idx]; if(!h) return;
+  delete h.auditIgnored; delete h.auditIgnoredBy; delete h.auditIgnoredAt;
+  save();
+  if(typeof writeLog==='function') writeLog('IGNORE','','Audit re-enabled — '+String(h.date||'').replace(' (weekly-reset)','').replace(' (pre-reset)',''),'',user.name,user.role);
+  renderHistory();
+  if(typeof renderAuditBanner==='function') renderAuditBanner();
+  toast('Audit re-enabled');
+}
+// Admin: ignore EVERY week still awaiting an audit (clears a backlog of old
+// pre-feature weeks at once).
+function ignoreAllAudits(){
+  if(!user||user.role!=='Administrative'){ toast('Admin only'); return; }
+  var targets=[];
+  for(var i=0;i<hist.length;i++){
+    var h=hist[i];
+    if(h && h.date && (String(h.date).indexOf('weekly-reset')>=0 || String(h.date).indexOf('pre-reset')>=0) && !_snapAudited(h)) targets.push(h);
+  }
+  if(!targets.length){ toast('No weeks awaiting audit'); return; }
+  if(!confirm('Ignore all '+targets.length+' week'+(targets.length===1?'':'s')+' still awaiting a Parts Received Audit?\n\nThis clears them from the awaiting list and stops the reminder. You can re-enable any week later from its dropdown.')) return;
+  var now=Date.now();
+  targets.forEach(function(h){ h.auditIgnored=true; h.auditIgnoredBy=user.name; h.auditIgnoredAt=now; });
+  try{ localStorage.setItem(AUDIT_SNOOZE_KEY,'0'); }catch(e){}
+  if(typeof fbReady!=='undefined' && fbReady){ try{ fbDb.ref('auditSnooze').set(0); }catch(e){} }
+  save();
+  if(typeof writeLog==='function') writeLog('IGNORE','','Ignored '+targets.length+' weeks awaiting audit (bulk)','',user.name,user.role);
+  renderHistory();
+  if(typeof renderAuditBanner==='function') renderAuditBanner();
+  toast('Ignored '+targets.length+' week'+(targets.length===1?'':'s')+' awaiting audit');
 }
 
 function toggleHist(i){
