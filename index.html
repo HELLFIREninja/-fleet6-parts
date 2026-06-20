@@ -866,6 +866,11 @@ input,select{outline:none;font-family:inherit;}
 </div>
 
 <!-- MARK RECEIVED MODAL — confirm full or partial quantity received -->
+<style>
+  #rcvQty::-webkit-inner-spin-button, #rcvQty::-webkit-outer-spin-button,
+  .audit-qi::-webkit-inner-spin-button, .audit-qi::-webkit-outer-spin-button{ -webkit-appearance:none; margin:0; }
+  #rcvQty, .audit-qi{ -moz-appearance:textfield; appearance:textfield; }
+</style>
 <div class="mov" id="mReceive">
   <div class="modal" style="max-width:460px;border-top-color:#2d8a4e;">
     <h3>✓ Mark Received</h3>
@@ -2736,7 +2741,7 @@ function renderHistory(){
     var auditLine = h.auditIgnored
       ? '<div style="font-size:10px;color:#9b6ed4;margin-top:3px;">🚫 Audit ignored by <strong>'+e(h.auditIgnoredBy||'—')+'</strong> · '+new Date(h.auditIgnoredAt||Date.now()).toLocaleString()+'</div>'
       : (la
-        ? '<div style="font-size:10px;color:var(--muted2);margin-top:3px;">📋 Last audit by <strong>'+e(la.by||'—')+'</strong> ('+e(la.role||'')+') · '+new Date(la.at).toLocaleString()+' · '+la.received+' received, '+la.notReceived+' not</div>'
+        ? '<div style="font-size:10px;color:var(--muted2);margin-top:3px;">📋 Last audit by <strong>'+e(la.by||'—')+'</strong> ('+e(la.role||'')+') · '+new Date(la.at).toLocaleString()+' · '+la.received+' received'+(la.partial?(', '+la.partial+' partial'):'')+', '+la.notReceived+' not</div>'
         : '<div style="font-size:10px;color:#d4890a;margin-top:3px;">📋 No Parts Received Audit completed yet</div>');
     var auditBtn = '<button class="btn-primary" onclick="event.stopPropagation();openAudit('+idx+')" style="background:'+(audited?'#2d6a2d':'#c9842a')+';border:none;font-size:11px;padding:7px 12px;white-space:nowrap;">📋 '+(audited?'Review audit':'Parts Received Audit')+'</button>';
     // Admin: per-week Ignore / Un-ignore exposed inside the expanded dropdown.
@@ -2829,9 +2834,12 @@ function renderAuditModal(){
   var isAdmin=user&&user.role==='Administrative';
   var weekLabel=String(h.date).replace(' (weekly-reset)','').replace(' (pre-reset)','');
   document.getElementById('auditMeta').innerHTML=
-    'Week: <strong>'+e(weekLabel)+'</strong><br>Check off each part that has been <strong>physically received</strong>. '+
-    'Anything left unchecked stays flagged as <strong>not received from previous week</strong> so it isn\'t ordered again. '+
-    'Your name and the time are recorded on this week.';
+    'Week: <strong>'+e(weekLabel)+'</strong><br>For each part, enter <strong>how many actually arrived</strong> (0 to the full ordered qty). '+
+    'Anything short of the full quantity stays as <strong>not received from previous week</strong>. Your name and the time are recorded on this week.'+
+    '<div style="display:flex;gap:8px;margin-top:10px;">'+
+      '<button class="btn-ghost" onclick="auditSetAll(true)" style="font-size:11px;">✓ All received</button>'+
+      '<button class="btn-ghost" onclick="auditSetAll(false)" style="font-size:11px;">✗ Clear all</button>'+
+    '</div>';
   var list=document.getElementById('auditList');
   if(!items.length){
     list.innerHTML='<div style="padding:18px;text-align:center;color:var(--muted);font-size:13px;">No items in this week.</div>';
@@ -2840,7 +2848,8 @@ function renderAuditModal(){
       var p=gp(it.oracle);
       var desc=p?e(p[2]):('Oracle #'+it.oracle+' (not in catalog)');
       var dept=(typeof it.dept==='number' && DEPT4_N[it.dept])?(DEPT4_I[it.dept]+' '+DEPT4_N[it.dept]):'';
-      var recv=(it.auditStatus==='received');
+      var oq=it.qty||0;
+      var pre=(it.auditStatus==='received')?oq:(it.receivedQty||0);   // preselect received qty
       var st=it.status||'submitted';
       var statusSel = isAdmin
         ? ' <select onchange="_auditEditStatus('+ii+',this.value)" title="Admin: edit recorded status" style="font-size:10px;margin-left:4px;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:2px;">'+
@@ -2850,13 +2859,18 @@ function renderAuditModal(){
           '</select>'
         : '';
       var lateTag = it.lateAdd ? ' <span class="stbadge stbadge-bo">↩ late add</span>' : '';
-      return '<label style="display:flex;align-items:flex-start;gap:10px;padding:9px 12px;border-bottom:1px solid var(--border);cursor:pointer;">'+
-        '<input type="checkbox" data-ai="'+ii+'" '+(recv?'checked':'')+' onchange="_auditTally()" style="margin-top:3px;flex-shrink:0;" />'+
+      return '<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--border);">'+
         '<div style="flex:1;min-width:0;">'+
           '<div style="font-size:13px;color:var(--text);font-weight:600;line-height:1.35;">'+desc.slice(0,120)+lateTag+'</div>'+
-          '<div style="font-size:11px;color:var(--muted);margin-top:3px;">Qty: <strong>'+it.qty+'</strong>'+(dept?(' &nbsp;·&nbsp; '+dept):'')+' &nbsp;·&nbsp; Oracle: '+it.oracle+statusSel+'</div>'+
+          '<div style="font-size:11px;color:var(--muted);margin-top:3px;">Ordered: <strong>'+oq+'</strong>'+(dept?(' &nbsp;·&nbsp; '+dept):'')+' &nbsp;·&nbsp; Oracle: '+it.oracle+statusSel+'</div>'+
         '</div>'+
-      '</label>';
+        '<div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">'+
+          '<button class="qb" onclick="auditAdjQty('+ii+',-1)">−</button>'+
+          '<input class="audit-qi" data-ai="'+ii+'" type="number" min="0" max="'+oq+'" value="'+pre+'" oninput="auditClampQty(this)" style="width:56px;padding:6px;background:var(--bg);border:1px solid var(--border);border-radius:2px;color:var(--text);font-size:14px;text-align:center;" />'+
+          '<button class="qb" onclick="auditAdjQty('+ii+',1)">+</button>'+
+          '<span style="font-size:11px;color:var(--muted2);white-space:nowrap;">/ '+oq+'</span>'+
+        '</div>'+
+      '</div>';
     }).join('');
   }
   var addBox=document.getElementById('auditAdminAdd');
@@ -2881,11 +2895,36 @@ function _auditEditStatus(ii,val){
   save();
 }
 function _auditTally(){
-  var boxes=Array.prototype.slice.call(document.querySelectorAll('#auditList input[type=checkbox]'));
-  var recv=boxes.filter(function(b){return b.checked;}).length;
-  var tot=boxes.length;
+  var inputs=Array.prototype.slice.call(document.querySelectorAll('#auditList .audit-qi'));
+  var full=0, partial=0, none=0;
+  inputs.forEach(function(inp){
+    var max=parseInt(inp.getAttribute('max'),10)||0;
+    var v=parseInt(inp.value,10)||0;
+    if(max>0 && v>=max) full++;
+    else if(v>0) partial++;
+    else none++;
+  });
   var el=document.getElementById('auditTally');
-  if(el) el.textContent=recv+' of '+tot+' received · '+(tot-recv)+' not received';
+  if(el) el.textContent=full+' received'+(partial?(' · '+partial+' partial'):'')+' · '+none+' not received';
+}
+function auditClampQty(el){
+  var max=parseInt(el.getAttribute('max'),10)||0;
+  var v=parseInt(el.value,10); if(isNaN(v)) v=0;
+  if(v<0) v=0; if(v>max) v=max; el.value=v;
+  _auditTally();
+}
+function auditAdjQty(ii,d){
+  var el=document.querySelector('#auditList .audit-qi[data-ai="'+ii+'"]');
+  if(!el) return;
+  el.value=(parseInt(el.value,10)||0)+d;
+  auditClampQty(el);
+}
+function auditSetAll(full){
+  Array.prototype.slice.call(document.querySelectorAll('#auditList .audit-qi')).forEach(function(el){
+    var max=parseInt(el.getAttribute('max'),10)||0;
+    el.value= full ? max : 0;
+  });
+  _auditTally();
 }
 function adminAddLateItem(){
   if(!user||user.role!=='Administrative'){ toast('Admin only'); return; }
@@ -2910,40 +2949,47 @@ function adminAddLateItem(){
 function _reconcileAuditToOrder(weekItems){
   weekItems.forEach(function(it){
     var o=it.oracle;
-    if(it.auditStatus==='not_received'){
-      order[o]=it.qty||order[o]||1;
-      orderBy[o]=(typeof it.dept==='number')?it.dept:deptOf(o);
-      if(!(o in orderStatus)) orderStatus[o]=it.status||'submitted';
-      if(!orderAdded[o]) orderAdded[o]=it.addedAt||Date.now();
-      backorderFlag[o]=true;   // shows under "not received from previous week"
-    } else if(it.auditStatus==='received'){
-      if(backorderFlag[o]){ _forgetItem(o); delete backorderFlag[o]; }  // resolved
+    if(it.auditStatus==='received'){
+      if(backorderFlag[o]){ _forgetItem(o); delete backorderFlag[o]; }   // fully resolved
+      return;
     }
+    // not_received (incl. partial): the carryover holds the REMAINING qty.
+    var oq=it.qty||0, rq=it.receivedQty||0, remain=oq-rq;
+    if(remain<=0){ if(backorderFlag[o]){ _forgetItem(o); delete backorderFlag[o]; } return; }
+    order[o]=remain;
+    orderBy[o]=(typeof it.dept==='number')?it.dept:deptOf(o);
+    if(!(o in orderStatus)) orderStatus[o]=it.status||'submitted';
+    if(!orderAdded[o]) orderAdded[o]=it.addedAt||Date.now();
+    backorderFlag[o]=true;   // shows under "not received from previous week"
   });
 }
 function completeAudit(){
   if(!user){ toast('Please sign in'); return; }
   var h=hist[_auditIdx]; if(!h) return;
   var items=h.items||[];
-  var boxes=Array.prototype.slice.call(document.querySelectorAll('#auditList input[type=checkbox]'));
-  var recv=0, notRecv=0;
-  boxes.forEach(function(b){
-    var ii=parseInt(b.dataset.ai,10);
+  var inputs=Array.prototype.slice.call(document.querySelectorAll('#auditList .audit-qi'));
+  var recv=0, notRecv=0, partial=0;
+  inputs.forEach(function(inp){
+    var ii=parseInt(inp.dataset.ai,10);
     if(isNaN(ii)||!items[ii]) return;
-    if(b.checked){ items[ii].auditStatus='received'; recv++; }
-    else { items[ii].auditStatus='not_received'; notRecv++; }
+    var it=items[ii], oq=it.qty||0;
+    var rq=parseInt(inp.value,10)||0; if(rq<0)rq=0; if(rq>oq)rq=oq;
+    it.receivedQty=rq;
+    if(oq>0 && rq>=oq){ it.auditStatus='received'; it.status='received'; it.receivedBy=user.name; it.receivedAt=Date.now(); recv++; }
+    else if(rq>0){ it.auditStatus='not_received'; it.receivedBy=user.name; it.receivedAt=Date.now(); partial++; }
+    else { it.auditStatus='not_received'; notRecv++; }
   });
   if(!Array.isArray(h.auditLog)) h.auditLog=[];
-  h.auditLog.push({ by:user.name, role:user.role, at:Date.now(), received:recv, notReceived:notRecv });
+  h.auditLog.push({ by:user.name, role:user.role, at:Date.now(), received:recv, notReceived:notRecv, partial:partial });
   if(h.auditIgnored){ delete h.auditIgnored; delete h.auditIgnoredBy; delete h.auditIgnoredAt; } // a real audit supersedes an ignore
   _reconcileAuditToOrder(items);
   save();
   var weekLabel=String(h.date).replace(' (weekly-reset)','').replace(' (pre-reset)','');
-  writeLog('AUDIT', '', 'Parts Received Audit — '+weekLabel, recv+' recv / '+notRecv+' not', user.name, user.role);
+  writeLog('AUDIT', '', 'Parts Received Audit — '+weekLabel, recv+' full / '+partial+' partial / '+notRecv+' none', user.name, user.role);
   closeMod();
   renderHistory(); renderAll(); if(typeof renderAdmin==='function') renderAdmin(); badges();
   if(typeof renderAuditBanner==='function') renderAuditBanner();
-  toast('Audit saved — '+recv+' received, '+notRecv+' not received');
+  toast('Audit saved — '+recv+' received'+(partial?(', '+partial+' partial'):'')+', '+notRecv+' not received');
 }
 
 // ── ADMIN ──────────────────────────────────────────────────
