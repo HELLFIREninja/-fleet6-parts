@@ -622,6 +622,7 @@ input,select{outline:none;font-family:inherit;}
         <span id="syncDot" style="width:8px;height:8px;border-radius:50%;background:#888;display:inline-block;transition:background .3s;"></span>
         <span id="syncLbl" style="font-size:10px;color:#888;letter-spacing:.5px;font-weight:600;">Offline</span>
       </div>
+      <button class="exit-btn" onclick="openWalkthrough()" title="Watch the walkthrough video for your role" style="background:rgba(47,140,202,0.15);border-color:rgba(47,140,202,0.45);color:#7fb8e6;margin-right:6px;">📺 Guide</button>
       <button class="exit-btn" onclick="logout()">Exit</button>
     </div>
   </div>
@@ -722,7 +723,7 @@ input,select{outline:none;font-family:inherit;}
       <div class="acard">
         <h3>🔐 Administrative Controls</h3>
         <div class="warnbox">
-          ℹ️ <strong>How the weekly cycle works:</strong> Click <strong>📤 Submit</strong> on a part once you've ordered it in Oracle (marked <em>Submitted</em> so the crews know it's handled). Every <strong id="warnResetWhen">Monday at 8:00 AM</strong> the whole week's order moves to <strong>History</strong>. When parts arrive <strong id="warnAuditWhen">Friday</strong>, anyone runs the <strong>Parts Received Audit</strong> in History — whatever isn't received resurfaces as <em>not received from previous week</em> so it isn't ordered again by mistake.
+          ℹ️ <strong>How the weekly cycle works:</strong> Click <strong>📤 Submit</strong> on a part once you've ordered it in Oracle (marked <em>Submitted</em> so everyone can see it's handled). Every <strong id="warnResetWhen">Monday at 8:00 AM</strong> the whole week's order moves to <strong>History</strong>. When parts arrive <strong id="warnAuditWhen">Friday</strong>, anyone runs the <strong>Parts Received Audit</strong> in History — whatever isn't received resurfaces as <em>not received from previous week</em> so it isn't ordered again by mistake.
         </div>
         <div id="adminStatusBar" style="margin-bottom:12px;padding:10px 12px;background:var(--nav);border:1px solid var(--border);border-radius:2px;"></div>
         <div class="sec-hd" style="flex-wrap:wrap;gap:8px;">
@@ -914,6 +915,26 @@ input,select{outline:none;font-family:inherit;}
       <button class="btn-ghost" onclick="closeMod()">Cancel</button>
       <button class="btn-primary" onclick="confirmReceive()" style="background:#2d6a2d;border:none;">✓ Confirm received</button>
     </div>
+  </div>
+</div>
+
+<!-- PART ORDER HISTORY MODAL — any user: every time a part was ordered (180-day history) -->
+<div class="mov" id="mPartHist">
+  <div class="modal" style="max-width:560px;border-top-color:#2f8cca;">
+    <h3 id="partHistTitle">Order history</h3>
+    <div id="partHistBody" style="max-height:52vh;overflow-y:auto;border:1px solid var(--border);border-radius:2px;background:var(--nav);margin:10px 0 14px;"></div>
+    <div class="mbtns"><button class="btn-ghost" onclick="closeMod()">Close</button></div>
+  </div>
+</div>
+
+<!-- WALKTHROUGH VIDEO MODAL — role-based: departments see the User guide, admins the Admin guide -->
+<div class="mov" id="mWalkthrough">
+  <div class="modal" style="max-width:940px;border-top-color:#2f8cca;">
+    <h3 id="wtTitle">📺 Walkthrough</h3>
+    <video id="wtVideo" controls playsinline preload="metadata" style="width:100%;border-radius:4px;background:#000;margin:8px 0;"></video>
+    <div id="wtSwitch" style="display:none;font-size:12px;color:var(--muted);margin-bottom:10px;"></div>
+    <div id="wtMissing" style="display:none;font-size:12px;color:#d4890a;margin-bottom:10px;line-height:1.5;"></div>
+    <div class="mbtns"><button class="btn-ghost" onclick="closeWalkthrough()">Close</button></div>
   </div>
 </div>
 
@@ -2252,7 +2273,7 @@ function setBackorderNote(oracle, text){
 }
 
 // ── 4 real departments (orderBy index): Mechanical / Electrical / Datavan /
-// Turbine. This is the requesting *crew*, distinct from a part's 7-way
+// Turbine. This is the requesting *department*, distinct from a part's 7-way
 // classification (DN/DI/DC, indexed by p[4]).
 const DEPT4_N = ['Mechanical','Electrical','Datavan','Turbine'];
 const DEPT4_I = ['🔧','⚡','💻','🌀'];
@@ -2344,7 +2365,7 @@ function _renderDeptGroups(entries, carry){
 function renderOrder(){
   const df=document.getElementById('oDeptF').value;
   const items=Object.entries(order).filter(([o,q])=>q>0);
-  // Dept totals by requesting crew (orderBy / deptOf).
+  // Dept totals by requesting department (orderBy / deptOf).
   const c=[0,0,0,0]; items.forEach(([o])=>{ c[deptOf(o)]++; });
   document.getElementById('oStats').innerHTML=
     `<div class="stat-box"><div class="sn">${items.length}</div><div class="sl">Total Items</div></div>`+
@@ -2521,6 +2542,8 @@ function pCard(p,q='',corrections){
   const descHtml=highlight(p[2].length>130?p[2].slice(0,130)+'…':p[2], q, corrections);
   const oracleHtml=highlight(String(p[0]),q,corrections);
   const sageHtml=highlight(String(p[1]),q,corrections);
+  const _oc=_ensureHistCounts()[o]||0;
+  const histBtn=_oc>0?`<button class="phist-btn" onclick="openPartHistory('${o}')" title="See every time this part was ordered over the last 180 days" style="display:inline-flex;align-items:center;gap:3px;background:rgba(47,140,202,0.12);border:1px solid rgba(47,140,202,0.4);color:#7fb8e6;border-radius:3px;padding:1px 8px;font-size:11px;cursor:pointer;">📜 Ordered ${_oc}×</button>`:'';
   const deptOpts=`<option value="0"${p[4]==0?' selected':''}>🔧 Mechanical</option><option value="1"${p[4]==1?' selected':''}>⚡ Electrical</option><option value="2"${p[4]==2?' selected':''}>💻 Datavan</option><option value="6"${p[4]==6?' selected':''}>🌀 Turbine</option><option value="3"${p[4]==3?' selected':''}>🔨 Tools</option><option value="4"${p[4]==4?' selected':''}>🔩 Hardware</option><option value="5"${p[4]==5?' selected':''}>📦 Miscellaneous</option>`;
   return`<div class="part-card d${p[4]}">
     <div class="pinfo">
@@ -2530,6 +2553,7 @@ function pCard(p,q='',corrections){
         <span>Oracle: ${oracleHtml}</span>
         <span>SAGE: ${sageHtml}</span>
         <span style="display:inline-flex;align-items:center;gap:3px;">UOM: <select class="uom-select" data-oracle="${o}" onchange="onUomChange(this)" title="Change unit of measure (applies for everyone)">${uomOptionsHtml(p[3])}</select></span>
+        ${histBtn}
       </div>
     </div>
     <div class="pact">
@@ -2920,11 +2944,12 @@ function renderAuditModal(){
     addBox.style.display='block';
     addBox.innerHTML='<div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Admin: add a late item to this week (submitted after the reset)</div>'+
       '<div style="display:flex;gap:8px;flex-wrap:wrap;">'+
-        '<input id="auditAddOracle" placeholder="Oracle #" style="flex:1;min-width:110px;padding:7px 9px;background:var(--bg);border:1px solid var(--border);border-radius:2px;color:var(--text);font-size:12px;" />'+
+        '<input id="auditAddOracle" placeholder="Oracle #" oninput="auditAddLookup()" onchange="auditAddLookup()" autocomplete="off" style="flex:1;min-width:110px;padding:7px 9px;background:var(--bg);border:1px solid var(--border);border-radius:2px;color:var(--text);font-size:12px;" />'+
         '<input id="auditAddQty" type="number" min="1" value="1" style="width:64px;padding:7px 9px;background:var(--bg);border:1px solid var(--border);border-radius:2px;color:var(--text);font-size:12px;" />'+
         '<select id="auditAddStatus" style="padding:7px 9px;background:var(--bg);border:1px solid var(--border);border-radius:2px;color:var(--text);font-size:12px;"><option value="submitted">✓ Submitted</option><option value="pending">● Pending</option></select>'+
-        '<button class="btn-ghost" onclick="adminAddLateItem()">➕ Add</button>'+
-      '</div>';
+        '<button class="btn-ghost" id="auditAddBtn" onclick="adminAddLateItem()">➕ Add</button>'+
+      '</div>'+
+      '<div id="auditAddPreview" style="font-size:12px;margin-top:7px;min-height:18px;line-height:1.4;color:var(--muted2);">Enter an Oracle # — the matching part appears here so you can confirm it before adding.</div>';
   } else { addBox.style.display='none'; addBox.innerHTML=''; }
   var ib=document.getElementById('auditIgnoreBtn'); if(ib) ib.style.display=isAdmin?'':'none';
   _auditTally();
@@ -2968,24 +2993,111 @@ function auditSetAll(full){
   });
   _auditTally();
 }
+// Live preview: as the admin types an Oracle #, show the matching part so they
+// can confirm it's the right one before adding.
+function auditAddLookup(){
+  var el=document.getElementById('auditAddPreview'); if(!el) return;
+  var o=(document.getElementById('auditAddOracle').value||'').trim();
+  if(!o){ el.style.color='var(--muted2)'; el.innerHTML='Enter an Oracle # — the matching part appears here so you can confirm it before adding.'; return; }
+  var p=gp(o);
+  if(p){ el.style.color='var(--teal)'; el.innerHTML='✓ <strong>'+e(p[2].slice(0,110))+'</strong> &nbsp;<span style="color:var(--muted);">SAGE '+e(String(p[1]))+' · '+DN[p[4]]+' · UOM '+e(String(p[3]))+'</span>'; }
+  else { el.style.color='#d4890a'; el.innerHTML='⚠ Oracle #'+e(o)+' is not in the current catalog — double-check the number before adding.'; }
+}
 function adminAddLateItem(){
   if(!user||user.role!=='Administrative'){ toast('Admin only'); return; }
   var h=hist[_auditIdx]; if(!h) return;
   var o=(document.getElementById('auditAddOracle').value||'').trim();
   if(!o){ toast('Enter an Oracle #'); return; }
-  var p=gp(o);
-  if(!p && !confirm('Oracle #'+o+' is not in the current catalog. Add it anyway?')) return;
   var qty=parseInt(document.getElementById('auditAddQty').value)||1;
   var st=document.getElementById('auditAddStatus').value||'submitted';
+  var p=gp(o);
+  var label = p ? p[2] : ('Oracle #'+o+' (NOT in the current catalog)');
+  var weekLabel=String(h.date).replace(' (weekly-reset)','').replace(' (pre-reset)','');
+  if(!confirm('Add this part to '+weekLabel+'?\n\n'+label.slice(0,120)+'\nQty: '+qty+'   ·   Status: '+st+(p?'':'\n\n⚠ This Oracle # is not in the catalog — double-check the number.'))) return;
   if(!Array.isArray(h.items)) h.items=[];
   var ex=h.items.find(function(it){return it.oracle===o;});
   if(ex){ ex.qty=(parseInt(ex.qty)||0)+qty; }
   else{ h.items.push({oracle:o,qty:qty,status:st,dept:deptOf(o),addedAt:Date.now(),auditStatus:'',lateAdd:true}); }
   save();
-  if(p) writeLog('LATEADD', o, p[2], qty, user.name, user.role);
+  writeLog('LATEADD', o, p?p[2]:('Oracle #'+o), qty, user.name, user.role);
   renderAuditModal();
   renderHistory();
-  toast('Added to '+String(h.date).replace(' (weekly-reset)','').replace(' (pre-reset)',''));
+  toast('Added '+(p?p[2].slice(0,40):('Oracle #'+o)));
+}
+// ── PER-PART ORDER HISTORY ──────────────────────────────────
+// Any user can see every time a part was ordered across the History snapshots.
+var _histCounts=null,_histCountsLen=-1;
+function _ensureHistCounts(){
+  if(_histCounts && _histCountsLen===hist.length) return _histCounts;
+  var m=Object.create(null);
+  for(var i=0;i<hist.length;i++){
+    var h=hist[i]; if(!h || String(h.date||'').indexOf('reset')<0) continue;
+    var seen=Object.create(null);
+    (h.items||[]).forEach(function(it){ if(it && it.oracle!=null && !seen[it.oracle]){ seen[it.oracle]=1; m[it.oracle]=(m[it.oracle]||0)+1; } });
+  }
+  _histCounts=m; _histCountsLen=hist.length; return m;
+}
+function _partOrderHistory(oracle){
+  var out=[];
+  for(var i=hist.length-1;i>=0;i--){
+    var h=hist[i]; if(!h || String(h.date||'').indexOf('reset')<0) continue;
+    (h.items||[]).forEach(function(it){
+      if(it && it.oracle===oracle){
+        out.push({date:String(h.date||'').replace(' (weekly-reset)','').replace(' (pre-reset)',''),
+          qty:it.qty, status:it.status||'pending', auditStatus:it.auditStatus||'', receivedQty:it.receivedQty||0});
+      }
+    });
+  }
+  return out;
+}
+function openPartHistory(oracle){
+  if(!user){ toast('Please sign in'); return; }
+  var p=gp(oracle); var rows=_partOrderHistory(oracle);
+  document.getElementById('partHistTitle').textContent='Order history — '+(p?p[2].slice(0,70):('Oracle #'+oracle));
+  var body=document.getElementById('partHistBody');
+  if(!rows.length){ body.innerHTML='<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">No previous orders found for this part in History.</div>'; }
+  else{
+    var totQ=0,totR=0;
+    rows.forEach(function(r){ totQ+=parseInt(r.qty)||0; totR+=(r.auditStatus==='received')?(parseInt(r.qty)||0):(parseInt(r.receivedQty)||0); });
+    body.innerHTML='<div style="font-size:12px;color:var(--muted);padding:10px 12px;border-bottom:1px solid var(--border);">Oracle '+(p?p[0]:oracle)+(p?(' &nbsp;·&nbsp; SAGE '+p[1]):'')+'<br><strong style="color:var(--text);">'+rows.length+'</strong> order'+(rows.length===1?'':'s')+' on record &nbsp;·&nbsp; <strong style="color:var(--text);">'+totQ+'</strong> total ordered &nbsp;·&nbsp; <strong style="color:#56b8a3;">'+totR+'</strong> received</div>'+
+      rows.map(function(r){
+        var ab = r.auditStatus==='received'?'<span class="stbadge stbadge-rec">✅ Received</span>'
+               : (r.receivedQty>0 && r.receivedQty<r.qty)?'<span class="stbadge stbadge-bo">📦 '+r.receivedQty+' of '+r.qty+' received</span>'
+               : r.auditStatus==='not_received'?'<span class="stbadge stbadge-bo">📦 Not received</span>'
+               : '<span class="stbadge stbadge-pend">⏳ Awaiting audit</span>';
+        return '<div style="padding:10px 12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px;">'+
+          '<div><div style="font-size:13px;color:var(--text);font-weight:600;">'+e(r.date)+'</div>'+
+          '<div style="font-size:11px;color:var(--muted);margin-top:2px;">Qty ordered: <strong>'+r.qty+'</strong></div></div>'+
+          '<div style="flex-shrink:0;">'+ab+'</div></div>';
+      }).join('');
+  }
+  document.getElementById('mPartHist').classList.add('show');
+}
+// ── IN-APP WALKTHROUGH VIDEOS ───────────────────────────────
+// Role-based: regular departments see the User guide; admins see the Admin
+// guide (and can switch to the User guide). The MP4s live next to index.html.
+function openWalkthrough(which){
+  var isAdmin = user && user.role==='Administrative';
+  if(!which) which = isAdmin ? 'admin' : 'user';
+  if(which==='admin' && !isAdmin) which='user';   // non-admins only get the user guide
+  var file = which==='admin' ? 'Fleet6_Admin_Walkthrough.mp4' : 'Fleet6_User_Walkthrough.mp4';
+  var v=document.getElementById('wtVideo');
+  document.getElementById('wtTitle').textContent = (which==='admin'?'📺 Admin Walkthrough':'📺 User Walkthrough');
+  var miss=document.getElementById('wtMissing'); miss.style.display='none';
+  v.onerror=function(){ miss.style.display='block'; miss.innerHTML='⚠ Video not found. Make sure <strong>'+file+'</strong> is uploaded to the same folder as the app.'; };
+  v.src=file; try{ v.load(); }catch(e){}
+  var sw=document.getElementById('wtSwitch');
+  if(isAdmin){
+    sw.style.display='block';
+    sw.innerHTML = (which==='admin')
+      ? 'Watching the Admin guide. <a href="#" onclick="openWalkthrough(\'user\');return false;" style="color:#7fb8e6;text-decoration:none;">▸ Switch to the User guide</a>'
+      : 'Watching the User guide. <a href="#" onclick="openWalkthrough(\'admin\');return false;" style="color:#7fb8e6;text-decoration:none;">▸ Switch to the Admin guide</a>';
+  } else { sw.style.display='none'; }
+  document.getElementById('mWalkthrough').classList.add('show');
+}
+function closeWalkthrough(){
+  var v=document.getElementById('wtVideo'); try{ v.pause(); }catch(e){}
+  document.getElementById('mWalkthrough').classList.remove('show');
 }
 // Re-sync the Current Weekly Order tab with this week's audit results.
 function _reconcileAuditToOrder(weekItems){
@@ -3959,7 +4071,7 @@ var HELP_CONTENT = {
       },
       { heading: "Ordering items (current week)",
         items: [
-          "Each requested item has a <strong>📤 Submit</strong> button. Click it as you place the order in Oracle — the badge changes to ✓ Submitted so the crews know it's handled.",
+          "Each requested item has a <strong>📤 Submit</strong> button. Click it as you place the order in Oracle — the badge changes to ✓ Submitted so everyone can see it's handled.",
           "Click again (now <strong>↩ Revert</strong>) to undo back to Pending. Receiving is confirmed later, in the {AUDITDAY} Parts Received Audit — not here.",
           "Use <strong>↩ Last week</strong> to move an item that was submitted after the reset back into the previous week's order (e.g. someone submitted late).",
         ]
@@ -5421,22 +5533,25 @@ updateCustomPartsStatus();
 <!-- PRINT STYLES -->
 <style>
 @media print {
-  body * { visibility: hidden; }
-  #printArea, #printArea * { visibility: visible; }
+  /* Hide the whole app by REMOVING it from layout (display:none), not just
+     visibility:hidden — otherwise the app's height paginates into blank pages.
+     printArea flows as a normal static block so all rows print across pages. */
+  body { background:#fff !important; }
+  body > *:not(#printArea):not(script):not(style) { display:none !important; }
   #printArea {
-    position: fixed; inset: 0;
-    background: white; color: #1a1a1a;
-    font-family: Arial, sans-serif;
-    padding: 24px;
-    font-size: 12px;
+    display:block !important; position:static !important;
+    background:#fff; color:#1a1a1a; font-family:Arial, sans-serif; padding:0; font-size:12px;
   }
-  .print-header { margin-bottom: 16px; border-bottom: 2px solid #1eb474; padding-bottom: 12px; }
+  .print-header { margin-bottom: 14px; border-bottom: 2px solid #1eb474; padding-bottom: 12px; }
   .print-title { font-size: 18px; font-weight: 800; color: #1a1a1a; }
   .print-sub { font-size: 11px; color: #666; margin-top: 4px; }
-  .print-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-  .print-table th { background: #1eb474; color: white; padding: 8px 10px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; }
-  .print-table td { padding: 7px 10px; border-bottom: 1px solid #e0e0e0; font-size: 11px; vertical-align: top; }
+  .print-sec { font-size: 13px; font-weight: 800; color: #1a7a50; margin: 18px 0 4px; }
+  .print-table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+  .print-table thead { display: table-header-group; }
+  .print-table th { background: #1eb474; color: white; padding: 7px 10px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; }
+  .print-table td { padding: 6px 10px; border-bottom: 1px solid #e0e0e0; font-size: 11px; vertical-align: top; }
   .print-table tr:nth-child(even) td { background: #f8f8f8; }
+  .print-table tr { page-break-inside: avoid; }
   .print-footer { margin-top: 16px; font-size: 10px; color: #999; border-top: 1px solid #ddd; padding-top: 8px; }
 }
 </style>
@@ -5454,9 +5569,9 @@ function buildOrderRows() {
   var rows = [];
   items.forEach(function(e){
     var p = gp(e[0]);
-    if(p) rows.push({ oracle:p[0], sage:p[1], desc:p[2], uom:p[3], dept:p[4], qty:e[1] });
+    if(p) rows.push({ oracle:p[0], sage:p[1], desc:p[2], uom:p[3], dept:p[4], rdept:deptOf(e[0]), carry:!!backorderFlag[e[0]], qty:e[1] });
   });
-  rows.sort(function(a,b){ return a.dept-b.dept || a.desc.localeCompare(b.desc); });
+  rows.sort(function(a,b){ return a.rdept-b.rdept || a.desc.localeCompare(b.desc); });
   return rows;
 }
 
@@ -5466,35 +5581,29 @@ function exportPrint() {
   if(!rows.length){ toast('No items in order to export'); return; }
 
   var now = new Date().toLocaleString();
-  var mech = rows.filter(function(r){return r.dept===0;}).length;
-  var elec = rows.filter(function(r){return r.dept===1;}).length;
-  var datav= rows.filter(function(r){return r.dept===2;}).length;
-
-  var tableRows = rows.map(function(r){
-    return '<tr>'
-      + '<td>' + r.oracle + '</td>'
-      + '<td>' + r.sage + '</td>'
-      + '<td>' + r.desc + '</td>'
-      + '<td style="text-align:center;">' + r.qty + '</td>'
-      + '<td>' + r.uom + '</td>'
-      + '<td>' + DI_PRINT[r.dept] + ' ' + DN_PRINT[r.dept] + '</td>'
-      + '</tr>';
-  }).join('');
+  var fresh = rows.filter(function(r){return !r.carry;});
+  var carried = rows.filter(function(r){return r.carry;});
+  function tbl(list){
+    if(!list.length) return '<div style="font-size:11px;color:#888;padding:4px 0 10px;">None.</div>';
+    return '<table class="print-table">'
+      + '<thead><tr><th>Oracle #</th><th>SAGE #</th><th>Description</th><th>Qty</th><th>UOM</th><th>Dept</th></tr></thead><tbody>'
+      + list.map(function(r){
+          return '<tr><td>'+r.oracle+'</td><td>'+r.sage+'</td><td>'+r.desc+'</td><td style="text-align:center;">'+r.qty+'</td><td>'+r.uom+'</td><td>'+(DEPT4_N[r.rdept]||'')+'</td></tr>';
+        }).join('')
+      + '</tbody></table>';
+  }
 
   document.getElementById('printArea').innerHTML =
     '<div class="print-header">'
     + '<div style="display:flex;justify-content:space-between;align-items:flex-start;">'
     + '<div>'
     + '<div class="print-title">Evolution Well Services — Fleet 6</div>'
-    + '<div class="print-sub">Weekly Parts Order &nbsp;·&nbsp; ' + rows.length + ' items total &nbsp;·&nbsp; 🔧 ' + mech + ' &nbsp; ⚡ ' + elec + ' &nbsp; 💻 ' + datav + '</div>'
+    + '<div class="print-sub">Weekly Parts Order &nbsp;·&nbsp; ' + rows.length + ' items total &nbsp;·&nbsp; ' + fresh.length + ' requested this week &nbsp;·&nbsp; ' + carried.length + ' not received from previous week</div>'
     + '</div>'
-    + '<div style="text-align:right;font-size:11px;color:#666;">' + now + '<br>Submitted by: ' + (user ? user.name : '—') + '</div>'
-    + '</div>'
-    + '</div>'
-    + '<table class="print-table">'
-    + '<thead><tr><th>Oracle #</th><th>SAGE #</th><th>Description</th><th>Qty</th><th>UOM</th><th>Dept</th></tr></thead>'
-    + '<tbody>' + tableRows + '</tbody>'
-    + '</table>'
+    + '<div style="text-align:right;font-size:11px;color:#666;">' + now + '<br>Printed by: ' + (user ? user.name : '—') + '</div>'
+    + '</div></div>'
+    + '<h2 class="print-sec">Items requested this week (' + fresh.length + ')</h2>' + tbl(fresh)
+    + '<h2 class="print-sec">Items not received from previous week (' + carried.length + ')</h2>' + tbl(carried)
     + '<div class="print-footer">Evolution Well Services® &nbsp;·&nbsp; Fleet 6 &nbsp;·&nbsp; Printed ' + now + '<br><span style="font-size:9px;color:#aaa;">Developed by Mason Columbine for Field Operations</span></div>';
 
   document.getElementById('printArea').style.display = 'block';
@@ -5505,7 +5614,7 @@ function exportPrint() {
 // ── EXCEL ──────────────────────────────────────────────────────
 function exportExcel() {
   if(typeof XLSX === 'undefined'){ toast('Excel library not loaded — check internet connection'); return; }
-  var rows = buildOrderRows();
+  var rows = buildOrderRows().sort(function(a,b){ return (a.carry-b.carry) || (a.rdept-b.rdept) || a.desc.localeCompare(b.desc); });
   if(!rows.length){ toast('No items in order to export'); return; }
 
   var wsData = [
@@ -5513,11 +5622,11 @@ function exportExcel() {
     ['Generated: ' + new Date().toLocaleString() + '   Submitted by: ' + (user ? user.name : '—')],
     ['Developed by Mason Columbine for Field Operations'],
     [],
-    ['Oracle #', 'SAGE #', 'Description', 'Qty', 'UOM', 'Department']
+    ['Oracle #', 'SAGE #', 'Description', 'Qty', 'UOM', 'Department', 'Section']
   ];
 
   rows.forEach(function(r){
-    wsData.push([r.oracle, r.sage, r.desc, r.qty, r.uom, DN_PRINT[r.dept]]);
+    wsData.push([r.oracle, r.sage, r.desc, r.qty, r.uom, DN_PRINT[r.dept], r.carry ? 'Not received from previous week' : 'Requested this week']);
   });
 
   var wb = XLSX.utils.book_new();
@@ -5525,12 +5634,12 @@ function exportExcel() {
 
   // Column widths
   ws['!cols'] = [
-    {wch:14}, {wch:10}, {wch:70}, {wch:6}, {wch:8}, {wch:14}
+    {wch:14}, {wch:10}, {wch:70}, {wch:6}, {wch:8}, {wch:14}, {wch:30}
   ];
 
   // Style header row (row index 4, zero-based — shifted down by the credit line)
   var headerRange = XLSX.utils.decode_range(ws['!ref']);
-  for(var c=0; c<=5; c++){
+  for(var c=0; c<=6; c++){
     var cell = ws[XLSX.utils.encode_cell({r:4, c:c})];
     if(cell) cell.s = { font:{bold:true}, fill:{fgColor:{rgb:'1EB474'}} };
   }
@@ -5544,10 +5653,10 @@ function exportExcel() {
 
 // ── CSV ────────────────────────────────────────────────────────
 function exportCSV() {
-  var rows = buildOrderRows();
+  var rows = buildOrderRows().sort(function(a,b){ return (a.carry-b.carry) || (a.rdept-b.rdept) || a.desc.localeCompare(b.desc); });
   if(!rows.length){ toast('No items in order to export'); return; }
 
-  var lines = ['"Oracle #","SAGE #","Description","Qty","UOM","Department"'];
+  var lines = ['"Oracle #","SAGE #","Description","Qty","UOM","Department","Section"'];
   rows.forEach(function(r){
     lines.push([
       '"' + r.oracle + '"',
@@ -5555,7 +5664,8 @@ function exportCSV() {
       '"' + r.desc.replace(/"/g,'""') + '"',
       r.qty,
       '"' + r.uom + '"',
-      '"' + DN_PRINT[r.dept] + '"'
+      '"' + DN_PRINT[r.dept] + '"',
+      '"' + (r.carry ? 'Not received from previous week' : 'Requested this week') + '"'
     ].join(','));
   });
 
