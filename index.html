@@ -1101,7 +1101,14 @@ const PARTS = [["10000000","11786","PACKING, PREFORMED ELASTOMER, ID 13.451IN, C
 const DN=['Mechanical','Electrical','Datavan','Tools','Hardware','Miscellaneous','Turbine'];
 const DI=['🔧','⚡','💻','🔨','🔩','📦','🌀'];
 const DC=['var(--mech)','var(--elec)','var(--data)','var(--tool)','var(--hard)','var(--misc)','var(--turbine)'];
-const ADMIN_PW = 'EWSFLT06';
+// Admin password derives from the fleet number, so each fleet has its own:
+// Fleet 6 -> EWSFLT06, Fleet 9 -> EWSFLT09, Fleet 11 -> EWSFLT11. Changing the
+// fleet number (Admin -> Weekly Schedule) updates the password automatically.
+function getAdminPw(){
+  var n=String((typeof schedule!=='undefined'&&schedule&&schedule.fleetNum!=null)?schedule.fleetNum:'6').trim()||'6';
+  while(n.length<2) n='0'+n;
+  return 'EWSFLT'+n;
+}
 
 // ── FUSE.JS INDEX ────────────────────────────────────────────
 // Build search index once at startup
@@ -2011,7 +2018,7 @@ function doLogin(){
   // Check admin password
   if(selR==='Administrative'){
     const pw=document.getElementById('pwInput').value;
-    if(pw!==ADMIN_PW){
+    if(pw!==getAdminPw()){
       document.getElementById('pwInput').classList.add('err');
       document.getElementById('pwErr').classList.add('show');
       document.getElementById('pwInput').focus();
@@ -3472,6 +3479,7 @@ function renderScheduleSettings(){
 }
 function saveSchedule(){
   if(!user||user.role!=='Administrative'){ toast('Admin only'); return; }
+  var _oldFleet=(typeof schedule!=='undefined'&&schedule)?String(schedule.fleetNum):'6';
   var rt=(document.getElementById('schedResetTime').value||'08:00').split(':');
   var at=(document.getElementById('schedAuditTime').value||'15:00').split(':');
   var fnEl=document.getElementById('schedFleetNum');
@@ -3490,7 +3498,11 @@ function saveSchedule(){
   applyFleetLabel();
   if(typeof renderAdmin==='function') renderAdmin();
   if(typeof renderAuditBanner==='function') renderAuditBanner();
-  toast('Weekly schedule saved');
+  if(String(schedule.fleetNum)!==_oldFleet){
+    toast('Saved — now '+fleetLabel()+'. Admin password is now '+getAdminPw());
+  } else {
+    toast('Weekly schedule saved');
+  }
 }
 
 // Auto-reset hook. Called on app load (after data is loaded). If we haven't
@@ -5884,14 +5896,14 @@ function exportPrint() {
     '<div class="print-header">'
     + '<div style="display:flex;justify-content:space-between;align-items:flex-start;">'
     + '<div>'
-    + '<div class="print-title">Evolution Well Services — Fleet 6</div>'
+    + '<div class="print-title">Evolution Well Services — '+fleetLabel()+'</div>'
     + '<div class="print-sub">Weekly Parts Order &nbsp;·&nbsp; ' + rows.length + ' items total &nbsp;·&nbsp; ' + fresh.length + ' requested this week &nbsp;·&nbsp; ' + carried.length + ' not received from previous week</div>'
     + '</div>'
     + '<div style="text-align:right;font-size:11px;color:#666;">' + now + '<br>Printed by: ' + (user ? user.name : '—') + '</div>'
     + '</div></div>'
     + '<h2 class="print-sec">Items requested this week (' + fresh.length + ')</h2>' + tbl(fresh)
     + '<h2 class="print-sec">Items not received from previous week (' + carried.length + ')</h2>' + tbl(carried)
-    + '<div class="print-footer">Evolution Well Services® &nbsp;·&nbsp; Fleet 6 &nbsp;·&nbsp; Printed ' + now + '<br><span style="font-size:9px;color:#aaa;">Developed by Mason Columbine for Field Operations</span></div>';
+    + '<div class="print-footer">Evolution Well Services® &nbsp;·&nbsp; '+fleetLabel()+' &nbsp;·&nbsp; Printed ' + now + '<br><span style="font-size:9px;color:#aaa;">Developed by Mason Columbine for Field Operations</span></div>';
 
   document.getElementById('printArea').style.display = 'block';
   window.print();
@@ -5905,7 +5917,7 @@ function exportExcel() {
   if(!rows.length){ toast('No items in order to export'); return; }
 
   var wsData = [
-    ['Evolution Well Services — Fleet 6 Weekly Parts Order'],
+    ['Evolution Well Services — '+fleetLabel()+' Weekly Parts Order'],
     ['Generated: ' + new Date().toLocaleString() + '   Submitted by: ' + (user ? user.name : '—')],
     ['Developed by Mason Columbine for Field Operations'],
     [],
@@ -5931,10 +5943,10 @@ function exportExcel() {
     if(cell) cell.s = { font:{bold:true}, fill:{fgColor:{rgb:'1EB474'}} };
   }
 
-  XLSX.utils.book_append_sheet(wb, ws, 'Fleet 6 Order');
+  XLSX.utils.book_append_sheet(wb, ws, fleetLabel()+' Order');
 
   var date = new Date().toISOString().slice(0,10);
-  XLSX.writeFile(wb, 'Fleet6_Parts_Order_' + date + '.xlsx');
+  XLSX.writeFile(wb, 'Fleet'+(schedule.fleetNum||'6')+'_Parts_Order_' + date + '.xlsx');
   toast('Excel file downloaded ✓');
 }
 
@@ -5961,7 +5973,7 @@ function exportCSV() {
   var a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   var date = new Date().toISOString().slice(0,10);
-  a.download = 'Fleet6_Parts_Order_' + date + '.csv';
+  a.download = 'Fleet'+(schedule.fleetNum||'6')+'_Parts_Order_' + date + '.csv';
   a.click();
   URL.revokeObjectURL(a.href);
   toast('CSV file downloaded ✓');
