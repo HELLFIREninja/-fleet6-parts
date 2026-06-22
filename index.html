@@ -207,9 +207,10 @@ input,select{outline:none;font-family:inherit;}
 .rm:hover{background:rgba(217,95,95,.12);}
 /* Status badges — pending vs submitted vs received on each order item */
 .stbadge{display:inline-block;font-size:9px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;padding:2px 7px;border-radius:2px;margin-right:6px;vertical-align:1px;white-space:nowrap;}
-.stbadge-pend{color:#d4890a;background:rgba(212,137,10,.10);border:1px solid rgba(212,137,10,.35);}
-.stbadge-sub{color:#1eb474;background:rgba(30,180,116,.10);border:1px solid rgba(30,180,116,.4);}
+.stbadge-pend{color:#ecc94b;background:rgba(236,201,75,.12);border:1px solid rgba(236,201,75,.4);}
+.stbadge-sub{color:#3f9bd6;background:rgba(47,140,202,.12);border:1px solid rgba(47,140,202,.45);}
 .stbadge-rec{color:#56b8a3;background:rgba(86,184,163,.12);border:1px solid rgba(86,184,163,.45);}
+.stbadge-no{color:#e0533a;background:rgba(224,83,58,.12);border:1px solid rgba(224,83,58,.5);}
 .stbadge-bo {color:#d4890a;background:rgba(212,137,10,.10);border:1px solid rgba(212,137,10,.4);}
 .ord-submitted{border-left:3px solid #1eb474;}
 .ord-pending{border-left:3px solid #d4890a;}
@@ -246,6 +247,10 @@ input,select{outline:none;font-family:inherit;}
 .bo-note-input{width:100%;padding:6px 8px;background:var(--nav);color:var(--text);border:1px solid var(--border);border-radius:2px;font-size:12px;font-family:inherit;margin-top:4px;resize:vertical;min-height:32px;}
 .bo-note-input:focus{outline:none;border-color:var(--teal);}
 .bo-note-empty{font-style:italic;color:var(--muted2);}
+.bo-card.bo-staged{border-left:3px solid #2d8a4e;background:rgba(45,138,78,.10);}
+.bo-card.bo-clickable{cursor:pointer;}
+.bo-card.bo-clickable:hover{border-color:#fff;box-shadow:0 0 0 1px rgba(255,255,255,.35);}
+.recv-cluster{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
 
 /* ── UPDATE BANNER ── */
 .upd-banner{display:none;align-items:center;gap:12px;background:linear-gradient(90deg,rgba(30,180,116,.14),rgba(47,140,202,.14));border-top:1px solid rgba(30,180,116,.35);border-bottom:1px solid rgba(30,180,116,.35);padding:0;overflow:hidden;position:relative;}
@@ -671,6 +676,7 @@ input,select{outline:none;font-family:inherit;}
     <div id="auditBanner" role="status" aria-live="polite" style="display:none;"></div>
     <div class="tabs">
       <button class="tab-btn active" onclick="switchTab('order')" data-tab="order"><span class="ticon">🛒</span>Current Weekly Order<span class="tbadge" id="oBadge">0</span></button>
+      <button class="tab-btn" onclick="switchTab('received')" data-tab="received"><span class="ticon">📦</span>Parts Received<span class="tbadge" id="rBadge">0</span></button>
       <button class="tab-btn" onclick="switchTab('browse')" data-tab="browse"><span class="ticon">📋</span>Master List</button>
       <button class="tab-btn" onclick="switchTab('favorites')" data-tab="favorites"><span class="ticon">⭐</span>Favorites<span class="tbadge" id="fBadge">0</span></button>
       <button class="tab-btn" onclick="switchTab('history')" data-tab="history"><span class="ticon">📜</span>History</button>
@@ -693,14 +699,22 @@ input,select{outline:none;font-family:inherit;}
       </div>
       <div id="oList"></div>
 
-      <!-- ITEMS NOT RECEIVED FROM PREVIOUS WEEK -->
-      <div id="notRecvSec" style="display:none;margin-top:24px;">
-        <div class="sec-hd" style="margin-bottom:8px;">
-          <div class="sec-t" style="color:#d4890a;">📦 Items not received from previous week <span id="notRecvCount" style="font-size:11px;color:var(--muted);font-weight:600;margin-left:6px;"></span></div>
+    </div>
+
+    <!-- PARTS RECEIVED TAB -->
+    <div class="tab-content" id="tab-received">
+      <div class="search-row">
+        <div class="sbox">
+          <span class="sico">🔍</span>
+          <input type="text" id="rQ" placeholder="Search awaiting parts — Oracle, SAGE, or description" enterkeyhint="search" oninput="renderReceived()" />
         </div>
-        <div style="font-size:11px;color:var(--muted2);margin-bottom:10px;line-height:1.5;">Ordered in a prior week but not yet confirmed received in a Parts Received Audit. Shown by department so the same parts aren't ordered again by mistake. Admins can add a note with status or ETA.</div>
-        <div id="notRecvList"></div>
+        <select class="fsel" id="rDept" onchange="renderReceived()">
+          <option value="">All Departments</option><option value="0">🔧 Mechanical</option><option value="1">⚡ Electrical</option><option value="2">💻 Datavan</option><option value="3">🌀 Turbine</option>
+        </select>
       </div>
+      <div style="font-size:12px;color:var(--muted);margin:2px 2px 12px;line-height:1.5;">Parts ordered in a previous week and <strong>not yet received</strong>. When a shipment lands — even late, or mixed across several orders — mark what arrived. Admins can ignore items that can't be verified.</div>
+      <div class="sec-hd" style="justify-content:space-between;align-items:center;"><div id="rCount" style="font-size:11px;color:var(--muted);letter-spacing:.5px;"></div><button class="btn-ghost" onclick="openLogReceipt()" title="Record a part that arrived but isn't in the list" style="white-space:nowrap;">➕ Log a receipt</button></div>
+      <div id="rList"></div>
     </div>
 
     <!-- BROWSE TAB -->
@@ -753,7 +767,7 @@ input,select{outline:none;font-family:inherit;}
       <div class="acard">
         <h3>🔐 Administrative Controls</h3>
         <div class="warnbox">
-          ℹ️ <strong>How the weekly cycle works:</strong> Click <strong>📤 Submit</strong> on a part once you've ordered it in Oracle (marked <em>Submitted</em> so everyone can see it's handled). Every <strong id="warnResetWhen">Monday at 8:00 AM</strong> the whole week's order moves to <strong>History</strong>. When parts arrive <strong id="warnAuditWhen">Friday</strong>, anyone runs the <strong>Parts Received Audit</strong> in History — whatever isn't received resurfaces as <em>not received from previous week</em> so it isn't ordered again by mistake.
+          ℹ️ <strong>How the weekly cycle works:</strong> Click <strong>📤 Submit</strong> on a part once you've ordered it in Oracle (marked <em>Submitted</em> so everyone can see it's handled). Every <strong id="warnResetWhen">Monday at 8:00 AM</strong> the whole week's order moves to the <strong>Parts Received</strong> tab. As parts arrive, anyone marks what came in there and hits <strong>Submit Audit</strong> (due <strong id="warnAuditWhen">Friday</strong>); whatever isn't received stays as <em>awaiting fulfillment</em> so it isn't ordered again by mistake.
         </div>
         <div id="adminStatusBar" style="margin-bottom:12px;padding:10px 12px;background:var(--nav);border:1px solid var(--border);border-radius:2px;"></div>
         <div class="sec-hd" style="flex-wrap:wrap;gap:8px;">
@@ -966,44 +980,44 @@ input,select{outline:none;font-family:inherit;}
 </div>
 
 <!-- PARTS RECEIVED AUDIT MODAL — any user checks off what physically arrived -->
-<div class="mov" id="mAudit">
-  <div class="modal" style="max-width:660px;border-top-color:#2d8a4e;">
-    <h3>📋 Parts Received Audit</h3>
-    <div id="auditMeta" style="font-size:12px;color:var(--muted);line-height:1.55;margin-bottom:12px;"></div>
-    <div id="auditList" style="max-height:44vh;overflow-y:auto;border:1px solid var(--border);border-radius:2px;background:var(--nav);margin-bottom:12px;"></div>
-    <div id="auditAdminAdd" style="display:none;margin-bottom:12px;"></div>
-    <div class="mbtns" style="align-items:center;">
-      <span id="auditTally" style="font-size:11px;color:var(--muted);margin-right:auto;"></span>
-      <button class="btn-ghost" id="auditIgnoreBtn" onclick="adminIgnoreAuditCurrent()" style="display:none;">🚫 Ignore this audit</button>
-      <button class="btn-ghost" onclick="closeMod()">Cancel</button>
-      <button class="btn-primary" onclick="completeAudit()" style="background:#2d6a2d;border:none;">✓ Save audit</button>
-    </div>
-  </div>
-</div>
-
 <!-- MARK RECEIVED MODAL — confirm full or partial quantity received -->
 <style>
   #rcvQty::-webkit-inner-spin-button, #rcvQty::-webkit-outer-spin-button,
   .audit-qi::-webkit-inner-spin-button, .audit-qi::-webkit-outer-spin-button{ -webkit-appearance:none; margin:0; }
   #rcvQty, .audit-qi{ -moz-appearance:textfield; appearance:textfield; }
 </style>
-<div class="mov" id="mReceive">
-  <div class="modal" style="max-width:460px;border-top-color:#2d8a4e;">
-    <h3>✓ Mark Received</h3>
-    <div id="rcvDesc" style="font-size:13px;color:var(--text);font-weight:600;line-height:1.35;margin-bottom:5px;"></div>
-    <div id="rcvMeta" style="font-size:11px;color:var(--muted);margin-bottom:16px;"></div>
+<div class="mov" id="mUntrack">
+  <div class="modal" style="max-width:460px;border-top-color:#9b6ed4;">
+    <h3>🚫 Ignore — no record</h3>
+    <div id="untkDesc" style="font-size:13px;color:var(--text);font-weight:600;line-height:1.35;margin-bottom:5px;"></div>
+    <div id="untkMeta" style="font-size:11px;color:var(--muted);margin-bottom:14px;"></div>
+    <div style="font-size:11px;color:var(--muted2);line-height:1.5;margin-bottom:14px;">Use when a part can't be verified as received — no BOL or paperwork. It leaves the awaiting list and is logged, but is <strong>not</strong> counted as received. Admin only.</div>
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-      <label style="font-size:12px;color:var(--muted);">Quantity received:</label>
-      <button class="qb" onclick="rcvAdj(-1)">−</button>
-      <input id="rcvQty" type="number" min="1" value="1" oninput="rcvSync()" style="width:84px;padding:7px 9px;background:var(--bg);border:1px solid var(--border);border-radius:2px;color:var(--text);font-size:15px;text-align:center;" />
-      <button class="qb" onclick="rcvAdj(1)">+</button>
-      <span id="rcvOf" style="font-size:12px;color:var(--muted2);"></span>
+      <label style="font-size:12px;color:var(--muted);">Quantity to ignore:</label>
+      <button class="qb" onclick="untkAdj(-1)">−</button>
+      <input id="untkQty" type="number" min="1" value="1" oninput="untkSync()" style="width:84px;padding:7px 9px;background:var(--bg);border:1px solid var(--border);border-radius:2px;color:var(--text);font-size:15px;text-align:center;" />
+      <button class="qb" onclick="untkAdj(1)">+</button>
+      <span id="untkOf" style="font-size:12px;color:var(--muted2);"></span>
     </div>
-    <div id="rcvHint" style="font-size:11px;color:var(--muted2);line-height:1.5;margin-bottom:16px;"></div>
+    <div id="untkHint" style="font-size:11px;color:var(--muted2);line-height:1.5;margin-bottom:16px;"></div>
     <div class="mbtns">
       <button class="btn-ghost" onclick="closeMod()">Cancel</button>
-      <button class="btn-primary" onclick="confirmReceive()" style="background:#2d6a2d;border:none;">✓ Confirm received</button>
+      <button class="btn-primary" onclick="confirmUntrack()" style="background:#6f4bb0;border:none;">🚫 Ignore</button>
     </div>
+  </div>
+</div>
+
+<div class="mov" id="mLogRecv">
+  <div class="modal" style="max-width:520px;border-top-color:#2d8a4e;">
+    <h3>➕ Log a receipt</h3>
+    <div style="font-size:11px;color:var(--muted2);line-height:1.5;margin-bottom:10px;">Record a part that physically arrived but isn't in the awaiting list. Search the catalog, pick it, and enter how many came in.</div>
+    <div class="sbox" style="margin-bottom:8px;">
+      <span class="sico">🔍</span>
+      <input type="text" id="lrQ" placeholder="Search Oracle, SAGE, or description" oninput="lrSearch()" autocomplete="off" />
+    </div>
+    <div id="lrResults" style="max-height:36vh;overflow-y:auto;border:1px solid var(--border);border-radius:2px;background:var(--nav);margin-bottom:10px;"></div>
+    <div id="lrPicked" style="display:none;"></div>
+    <div class="mbtns"><button class="btn-ghost" onclick="closeMod()">Close</button></div>
   </div>
 </div>
 
@@ -1606,12 +1620,6 @@ var ALL_FAV_ROLES=['Mechanical','Electrical','Datavan','Turbine','Administrative
 function stat(oracle){ return (orderStatus && orderStatus[oracle]) || 'pending'; }
 // True when an item is pending AND was first added before the most recent
 // weekly reset — i.e. it survived a Monday-8am rollover without being pulled.
-function isBackorder(oracle){
-  if(!lastReset) return false;
-  if(stat(oracle) !== 'pending') return false;
-  var added = orderAdded[oracle] || 0;
-  return added > 0 && added < lastReset;
-}
 // Pretty-format an age in ms as "Xw Yd" / "Yd" / "<1d".
 function fmtAge(ms){
   if(!ms || ms<0) return '—';
@@ -2097,6 +2105,7 @@ function switchTab(t){
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
   document.querySelectorAll('.tab-content').forEach(c=>c.classList.toggle('active',c.id==='tab-'+t));
   if(t==='order')renderOrder();
+  if(t==='received')renderReceived();
   if(t==='browse'){document.getElementById('bDept').value='';rstBrowse();}
   if(t==='favorites'){document.getElementById('fDept').value='';renderFavs();}
   if(t==='history')renderHistory();
@@ -2105,10 +2114,11 @@ function switchTab(t){
 
 // ── BADGES ──────────────────────────────────────────────────
 function badges(){
-  document.getElementById('oBadge').textContent=Object.values(order).filter(v=>v>0).length;
+  document.getElementById('oBadge').textContent=Object.entries(order).filter(function(en){return en[1]>0 && !backorderFlag[en[0]];}).length;
   document.getElementById('fBadge').textContent=Object.keys(favs).length;
+  var rb=document.getElementById('rBadge'); if(rb) rb.textContent=Object.entries(order).filter(function(en){return en[1]>0 && backorderFlag[en[0]];}).length;
 }
-function renderAll(){renderOrder();renderBrowse();badges();}
+function renderAll(){renderOrder();renderReceived();renderBrowse();badges();}
 // Look up a part by its Oracle #. Search order: active parts (which respects
 // custom uploads), then bundled PARTS, then the favSnapshots cache (so an
 // orphaned-but-favorited part still renders correctly in the order/history
@@ -2234,65 +2244,242 @@ function rmP(oracle){
 var _rcvOracle=null, _rcvRemaining=0;
 // Open the receive dialog for a "not received" carryover item — the user
 // confirms how many of the expected qty actually arrived (full or partial).
-function markCarryReceived(oracle){
-  if(!user){ toast('Please sign in'); return; }
+// Admin-only: untrack a "not received" item (full or partial) when there's no
+// paperwork to verify it. Leaves the awaiting list and is logged, but is NOT
+// counted as received. Marks the matching History item 'untracked'.
+var _untkOracle=null, _untkRemaining=0;
+function untrackCarry(oracle){
+  if(!user || user.role!=='Administrative'){ toast('Admin only'); return; }
   var remaining=order[oracle]||0; if(remaining<=0) return;
   var p=gp(oracle);
-  _rcvOracle=oracle; _rcvRemaining=remaining;
-  document.getElementById('rcvDesc').textContent = p?p[2]:('Oracle #'+oracle);
-  document.getElementById('rcvMeta').innerHTML = 'Oracle: '+(p?p[0]:oracle)+' &nbsp;·&nbsp; Expected: <strong>'+remaining+'</strong>'+(p?(' '+p[3]):'');
-  var qi=document.getElementById('rcvQty'); qi.value=remaining; qi.setAttribute('max', remaining);
-  document.getElementById('rcvOf').textContent='of '+remaining+(p?(' '+p[3]):'');
-  rcvSync();
-  document.getElementById('mReceive').classList.add('show');
+  _untkOracle=oracle; _untkRemaining=remaining;
+  document.getElementById('untkDesc').textContent = p?p[2]:('Oracle #'+oracle);
+  document.getElementById('untkMeta').innerHTML = 'Oracle: '+(p?p[0]:oracle)+' &nbsp;·&nbsp; Awaiting: <strong>'+remaining+'</strong>'+(p?(' '+p[3]):'');
+  var qi=document.getElementById('untkQty'); qi.value=remaining; qi.setAttribute('max', remaining);
+  document.getElementById('untkOf').textContent='of '+remaining+(p?(' '+p[3]):'');
+  untkSync();
+  document.getElementById('mUntrack').classList.add('show');
 }
-function rcvAdj(d){ var qi=document.getElementById('rcvQty'); qi.value=(parseInt(qi.value,10)||0)+d; rcvSync(); }
-function rcvSync(){
-  var qi=document.getElementById('rcvQty'); var v=parseInt(qi.value,10)||0;
-  if(v<1) v=1; if(v>_rcvRemaining) v=_rcvRemaining; qi.value=v;
-  var rem=_rcvRemaining-v;
-  document.getElementById('rcvHint').innerHTML = (rem<=0)
-    ? '✓ Receiving the full remaining quantity — this item closes out.'
-    : '↩ <strong>'+rem+'</strong> stays in “not received from previous week”; <strong>'+v+'</strong> is recorded received in History.';
+function untkAdj(d){ var qi=document.getElementById('untkQty'); qi.value=(parseInt(qi.value,10)||0)+d; untkSync(); }
+function untkSync(){
+  var qi=document.getElementById('untkQty'); var v=parseInt(qi.value,10)||0;
+  if(v<1) v=1; if(v>_untkRemaining) v=_untkRemaining; qi.value=v;
+  var rem=_untkRemaining-v;
+  document.getElementById('untkHint').innerHTML = (rem<=0)
+    ? '🚫 Ignoring the full quantity — this item leaves the awaiting list.'
+    : '🚫 <strong>'+v+'</strong> ignored; <strong>'+rem+'</strong> stays awaiting.';
 }
-function confirmReceive(){
-  if(!user || !_rcvOracle){ return; }
-  var oracle=_rcvOracle;
+function confirmUntrack(){
+  if(!user || user.role!=='Administrative' || !_untkOracle){ return; }
+  var oracle=_untkOracle;
   var remaining=order[oracle]||0;
-  var rq=parseInt(document.getElementById('rcvQty').value,10)||0;
-  if(rq<1){ toast('Enter a quantity of 1 or more'); return; }
-  if(rq>remaining) rq=remaining;
+  var uq=parseInt(document.getElementById('untkQty').value,10)||0;
+  if(uq<1){ toast('Enter a quantity of 1 or more'); return; }
+  if(uq>remaining) uq=remaining;
   var p=gp(oracle);
-  // Record the received portion on the matching History snapshot item.
   for(var i=hist.length-1;i>=0;i--){
     var h=hist[i];
     if(!h || (String(h.date||'').indexOf('weekly-reset')<0 && String(h.date||'').indexOf('pre-reset')<0)) continue;
-    var items=h.items||[], done=false;
+    var items=h.items||[], done2=false;
     for(var j=0;j<items.length;j++){
       var it=items[j];
       if(it.oracle===oracle && (it.auditStatus||'')!=='received'){
-        var oq=it.qty||remaining;
-        it.receivedQty=(it.receivedQty||0)+rq;
-        it.receivedBy=user.name; it.receivedAt=Date.now();
-        if(it.receivedQty>=oq){ it.auditStatus='received'; it.status='received'; }
-        else { it.auditStatus='not_received'; }   // still partially outstanding (decided state)
-        done=true; break;
+        it.auditStatus='untracked'; it.untrackedBy=user.name; it.untrackedAt=Date.now();
+        done2=true; break;
       }
     }
-    if(done) break;
+    if(done2) break;
   }
-  var newRemain=remaining-rq;
+  var newRemain=remaining-uq;
   if(newRemain<=0){ _forgetItem(oracle); delete backorderFlag[oracle]; }
   else { order[oracle]=newRemain; }
   save();
-  if(user) writeLog('RECEIVE', oracle, p?p[2]:'Oracle #'+oracle, rq+' of '+remaining+(newRemain>0?(' · '+newRemain+' still expected'):' · full'), user.name, user.role);
-  closeMod(); _rcvOracle=null;
+  if(typeof writeLog==='function') writeLog('UNTRACK', oracle, p?p[2]:'Oracle #'+oracle, uq+' of '+remaining+(newRemain>0?(' · '+newRemain+' still awaiting'):' · all'), user.name, user.role);
+  closeMod(); _untkOracle=null;
   renderOrder();
+  if(typeof renderReceived==='function') renderReceived();
+  if(typeof renderHistory==='function') renderHistory();
+  if(typeof renderAdmin==='function') renderAdmin();
+  badges();
+  toast(newRemain<=0 ? 'Ignored' : (uq+' ignored · '+newRemain+' still awaiting'));
+}
+
+// ── LOG A RECEIPT (part not in the awaiting list) ───────────
+// Anyone can record a part that physically arrived. If it's awaiting, draws it
+// down; otherwise records the receipt against its most recent open order (or
+// just logs it). Closes the "received something I don't see" gap.
+var _lrOracle=null;
+function openLogReceipt(){
+  if(!user){ toast('Please sign in'); return; }
+  _lrOracle=null;
+  var qEl=document.getElementById('lrQ'); if(qEl) qEl.value='';
+  document.getElementById('lrResults').innerHTML='<div style="padding:14px;color:var(--muted2);font-size:12px;">Start typing to find a part…</div>';
+  document.getElementById('lrPicked').style.display='none';
+  document.getElementById('mLogRecv').classList.add('show');
+  setTimeout(function(){ var q=document.getElementById('lrQ'); if(q) q.focus(); },60);
+}
+function lrSearch(){
+  var q=((document.getElementById('lrQ')||{}).value||'').trim().toLowerCase();
+  var box=document.getElementById('lrResults');
+  document.getElementById('lrPicked').style.display='none';
+  if(q.length<2){ box.innerHTML='<div style="padding:14px;color:var(--muted2);font-size:12px;">Type at least 2 characters…</div>'; return; }
+  var parts=(typeof getActiveParts==='function')?getActiveParts():PARTS;
+  var hits=[];
+  for(var i=0;i<parts.length && hits.length<40;i++){
+    var p=parts[i];
+    if((''+p[0]).toLowerCase().indexOf(q)>=0 || (''+p[1]).toLowerCase().indexOf(q)>=0 || (''+p[2]).toLowerCase().indexOf(q)>=0) hits.push(p);
+  }
+  if(!hits.length){ box.innerHTML='<div style="padding:14px;color:var(--muted2);font-size:12px;">No matches.</div>'; return; }
+  box.innerHTML=hits.map(function(p){
+    var aw=(backorderFlag[p[0]] && (order[p[0]]||0)>0)?(' <span class="stbadge stbadge-bo">📦 '+order[p[0]]+' awaiting</span>'):'';
+    return '<div class="hitem" style="display:flex;justify-content:space-between;align-items:center;gap:8px;cursor:pointer;" onclick="lrPick(\''+p[0]+'\')"><div><div class="hidesc">'+DI[p[4]]+' '+e(p[2])+aw+'</div><div class="himeta">Oracle: '+p[0]+' · SAGE: '+p[1]+' · '+DN[p[4]]+'</div></div><button class="pullb" style="background:#2d6a2d;border:none;white-space:nowrap;" onclick="event.stopPropagation();lrPick(\''+p[0]+'\')">Select</button></div>';
+  }).join('');
+}
+function lrPick(oracle){
+  _lrOracle=oracle;
+  var p=gp(oracle);
+  var aw=(backorderFlag[oracle] && (order[oracle]||0)>0)?order[oracle]:0;
+  var box=document.getElementById('lrPicked'); box.style.display='block';
+  box.innerHTML='<div style="border-top:1px solid var(--border);padding-top:12px;margin-top:2px;">'+
+    '<div style="font-size:13px;color:var(--text);font-weight:600;margin-bottom:4px;">'+(p?e(p[2]):('Oracle #'+oracle))+'</div>'+
+    '<div style="font-size:11px;color:var(--muted);margin-bottom:10px;">Oracle: '+(p?p[0]:oracle)+(aw?(' &nbsp;·&nbsp; <strong style="color:#d4890a;">'+aw+' currently awaiting</strong>'):' &nbsp;·&nbsp; not in the awaiting list')+'</div>'+
+    '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;"><label style="font-size:12px;color:var(--muted);">Quantity received:</label>'+
+    '<input id="lrQty" type="number" min="1" value="'+(aw||1)+'" style="width:84px;padding:7px 9px;background:var(--bg);border:1px solid var(--border);border-radius:2px;color:var(--text);font-size:15px;text-align:center;" />'+
+    '<button class="btn-primary" onclick="lrConfirm()" style="background:#2d6a2d;border:none;">✓ Record received</button></div>'+
+    '<textarea id="lrComment" rows="2" class="bo-note-input" style="min-height:46px;margin-top:10px;" placeholder="Optional comment — e.g. rushed to pad before the weekly order arrived"></textarea>'+
+    '</div>';
+}
+function lrConfirm(){
+  if(!user || !_lrOracle) return;
+  var oracle=_lrOracle;
+  var qty=parseInt((document.getElementById('lrQty')||{}).value,10)||0;
+  if(qty<1){ toast('Enter a quantity of 1 or more'); return; }
+  var cmt=((document.getElementById('lrComment')||{}).value||'').trim();
+  var p=gp(oracle), recorded=false;
+  for(var i=hist.length-1;i>=0;i--){
+    var h=hist[i];
+    if(!h || (String(h.date||'').indexOf('weekly-reset')<0 && String(h.date||'').indexOf('pre-reset')<0)) continue;
+    var items=h.items||[];
+    for(var j=0;j<items.length;j++){
+      var it=items[j];
+      if(it.oracle===oracle && (it.auditStatus||'')!=='received'){
+        var oq=it.qty||qty;
+        it.receivedQty=(it.receivedQty||0)+qty;
+        it.receivedBy=user.name; it.receivedAt=Date.now();
+        if(cmt){ it.receiptNote=cmt; it.receiptNoteBy=user.name; }
+        if(it.receivedQty>=oq){ it.auditStatus='received'; it.status='received'; }
+        else { it.auditStatus='not_received'; }
+        recorded=true; break;
+      }
+    }
+    if(recorded) break;
+  }
+  if(backorderFlag[oracle] && (order[oracle]||0)>0){
+    var nr=(order[oracle]||0)-qty;
+    if(nr<=0){ _forgetItem(oracle); delete backorderFlag[oracle]; }
+    else order[oracle]=nr;
+  }
+  save();
+  if(typeof writeLog==='function') writeLog('RECEIVE', oracle, p?p[2]:'Oracle #'+oracle, qty+(cmt?(' · "'+cmt+'"'):'')+(recorded?'':' (not on an open order)'), user.name, user.role);
+  closeMod(); _lrOracle=null;
+  renderOrder(); if(typeof renderReceived==='function') renderReceived();
+  if(typeof renderHistory==='function') renderHistory();
+  if(typeof renderAdmin==='function') renderAdmin();
+  badges();
+  toast('Receipt logged');
+}
+
+// ── PARTS RECEIVED AUDIT (stage on the tab, submit as a batch) ──────
+// Users tick a quantity + hit Received to STAGE an item (highlight, in-memory).
+// Submit Audit commits all staged receipts at once, records the audit in
+// History (auditLog), and resets the weekly audit reminder banner.
+var _recvStaged={};
+function recvTick(oracle,d){
+  var i=document.getElementById('recvq-'+oracle); if(!i) return;
+  var max=(order[oracle]||0); var v=(parseInt(i.value,10)||0)+d;
+  if(v<1)v=1; if(max&&v>max)v=max; i.value=v;
+}
+function stageReceived(oracle){
+  if(!user){ toast('Please sign in'); return; }
+  var remaining=order[oracle]||0; if(remaining<=0) return;
+  var i=document.getElementById('recvq-'+oracle); var v=parseInt(i?i.value:remaining,10)||remaining;
+  if(v<1)v=1; if(v>remaining)v=remaining;
+  _recvStaged[oracle]=v;
+  renderReceived();
+}
+function unstageReceived(oracle){ delete _recvStaged[oracle]; renderReceived(); }
+function clearStaged(){ _recvStaged={}; renderReceived(); }
+
+// Record one received qty against the most recent unreceived History item.
+function _recordReceiptToHist(oracle, rq){
+  for(var i=hist.length-1;i>=0;i--){
+    var h=hist[i];
+    if(!h || (String(h.date||'').indexOf('weekly-reset')<0 && String(h.date||'').indexOf('pre-reset')<0)) continue;
+    var items=h.items||[];
+    for(var j=0;j<items.length;j++){
+      var it=items[j];
+      if(it.oracle===oracle && (it.auditStatus||'')!=='received'){
+        var oq=it.qty||rq;
+        it.receivedQty=(it.receivedQty||0)+rq; it.receivedBy=user.name; it.receivedAt=Date.now();
+        if(it.receivedQty>=oq){ it.auditStatus='received'; it.status='received'; }
+        else { it.auditStatus='not_received'; }
+        return true;
+      }
+    }
+  }
+  return false;
+}
+// Close out every weekly snapshot whose audit window has opened: decide any
+// still-pending items as not-received and stamp an auditLog entry (records the
+// audit in History; makes _snapAudited true so the reminder banner clears).
+function _completeDueAudits(){
+  var done=0, now=Date.now();
+  for(var i=0;i<hist.length;i++){
+    var h=hist[i];
+    if(!(h && h.weekEnded && String(h.date||'').indexOf('weekly-reset')>=0 && !_snapAudited(h))) continue;
+    if(now < _auditRemindStart(h.weekEnded)) continue;
+    var items=h.items||[], recv=0, notRecv=0, partial=0;
+    for(var j=0;j<items.length;j++){
+      var it=items[j]; if((it.auditStatus||'')==='') it.auditStatus='not_received';
+      var a=it.auditStatus||'', oq=it.qty||0, rq=it.receivedQty||0;
+      if(a==='received'||(oq>0&&rq>=oq)) recv++;
+      else if(rq>0) partial++;
+      else if(a==='not_received') notRecv++;
+    }
+    if(!Array.isArray(h.auditLog)) h.auditLog=[];
+    h.auditLog.push({by:user.name, role:user.role, at:Date.now(), received:recv, notReceived:notRecv, partial:partial, viaTab:true});
+    done++;
+  }
+  return done;
+}
+function submitAudit(){
+  if(!user){ toast('Please sign in'); return; }
+  // prune anything no longer awaiting
+  Object.keys(_recvStaged).forEach(function(o){ if(!((order[o]||0)>0 && backorderFlag[o])) delete _recvStaged[o]; });
+  var keys=Object.keys(_recvStaged);
+  if(!keys.length){ toast('Mark some items received first'); return; }
+  var n=0, units=0;
+  keys.forEach(function(oracle){
+    var remaining=order[oracle]||0; var rq=_recvStaged[oracle];
+    if(rq>remaining) rq=remaining; if(rq<1) return;
+    _recordReceiptToHist(oracle, rq);
+    var newRemain=remaining-rq;
+    if(newRemain<=0){ _forgetItem(oracle); delete backorderFlag[oracle]; }
+    else order[oracle]=newRemain;
+    n++; units+=rq;
+  });
+  var weeks=_completeDueAudits();
+  _recvStaged={};
+  save();
+  if(typeof writeLog==='function') writeLog('AUDIT','','Parts Received Audit submitted', n+' item'+(n===1?'':'s')+' / '+units+' unit'+(units===1?'':'s')+' received', user.name, user.role);
+  try{ localStorage.setItem(AUDIT_SNOOZE_KEY,'0'); }catch(e){}
+  if(typeof fbReady!=='undefined' && fbReady){ try{ fbDb.ref('auditSnooze').set(0); }catch(e){} }
+  renderOrder(); renderReceived();
   if(typeof renderHistory==='function') renderHistory();
   if(typeof renderAdmin==='function') renderAdmin();
   badges();
   if(typeof renderAuditBanner==='function') renderAuditBanner();
-  toast(newRemain<=0 ? 'Received in full' : (rq+' received · '+newRemain+' still expected'));
+  toast('Audit submitted — '+n+' item'+(n===1?'':'s')+' received'+(weeks?(' · '+weeks+' week'+(weeks===1?'':'s')+' closed'):''));
 }
 // Capture / refresh snapshots for every favorite whose Oracle # is in the
 // active parts list. Two jobs:
@@ -2377,6 +2564,30 @@ function setBackorderNote(oracle, text){
   if(stamp){ stamp.textContent = t ? '· saved' : ''; }
 }
 
+// Admin comment box (the "+" on Parts Received cards). Writes the shared
+// orderNotes note shown on the item.
+var _cmtOracle=null;
+// Click an awaiting card (off its controls) to reveal an inline comment editor.
+function cardComment(ev, oracle){
+  if(!(user && user.role==='Administrative')) return;
+  if(ev && ev.target && ev.target.closest && ev.target.closest('button,input,select,textarea,a')) return;
+  var a=document.getElementById('cmt-area-'+oracle); if(!a) return;
+  var show = a.style.display==='none' || a.style.display==='';
+  a.style.display = show ? 'block' : 'none';
+  if(show){ var ta=document.getElementById('cmt-ta-'+oracle); if(ta){ ta.focus(); } }
+}
+function saveCardComment(oracle){
+  if(!(user && user.role==='Administrative')) return;
+  var ta=document.getElementById('cmt-ta-'+oracle); var t=(ta?ta.value:'').trim();
+  if(t) orderNotes[oracle]={ by:user.name, text:t, at:Date.now() };
+  else  delete orderNotes[oracle];
+  save();
+  var p=gp(oracle);
+  if(typeof writeLog==='function') writeLog('NOTE', oracle, p?p[2]:'Oracle #'+oracle, t?t.slice(0,60):'(cleared)', user.name, user.role);
+  renderOrder(); if(typeof renderReceived==='function') renderReceived();
+  toast(t?'Comment saved':'Comment cleared');
+}
+
 // ── 4 real departments (orderBy index): Mechanical / Electrical / Datavan /
 // Turbine. This is the requesting *department*, distinct from a part's 7-way
 // classification (DN/DI/DC, indexed by p[4]).
@@ -2412,16 +2623,33 @@ function _orderItemCard(oracle, qty, carry){
     const noteHtml = _nt ? `<div class="bo-note"><span class="bo-note-label">Note</span>${e(_nt)}</div>` : '';
     // Not editable on this tab — the only action is "Mark received" (any user,
     // with a confirm). Notes are authored by admins on the Admin tab.
-    return `<div class="bo-card">
+    const isStaged = !!(_recvStaged && (oracle in _recvStaged));
+    const stagedN = isStaged ? _recvStaged[oracle] : qty;
+    const cardCls = 'bo-card'+(isStaged?' bo-staged':'')+(isAdmin?' bo-clickable':'');
+    const cardClick = isAdmin ? ` onclick="cardComment(event,'${oracle}')"` : '';
+    return `<div class="${cardCls}"${cardClick}>
       <div class="bo-row">
         <div class="odot" style="background:${DC[p[4]]}"></div>
         <div class="oinfo">
-          <div class="odesc"><span class="bo-age" title="First requested ${orderedOn}">⏱ ${age}</span> ${badge} ${e(p[2])}</div>
+          <div class="odesc"><span class="bo-age" title="First requested ${orderedOn}">⏱ ${age}</span> ${isAdmin ? statusSegHtml(oracle) : badge} ${e(p[2])}</div>
           <div class="ometa">${DI[p[4]]} ${DN[p[4]]} &nbsp;·&nbsp; Oracle: ${p[0]} &nbsp;·&nbsp; SAGE: ${p[1]} &nbsp;·&nbsp; Qty: ${qty} ${p[3]} &nbsp;·&nbsp; First requested ${orderedOn}</div>
         </div>
-        <button class="pullb" onclick="markCarryReceived('${oracle}')" title="Confirm this part has been received" style="background:#2d6a2d;border:none;white-space:nowrap;">✓ Mark received</button>
+        <div class="recv-cluster">
+          <div class="qwrap"><button class="qb" onclick="recvTick('${oracle}',-1)">−</button><input id="recvq-${oracle}" class="qi" type="number" value="${stagedN}" min="1" max="${qty}" /><button class="qb" onclick="recvTick('${oracle}',1)">+</button></div>
+          ${isStaged
+            ? `<button class="pullb" onclick="unstageReceived('${oracle}')" title="Staged as received — click to undo" style="background:#2d6a2d;border:none;white-space:nowrap;">✓ Received (${stagedN})</button>`
+            : `<button class="pullb" onclick="stageReceived('${oracle}')" title="Mark this quantity received" style="background:transparent;border:1px solid #2d8a4e;color:#5cc98a;white-space:nowrap;">Received</button>`}
+          ${isAdmin ? `<button class="pullb" onclick="untrackCarry('${oracle}')" title="No record / can't verify (admin only)" style="background:transparent;border:1px solid #6f4bb0;color:#b48be0;white-space:nowrap;">🚫 Ignore</button>` : ''}
+        </div>
       </div>
       ${noteHtml}
+      ${isAdmin ? `<div id="cmt-area-${oracle}" style="display:none;margin-top:10px;border-top:1px dashed var(--border);padding-top:10px;">
+        <textarea id="cmt-ta-${oracle}" class="bo-note-input" placeholder="Comment for users (status, ETA…) — your name is added automatically">${e(_noteEditText(orderNotes[oracle]))}</textarea>
+        <div style="display:flex;gap:8px;margin-top:6px;justify-content:flex-end;">
+          <button class="btn-ghost" onclick="event.stopPropagation();document.getElementById('cmt-area-${oracle}').style.display='none';">Cancel</button>
+          <button class="btn-primary" onclick="event.stopPropagation();saveCardComment('${oracle}');">Save</button>
+        </div>
+      </div>` : ''}
     </div>`;
   }
   const pullLabel = st==='submitted' ? '↩ Revert' : '📤 Submit';
@@ -2469,7 +2697,7 @@ function _renderDeptGroups(entries, carry){
 
 function renderOrder(){
   const df=document.getElementById('oDeptF').value;
-  const items=Object.entries(order).filter(([o,q])=>q>0);
+  const items=Object.entries(order).filter(([o,q])=>q>0 && !backorderFlag[o]);
   // Dept totals by requesting department (orderBy / deptOf).
   const c=[0,0,0,0]; items.forEach(([o])=>{ c[deptOf(o)]++; });
   document.getElementById('oStats').innerHTML=
@@ -2495,18 +2723,65 @@ function renderOrder(){
     document.getElementById('oList').innerHTML=_renderDeptGroups(fresh, false);
   }
 
-  // ── Items not received from previous week
-  const nrSec = document.getElementById('notRecvSec');
-  const nrCount = document.getElementById('notRecvCount');
-  const nrList = document.getElementById('notRecvList');
-  if(carried.length){
-    nrSec.style.display='block';
-    nrCount.textContent = '— '+carried.length+' awaiting fulfillment';
-    nrList.innerHTML = _renderDeptGroups(carried, true);
-  } else {
-    nrSec.style.display='none';
-    nrList.innerHTML='';
+}
+
+// ── PARTS RECEIVED (awaiting fulfillment) ───────────────────
+// Parts ordered in a previous week and not yet received. Own tab so late /
+// mixed shipments get reconciled in one place. Receiving is open to everyone;
+// untracking is admin-only.
+function renderReceived(){
+  var dfEl=document.getElementById('rDept'); var df=dfEl?dfEl.value:'';
+  var qEl=document.getElementById('rQ'); var q=((qEl&&qEl.value)||'').trim().toLowerCase();
+  var awaiting=Object.entries(order).filter(function(en){ return en[1]>0 && backorderFlag[en[0]]; });
+  var total=awaiting.length;
+  if(df!=='') awaiting=awaiting.filter(function(en){ return String(deptOf(en[0]))===String(df); });
+  if(q) awaiting=awaiting.filter(function(en){ var p=gp(en[0]); return p && ((''+p[0]).toLowerCase().indexOf(q)>=0 || (''+p[1]).toLowerCase().indexOf(q)>=0 || (''+p[2]).toLowerCase().indexOf(q)>=0); });
+  var cEl=document.getElementById('rCount'); var listEl=document.getElementById('rList');
+  if(!listEl) return;
+  if(!total){
+    if(cEl) cEl.textContent=''; _recvStaged={};
+    listEl.innerHTML='<div class="empty"><div class="ei">📦</div><p>Nothing awaiting receipt.<br>Parts ordered in earlier weeks that have not been received show up here.</p></div>';
+    return;
   }
+  if(cEl) cEl.textContent=awaiting.length+' of '+total+' awaiting'+((df!==''||q)?' (filtered)':'');
+  Object.keys(_recvStaged).forEach(function(o){ if(!((order[o]||0)>0 && backorderFlag[o])) delete _recvStaged[o]; });
+  var nStaged=Object.keys(_recvStaged).length;
+  var bar = nStaged ? '<div style="position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:linear-gradient(90deg,#1d5536,#1f6e45);border:1px solid #2d8a4e;border-radius:4px;padding:9px 12px;margin-bottom:12px;"><div style="font-size:12px;color:#dff5e8;font-weight:700;">'+nStaged+' item'+(nStaged===1?'':'s')+' marked received</div><div style="display:flex;gap:8px;"><button class="btn-ghost" onclick="clearStaged()" style="color:#cfeede;border-color:rgba(255,255,255,.25);">Clear</button><button class="btn-primary" onclick="submitAudit()" style="background:#2d8a4e;border:none;">✓ Submit Audit</button></div></div>' : '';
+  listEl.innerHTML = bar + (awaiting.length ? _renderWeekGroups(awaiting)
+    : '<div class="empty"><div class="ei">🔍</div><p>No awaiting parts match your filters.</p></div>');
+}
+// The reset week an awaiting part belongs to — the most recent weekly snapshot
+// that still lists it un-received.
+function _weekOf(oracle){
+  for(var i=hist.length-1;i>=0;i--){
+    var h=hist[i]; if(!h || String(h.date||'').indexOf('reset')<0) continue;
+    var items=h.items||[];
+    for(var j=0;j<items.length;j++){ if(items[j].oracle===oracle && (items[j].auditStatus||'')!=='received') return h; }
+  }
+  return null;
+}
+// Group awaiting items by reset week (newest first); thin divider between groups,
+// week-end (reset) date as the header.
+function _renderWeekGroups(entries){
+  if(!entries.length) return '';
+  var groups={}, keys=[];
+  entries.forEach(function(en){
+    var h=_weekOf(en[0]);
+    var key = h ? ('w'+(h.weekEnded||h.date)) : 'current';
+    var at  = h ? (h.weekEnded || Date.parse(String(h.date||'').replace(' (weekly-reset)','').replace(' (pre-reset)','')) || 0) : Infinity;
+    var label = h ? ('Week ended '+String(h.date).replace(' (weekly-reset)','').replace(' (pre-reset)','')) : 'Added this week — not yet reset';
+    if(!groups[key]){ groups[key]={label:label, at:at, items:[]}; keys.push(key); }
+    groups[key].items.push(en);
+  });
+  keys.sort(function(a,b){ return groups[b].at - groups[a].at; });
+  var html='';
+  keys.forEach(function(k, gi){
+    var g=groups[k];
+    html += (gi>0 ? '<div style="border-top:1px solid var(--border);margin:20px 0 14px;"></div>' : '') +
+      '<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:0 0 10px 2px;">📅 '+e(g.label)+' <span style="color:var(--muted2);font-weight:600;">· '+g.items.length+' item'+(g.items.length===1?'':'s')+'</span></div>' +
+      g.items.map(function(en){ return _orderItemCard(en[0], en[1], true); }).join('');
+  });
+  return html;
 }
 
 // ── FUZZY BROWSE ─────────────────────────────────────────────
@@ -2853,109 +3128,118 @@ function goP(p){bPg=Math.max(0,p);renderBrowse();window.scrollTo(0,0);}
 
 // ── HISTORY ──────────────────────────────────────────────────
 function renderHistory(){
-  // Reset snapshots, keeping each entry's REAL hist index so the audit can
-  // update the right week.
   var resets=[];
   for(var hi=0; hi<hist.length; hi++){
     var hh=hist[hi];
-    if(hh && hh.date && (String(hh.date).indexOf('pre-reset')>=0 || String(hh.date).indexOf('weekly-reset')>=0)){
-      resets.push({h:hh, idx:hi});
-    }
+    if(hh && hh.date && (String(hh.date).indexOf('pre-reset')>=0 || String(hh.date).indexOf('weekly-reset')>=0)) resets.push({h:hh, idx:hi});
   }
   if(!resets.length){
     document.getElementById('hList').innerHTML='<div class="empty"><div class="ei">📜</div><p>No reset history yet.<br>The full weekly order is snapshotted here every '+schedResetLabel()+'.</p></div>';
     return;
   }
   var _isAdmH = user && user.role==='Administrative';
-  var _pendAudits = resets.filter(function(r){ return !_snapAudited(r.h); }).length;
-  var _topTools = (_isAdmH && _pendAudits>0)
-    ? '<div style="display:flex;justify-content:flex-end;margin-bottom:10px;"><button onclick="ignoreAllAudits()" title="Ignore every week still awaiting an audit (e.g. old pre-feature weeks)" style="background:rgba(155,110,212,0.12);border:1px solid rgba(155,110,212,0.5);color:#b48be0;border-radius:2px;padding:7px 13px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;cursor:pointer;">🚫 Ignore all '+_pendAudits+' awaiting audit</button></div>'
+  var _pend = resets.filter(function(r){ return !_snapAudited(r.h); }).length;
+  var _topTools = (_isAdmH && _pend>0)
+    ? '<div style="display:flex;justify-content:flex-end;margin-bottom:10px;"><button onclick="ignoreAllAudits()" title="Ignore every old week still flagged (e.g. pre-feature weeks)" style="background:rgba(155,110,212,0.12);border:1px solid rgba(155,110,212,0.5);color:#b48be0;border-radius:2px;padding:7px 13px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;cursor:pointer;">🚫 Ignore all '+_pend+' old week'+(_pend===1?'':'s')+'</button></div>'
     : '';
-  document.getElementById('hList').innerHTML=_topTools+resets.slice().reverse().map(function(rec){
-    var h=rec.h, idx=rec.idx, items=h.items||[];
-    // Tally received / not-received / awaiting-audit for this snapshot.
-    var recvN=0, notRecvN=0, pendAudit=0, ignoredN=0;
-    items.forEach(function(it){
-      var a=it.auditStatus||'';
-      if(a==='received') recvN++;
-      else if(a==='not_received') notRecvN++;
-      else if(h.auditIgnored) ignoredN++;
-      else pendAudit++;
-    });
-    var audited = items.length>0 && pendAudit===0;
-    var itemsHtml=items.map(function(it){
-      var p=gp(it.oracle);
-      var itStatus=it.status||'pending';
-      var sBadge;
-      if(itStatus==='submitted')      sBadge='<span class="stbadge stbadge-sub">✓ Submitted</span>';
-      else if(itStatus==='received')  sBadge='<span class="stbadge stbadge-rec">📦 Received</span>';
-      else                            sBadge='<span class="stbadge stbadge-pend">● Pending</span>';
-      var a=it.auditStatus||'';
-      var _rq=it.receivedQty||0, _oq=it.qty||0;
-      var aBadge = a==='received' ? '<span class="stbadge stbadge-rec">✅ Received</span>'
-                 : (_rq>0 && _rq<_oq) ? '<span class="stbadge stbadge-bo">📦 '+_rq+' of '+_oq+' received</span>'
-                 : a==='not_received' ? '<span class="stbadge stbadge-bo">📦 Not received</span>'
-                 : h.auditIgnored ? '<span style="display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:3px;border:1px solid #9b6ed4;color:#b48be0;background:rgba(155,110,212,.10);">🚫 Ignored</span>'
-                 : '<span class="stbadge stbadge-pend">⏳ Awaiting audit</span>';
-      var desc = p ? e(p[2]) : ('Oracle #'+it.oracle+' (not in current catalog)');
-      var meta = p ? ('Qty: '+it.qty+' '+p[3]+' &nbsp;·&nbsp; Oracle: '+p[0]+' &nbsp;·&nbsp; SAGE: '+p[1]) : ('Qty: '+it.qty);
-      var ic = p ? DI[p[4]] : '📦';
-      var deptTag = (typeof it.dept==='number' && DEPT4_N[it.dept]) ? (' &nbsp;·&nbsp; '+DEPT4_I[it.dept]+' '+DEPT4_N[it.dept]) : '';
-      var lateTag = it.lateAdd ? ' <span class="stbadge stbadge-bo">↩ late add</span>' : '';
-      return '<div class="hitem"><div class="hidesc">'+sBadge+' '+aBadge+lateTag+' '+ic+' '+desc+'</div><div class="himeta">'+meta+deptTag+'</div></div>';
-    }).join('');
-    var label = String(h.date).indexOf('weekly-reset')>=0 ? 'Week ended' : 'Reset';
-    var tp=[];
-    if(recvN)     tp.push('<strong style="color:#56b8a3">'+recvN+'</strong> received');
-    if(notRecvN)  tp.push('<strong style="color:#d4890a">'+notRecvN+'</strong> not received');
-    if(pendAudit) tp.push('<strong style="color:var(--mech)">'+pendAudit+'</strong> awaiting audit');
-    if(ignoredN)  tp.push('<strong style="color:#b48be0">'+ignoredN+'</strong> ignored');
-    var tally = tp.length ? tp.join(' · ') : '—';
-    var la = (h.auditLog && h.auditLog.length) ? h.auditLog[h.auditLog.length-1] : null;
-    var auditLine = h.auditIgnored
-      ? '<div style="font-size:10px;color:#9b6ed4;margin-top:3px;">🚫 Audit ignored by <strong>'+e(h.auditIgnoredBy||'—')+'</strong> · '+new Date(h.auditIgnoredAt||Date.now()).toLocaleString()+'</div>'
-      : (la
-        ? '<div style="font-size:10px;color:var(--muted2);margin-top:3px;">📋 Last audit by <strong>'+e(la.by||'—')+'</strong> ('+e(la.role||'')+') · '+new Date(la.at).toLocaleString()+' · '+la.received+' received'+(la.partial?(', '+la.partial+' partial'):'')+', '+la.notReceived+' not</div>'
-        : '<div style="font-size:10px;color:#d4890a;margin-top:3px;">📋 No Parts Received Audit completed yet</div>');
-    var auditBtn = '<button class="btn-primary" onclick="event.stopPropagation();openAudit('+idx+')" style="background:'+(audited?'#2d6a2d':'#c9842a')+';border:none;font-size:11px;padding:7px 12px;white-space:nowrap;">📋 '+(audited?'Review audit':'Parts Received Audit')+'</button>';
-    // Admin: per-week Ignore / Un-ignore exposed inside the expanded dropdown.
-    var _isAdm = user && user.role==='Administrative';
-    var adminAuditTools='';
-    if(_isAdm){
-      if(h.auditIgnored){
-        adminAuditTools='<div style="display:flex;justify-content:flex-end;padding:8px 12px;border-bottom:1px solid var(--border);background:rgba(155,110,212,0.06);"><button onclick="unignoreAuditWeek('+idx+')" style="background:transparent;border:1px solid rgba(155,110,212,0.5);color:#b48be0;border-radius:2px;padding:5px 11px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;cursor:pointer;">↩ Un-ignore (re-enable audit)</button></div>';
-      } else if(!audited){
-        adminAuditTools='<div style="display:flex;justify-content:flex-end;padding:8px 12px;border-bottom:1px solid var(--border);background:rgba(155,110,212,0.06);"><button onclick="ignoreAuditWeek('+idx+')" title="Ignore this week&#39;s audit — clears it from the awaiting list" style="background:transparent;border:1px solid rgba(155,110,212,0.5);color:#b48be0;border-radius:2px;padding:5px 11px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;cursor:pointer;">🚫 Ignore Audit</button></div>';
-      }
-    }
-    return '<div class="hcard" id="hcard-'+idx+'">'+
-      '<div class="htop" onclick="toggleHist('+idx+')" style="cursor:pointer;user-select:none;">'+
-        '<div style="flex:1;min-width:0;">'+
-          '<div class="hdate">📅 '+label+' — '+String(h.date).replace(' (weekly-reset)','').replace(' (pre-reset)','')+'</div>'+
-          '<div class="hby">'+(h.submittedBy||'—')+' &nbsp;·&nbsp; '+tally+' &nbsp;·&nbsp; '+items.length+' total</div>'+
-          auditLine+
-        '</div>'+
-        '<div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">'+auditBtn+'<span class="hchev" style="font-size:14px;color:var(--teal);transition:transform .2s;">▼</span></div>'+
-      '</div>'+
-      '<div class="hitems" style="display:none;">'+adminAuditTools+itemsHtml+'</div>'+
-    '</div>';
+  // Chronological stream: a Weekly Order card per reset + a Receipt Audit card
+  // per audit submission, interleaved newest-first.
+  var events=[];
+  resets.forEach(function(rec){
+    var h=rec.h;
+    var oAt = h.weekEnded || Date.parse(String(h.date||'').replace(' (weekly-reset)','').replace(' (pre-reset)','')) || 0;
+    events.push({t:'order', at:oAt, h:h, idx:rec.idx});
+    (h.auditLog||[]).forEach(function(a){ events.push({t:'audit', at:(a.at||oAt), a:a, h:h}); });
+  });
+  events.sort(function(a,b){ return b.at - a.at; });
+  document.getElementById('hList').innerHTML = _topTools + events.map(function(ev, i){
+    return ev.t==='order' ? _histOrderCard(ev.h, ev.idx) : _histAuditCard(ev.a, ev.h, i);
   }).join('');
+}
+// Weekly Order card — what was requested that week (items + current status).
+function _histOrderCard(h, idx){
+  var items=h.items||[];
+  var subN=0, pendN=0, ignN=0;
+  items.forEach(function(it){
+    var a=it.auditStatus||'';
+    if(a==='untracked'){ ignN++; return; }
+    if((it.status||'pending')==='pending' && a===''){ pendN++; }
+    else { subN++; }
+  });
+  var itemsHtml=items.map(function(it){
+    var p=gp(it.oracle);
+    var itStatus=it.status||'pending';
+    var sBadge = itStatus==='submitted' ? '<span class="stbadge stbadge-sub">✓ Submitted</span>'
+               : itStatus==='received'  ? '<span class="stbadge stbadge-rec">📦 Received</span>'
+               : '<span class="stbadge stbadge-pend">● Pending</span>';
+    var a=it.auditStatus||'';
+    var _rq=it.receivedQty||0, _oq=it.qty||0;
+    var aBadge = a==='received' ? '<span class="stbadge stbadge-rec">📦 Received</span>'
+               : (_rq>0 && _rq<_oq) ? '<span class="stbadge stbadge-bo">📦 '+_rq+' of '+_oq+' received</span>'
+               : a==='untracked' ? '<span style="display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:3px;border:1px solid #9b6ed4;color:#b48be0;background:rgba(155,110,212,.10);">🚫 Ignored</span>'
+               : a==='not_received' ? '<span class="stbadge stbadge-no">❌ Not received</span>'
+               : h.auditIgnored ? '<span style="display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:3px;border:1px solid #9b6ed4;color:#b48be0;background:rgba(155,110,212,.10);">🚫 Ignored</span>'
+               : '<span class="stbadge stbadge-pend">⏳ Awaiting</span>';
+    var desc = p ? e(p[2]) : ('Oracle #'+it.oracle+' (not in current catalog)');
+    var meta = p ? ('Qty: '+it.qty+' '+p[3]+' &nbsp;·&nbsp; Oracle: '+p[0]+' &nbsp;·&nbsp; SAGE: '+p[1]) : ('Qty: '+it.qty);
+    var ic = p ? DI[p[4]] : '📦';
+    var deptTag = (typeof it.dept==='number' && DEPT4_N[it.dept]) ? (' &nbsp;·&nbsp; '+DEPT4_I[it.dept]+' '+DEPT4_N[it.dept]) : '';
+    var lateTag = it.lateAdd ? ' <span class="stbadge stbadge-bo">↩ late add</span>' : '';
+    var badgeHtml = (a==='received') ? '<span class="stbadge stbadge-rec">📦 Received</span>' : (sBadge+' '+aBadge);
+    return '<div class="hitem"><div class="hidesc">'+badgeHtml+lateTag+' '+ic+' '+desc+'</div><div class="himeta">'+meta+deptTag+'</div></div>';
+  }).join('');
+  var tp=[];
+  if(subN)  tp.push('<strong style="color:#3f9bd6">'+subN+'</strong> submitted');
+  if(pendN) tp.push('<strong style="color:#ecc94b">'+pendN+'</strong> pending');
+  if(ignN)  tp.push('<strong style="color:#b48be0">'+ignN+'</strong> ignored');
+  var tally = tp.length ? tp.join(' · ') : '—';
+  var ignoredLine = h.auditIgnored ? '<div style="font-size:10px;color:#9b6ed4;margin-top:3px;">🚫 Audit ignored by <strong>'+e(h.auditIgnoredBy||'—')+'</strong> · '+new Date(h.auditIgnoredAt||Date.now()).toLocaleString()+'</div>' : '';
+  var dateLabel=String(h.date).replace(' (weekly-reset)','').replace(' (pre-reset)','');
+  return '<div class="hcard" id="hcard-'+idx+'">'+
+    '<div class="htop" onclick="toggleHist('+idx+')" style="cursor:pointer;user-select:none;">'+
+      '<div style="flex:1;min-width:0;">'+
+        '<div class="hdate">📦 Weekly Order — '+dateLabel+'</div>'+
+        '<div class="hby">'+(h.submittedBy||'—')+' &nbsp;·&nbsp; '+tally+' &nbsp;·&nbsp; '+items.length+' total</div>'+
+        ignoredLine+
+      '</div>'+
+      '<span class="hchev" style="font-size:14px;color:var(--teal);transition:transform .2s;flex-shrink:0;">▼</span>'+
+    '</div>'+
+    '<div class="hitems" style="display:none;">'+itemsHtml+'</div>'+
+  '</div>';
+}
+// Receipt Audit card — one per Submit Audit; what came in, who, when.
+function _histAuditCard(a, h, id){
+  var weekLabel=String(h.date||'').replace(' (weekly-reset)','').replace(' (pre-reset)','');
+  var _subN=0, _recvN=0;
+  (h.items||[]).forEach(function(it){
+    var au=it.auditStatus||''; if(au==='untracked') return;
+    if((it.status||'pending')==='pending' && au==='') return;
+    _subN++; if(au==='received') _recvN++;
+  });
+  var _awaitN=_subN-_recvN; if(_awaitN<0) _awaitN=0;
+  var summary='<strong style="color:#56b8a3">'+_recvN+'</strong> received · <strong style="color:#d4890a">'+_awaitN+'</strong> awaiting · of '+_subN+' submitted';
+  var receipts=[];
+  (h.items||[]).forEach(function(it){
+    if((it.receivedQty||0)>0){
+      var rp=gp(it.oracle); var rnm=rp?e(rp[2]):('Oracle #'+it.oracle);
+      receipts.push('<div class="hitem"><div class="hidesc">📦 <strong>'+it.receivedQty+'</strong> of '+(it.qty||'?')+' received — '+rnm+'</div><div class="himeta">'+(it.receivedBy?('by '+e(it.receivedBy)):'—')+(it.receivedAt?(' · '+new Date(it.receivedAt).toLocaleString()):'')+(it.receiptNote?(' &nbsp;·&nbsp; 💬 '+e(it.receiptNote)):'')+'</div></div>');
+    }
+  });
+  var body = receipts.length ? receipts.join('') : '<div style="padding:10px 12px;font-size:11px;color:var(--muted2);">No item-level receipts recorded for this week.</div>';
+  var aid='acard-'+id;
+  return '<div class="hcard" id="'+aid+'" style="border-left:3px solid #2d8a4e;">'+
+    '<div class="htop" onclick="toggleHcard(\''+aid+'\')" style="cursor:pointer;user-select:none;">'+
+      '<div style="flex:1;min-width:0;">'+
+        '<div class="hdate">✅ Receipt Audit — '+new Date(a.at||Date.now()).toLocaleString()+'</div>'+
+        '<div class="hby">by <strong>'+e(a.by||'—')+'</strong>'+(a.role?(' ('+e(a.role)+')'):'')+' &nbsp;·&nbsp; '+summary+' &nbsp;·&nbsp; from '+weekLabel+'</div>'+
+      '</div>'+
+      '<span class="hchev" style="font-size:14px;color:var(--teal);transition:transform .2s;flex-shrink:0;">▼</span>'+
+    '</div>'+
+    '<div class="hitems" style="display:none;">'+body+'</div>'+
+  '</div>';
 }
 // Admin: ignore one week's audit directly from History (per-week, exposed in
 // the expanded dropdown) — separate from the live reminder banner.
-function ignoreAuditWeek(idx){
-  if(idx>=0 && idx<hist.length) _ignoreSnapshot(hist[idx]);
-}
-function unignoreAuditWeek(idx){
-  if(!user||user.role!=='Administrative'){ toast('Admin only'); return; }
-  var h=hist[idx]; if(!h) return;
-  delete h.auditIgnored; delete h.auditIgnoredBy; delete h.auditIgnoredAt;
-  save();
-  if(typeof writeLog==='function') writeLog('IGNORE','','Audit re-enabled — '+String(h.date||'').replace(' (weekly-reset)','').replace(' (pre-reset)',''),'',user.name,user.role);
-  renderHistory();
-  if(typeof renderAuditBanner==='function') renderAuditBanner();
-  toast('Audit re-enabled');
-}
 // Admin: ignore EVERY week still awaiting an audit (clears a backlog of old
 // pre-feature weeks at once).
 function ignoreAllAudits(){
@@ -2987,6 +3271,14 @@ function toggleHist(i){
   items.style.display=open?'':'none';
   if(chev)chev.style.transform=open?'rotate(180deg)':'';
 }
+function toggleHcard(elId){
+  var card=document.getElementById(elId); if(!card) return;
+  var items=card.querySelector('.hitems'); if(!items) return;
+  var chev=card.querySelector('.hchev');
+  var open=items.style.display==='none' || items.style.display==='';
+  items.style.display=open?'block':'none';
+  if(chev) chev.style.transform=open?'rotate(180deg)':'';
+}
 
 // ── PARTS RECEIVED AUDIT ────────────────────────────────────
 // Any user can run an audit on a week's History snapshot: check off what
@@ -2995,13 +3287,6 @@ function toggleHist(i){
 // week" so it isn't ordered again. The pass is stamped with the auditor's
 // name + time on that week, and can be re-run as parts trickle in.
 var _auditIdx=-1;
-function openAudit(idx){
-  if(!user){ toast('Please sign in'); return; }
-  if(idx<0 || idx>=hist.length || !hist[idx]) return;
-  _auditIdx=idx;
-  renderAuditModal();
-  document.getElementById('mAudit').classList.add('show');
-}
 function renderAuditModal(){
   var h=hist[_auditIdx]; if(!h) return;
   var items=h.items||[];
@@ -3169,9 +3454,10 @@ function openPartHistory(oracle){
     rows.forEach(function(r){ totQ+=parseInt(r.qty)||0; totR+=(r.auditStatus==='received')?(parseInt(r.qty)||0):(parseInt(r.receivedQty)||0); });
     body.innerHTML='<div style="font-size:12px;color:var(--muted);padding:10px 12px;border-bottom:1px solid var(--border);">Oracle '+(p?p[0]:oracle)+(p?(' &nbsp;·&nbsp; SAGE '+p[1]):'')+'<br><strong style="color:var(--text);">'+rows.length+'</strong> order'+(rows.length===1?'':'s')+' on record &nbsp;·&nbsp; <strong style="color:var(--text);">'+totQ+'</strong> total ordered &nbsp;·&nbsp; <strong style="color:#56b8a3;">'+totR+'</strong> received</div>'+
       rows.map(function(r){
-        var ab = r.auditStatus==='received'?'<span class="stbadge stbadge-rec">✅ Received</span>'
+        var ab = r.auditStatus==='received'?'<span class="stbadge stbadge-rec">📦 Received</span>'
                : (r.receivedQty>0 && r.receivedQty<r.qty)?'<span class="stbadge stbadge-bo">📦 '+r.receivedQty+' of '+r.qty+' received</span>'
-               : r.auditStatus==='not_received'?'<span class="stbadge stbadge-bo">📦 Not received</span>'
+               : r.auditStatus==='untracked'?'<span style="display:inline-block;font-size:11px;font-weight:700;padding:1px 8px;border-radius:3px;border:1px solid #9b6ed4;color:#b48be0;background:rgba(155,110,212,.10);">🚫 Ignored</span>'
+               : r.auditStatus==='not_received'?'<span class="stbadge stbadge-no">❌ Not received</span>'
                : r.ignored?'<span style="display:inline-block;font-size:11px;font-weight:700;padding:1px 8px;border-radius:3px;border:1px solid #9b6ed4;color:#b48be0;background:rgba(155,110,212,.10);">🚫 Audit ignored</span>'
                : '<span class="stbadge stbadge-pend">⏳ Awaiting audit</span>';
         return '<div style="padding:10px 12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px;">'+
@@ -3209,52 +3495,6 @@ function closeWalkthrough(){
   document.getElementById('mWalkthrough').classList.remove('show');
 }
 // Re-sync the Current Weekly Order tab with this week's audit results.
-function _reconcileAuditToOrder(weekItems){
-  weekItems.forEach(function(it){
-    var o=it.oracle;
-    if(it.auditStatus==='received'){
-      if(backorderFlag[o]){ _forgetItem(o); delete backorderFlag[o]; }   // fully resolved
-      return;
-    }
-    // not_received (incl. partial): the carryover holds the REMAINING qty.
-    var oq=it.qty||0, rq=it.receivedQty||0, remain=oq-rq;
-    if(remain<=0){ if(backorderFlag[o]){ _forgetItem(o); delete backorderFlag[o]; } return; }
-    order[o]=remain;
-    orderBy[o]=(typeof it.dept==='number')?it.dept:deptOf(o);
-    if(!(o in orderStatus)) orderStatus[o]=it.status||'submitted';
-    if(!orderAdded[o]) orderAdded[o]=it.addedAt||Date.now();
-    backorderFlag[o]=true;   // shows under "not received from previous week"
-  });
-}
-function completeAudit(){
-  if(!user){ toast('Please sign in'); return; }
-  var h=hist[_auditIdx]; if(!h) return;
-  var items=h.items||[];
-  var inputs=Array.prototype.slice.call(document.querySelectorAll('#auditList .audit-qi'));
-  var recv=0, notRecv=0, partial=0;
-  inputs.forEach(function(inp){
-    var ii=parseInt(inp.dataset.ai,10);
-    if(isNaN(ii)||!items[ii]) return;
-    var it=items[ii], oq=it.qty||0;
-    var rq=parseInt(inp.value,10)||0; if(rq<0)rq=0; if(rq>oq)rq=oq;
-    it.receivedQty=rq;
-    if(oq>0 && rq>=oq){ it.auditStatus='received'; it.status='received'; it.receivedBy=user.name; it.receivedAt=Date.now(); recv++; }
-    else if(rq>0){ it.auditStatus='not_received'; it.receivedBy=user.name; it.receivedAt=Date.now(); partial++; }
-    else { it.auditStatus='not_received'; notRecv++; }
-  });
-  if(!Array.isArray(h.auditLog)) h.auditLog=[];
-  h.auditLog.push({ by:user.name, role:user.role, at:Date.now(), received:recv, notReceived:notRecv, partial:partial });
-  if(h.auditIgnored){ delete h.auditIgnored; delete h.auditIgnoredBy; delete h.auditIgnoredAt; } // a real audit supersedes an ignore
-  _reconcileAuditToOrder(items);
-  save();
-  var weekLabel=String(h.date).replace(' (weekly-reset)','').replace(' (pre-reset)','');
-  writeLog('AUDIT', '', 'Parts Received Audit — '+weekLabel, recv+' full / '+partial+' partial / '+notRecv+' none', user.name, user.role);
-  closeMod();
-  renderHistory(); renderAll(); if(typeof renderAdmin==='function') renderAdmin(); badges();
-  if(typeof renderAuditBanner==='function') renderAuditBanner();
-  toast('Audit saved — '+recv+' received'+(partial?(', '+partial+' partial'):'')+', '+notRecv+' not received');
-}
-
 // ── ADMIN ──────────────────────────────────────────────────
 function renderAdmin(){
   // Refresh catalog status so the Export/Restore buttons render correctly
@@ -3292,7 +3532,7 @@ function renderAdmin(){
   }
   // Split the admin worklist into this week's fresh requests vs carried-over
   // "not received" items — each gets its own section and controls.
-  var freshIt=items.filter(function(it){return !backorderFlag[it[0]];});
+  var freshIt=items.filter(function(it){return !backorderFlag[it[0]] && stat(it[0])==='pending';});
   var carryIt=items.filter(function(it){return !!backorderFlag[it[0]];});
   var pillCss='background:var(--nav);border:1px solid var(--border);border-radius:10px;padding:1px 8px;font-size:10px;color:var(--muted2);margin-left:6px;';
   var kHtml='';
@@ -3300,10 +3540,13 @@ function renderAdmin(){
   kHtml += freshIt.length
     ? freshIt.map(function(it){return _adminRow(it[0],it[1],false);}).join('')
     : '<div style="font-size:12px;color:var(--muted);padding:4px 0 6px;">No new requests this week.</div>';
-  if(carryIt.length){
-    kHtml += '<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:#d4890a;margin:20px 0 4px;border-top:1px solid var(--border);padding-top:16px;">📦 Previous weekly order — items not received <span style="'+pillCss+'">'+carryIt.length+'</span></div>';
-    kHtml += '<div style="font-size:11px;color:var(--muted2);margin-bottom:10px;line-height:1.5;">Write a note for users — your name is added automatically (shown as "'+e(user&&user.name?user.name:'Admin')+' - your comment") and stays on the item until it\'s received.</div>';
-    kHtml += carryIt.map(function(it){return _adminRow(it[0],it[1],true);}).join('');
+  // Missed submissions: items from previous weeks (awaiting) still pending —
+  // never marked Submitted. They drop off once the admin submits them.
+  var carryPending=items.filter(function(it){return !!backorderFlag[it[0]] && stat(it[0])==='pending';});
+  if(carryPending.length){
+    kHtml += '<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:#d4890a;margin:22px 0 4px;border-top:1px solid var(--border);padding-top:16px;">⚠️ Missed submissions — still pending from previous weeks <span style="'+pillCss+'">'+carryPending.length+'</span></div>';
+    kHtml += '<div style="font-size:11px;color:var(--muted2);margin-bottom:10px;line-height:1.5;">Ordered in a past week but never marked Submitted. Order them in Oracle, then mark Submitted here — they drop off once submitted.</div>';
+    kHtml += carryPending.map(function(it){return _missedRow(it[0],it[1]);}).join('');
   }
   document.getElementById('kList').innerHTML=kHtml;
 }
@@ -3321,7 +3564,7 @@ function _adminRow(oracle, qty, carry){
     var noteEdit=_noteEditText(orderNotes[oracle]);
     return '<div class="krow" style="align-items:flex-start;">'+
       '<div class="kinfo">'+
-        '<div class="kdesc"><span class="stbadge stbadge-bo">📦 Not received</span> '+DI[p[4]]+' '+e(p[2].slice(0,90))+(p[2].length>90?'…':'')+'</div>'+
+        '<div class="kdesc"><span class="stbadge stbadge-no">❌ Not received</span> '+DI[p[4]]+' '+e(p[2].slice(0,90))+(p[2].length>90?'…':'')+'</div>'+
         '<div class="kmeta">'+statusBadgeOf(st)+' Oracle: '+p[0]+' &nbsp;·&nbsp; SAGE: '+p[1]+' &nbsp;·&nbsp; Qty: '+qty+' '+p[3]+'</div>'+
         '<div class="bo-note" style="margin-top:8px;"><div><span class="bo-note-label">Note for users</span> <span id="bo-note-stamp-'+oracle+'" style="font-size:10px;color:var(--muted2);"></span></div>'+
           '<textarea class="bo-note-input" placeholder="Comment (status, ETA…) — your name is added automatically" onchange="setBackorderNote(\''+oracle+'\', this.value)" onblur="setBackorderNote(\''+oracle+'\', this.value)">'+e(noteEdit)+'</textarea></div>'+
@@ -3336,7 +3579,23 @@ function _adminRow(oracle, qty, carry){
   return '<div class="krow">'+
     '<div class="kinfo"><div class="kdesc">'+DI[p[4]]+' '+e(p[2].slice(0,90))+(p[2].length>90?'…':'')+'</div>'+
       '<div class="kmeta">'+statusBadgeOf(st)+' Oracle: '+p[0]+' &nbsp;·&nbsp; SAGE: '+p[1]+' &nbsp;·&nbsp; Qty: '+qty+' '+p[3]+'</div></div>'+
-    '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;">'+actCluster+moveBtn+'</div>'+
+    '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;">'+actCluster+'</div>'+
+  '</div>';
+}
+// Missed-submission row: pending item carried from a previous week. Admin can
+// Submit it (ordered in Oracle) or Ignore it — either drops it off this list.
+function _missedRow(oracle, qty){
+  var p=gp(oracle); if(!p) return '';
+  var st=stat(oracle);
+  var pullLabel=st==='submitted'?'↩ Revert':'📤 Submit';
+  var pullTitle=st==='submitted'?'Click to revert to Pending':'Mark Submitted (ordered in Oracle)';
+  return '<div class="krow">'+
+    '<div class="kinfo"><div class="kdesc">'+DI[p[4]]+' '+e(p[2].slice(0,90))+(p[2].length>90?'…':'')+'</div>'+
+      '<div class="kmeta">'+statusBadgeOf(st)+' Oracle: '+p[0]+' &nbsp;·&nbsp; SAGE: '+p[1]+' &nbsp;·&nbsp; Qty: '+qty+' '+p[3]+'</div></div>'+
+    '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;">'+
+      '<button class="pullb'+(st==='submitted'?' pullb-done':'')+'" onclick="pullPart(\''+oracle+'\')" title="'+pullTitle+'">'+pullLabel+'</button>'+
+      '<button class="pullb" onclick="untrackCarry(\''+oracle+'\')" title="Ignore — no record / not tracking" style="background:transparent;border:1px solid #6f4bb0;color:#b48be0;white-space:nowrap;">🚫 Ignore</button>'+
+    '</div>'+
   '</div>';
 }
 
@@ -3367,8 +3626,6 @@ function setItemStatus(oracle, newStatus){
   toast(toastMap[newStatus]);
 }
 function pullPart(oracle){ setItemStatus(oracle, 'submitted'); }
-function receivePart(oracle){ setItemStatus(oracle, 'received'); }
-
 // Render the single-button status dropdown for an oracle. Admin only —
 // non-admin views show just the status badge. Uses a native <select> styled
 // as a button, so mobile users get their OS picker and keyboard users get
@@ -3379,7 +3636,6 @@ function statusSegHtml(oracle){
   return '<select class="'+cls+'" aria-label="Item status" title="Change status" onchange="setItemStatus(\''+oracle+'\', this.value)">'+
     '<option value="pending"   '+(s==='pending'  ?'selected':'')+'>● Pending</option>'+
     '<option value="submitted" '+(s==='submitted'?'selected':'')+'>✓ Submitted</option>'+
-    '<option value="received"  '+(s==='received' ?'selected':'')+'>📦 Received</option>'+
   '</select>';
 }
 // pullAllPending removed — admin works through items one at a time so they
@@ -3548,10 +3804,13 @@ function maybeAutoReset(){
       auditLog:[]
     });
   }
-  // Clear the snapshotted fresh items out of the active order. Nothing is
-  // auto-promoted to "not received" here — that only happens via the Friday
-  // Parts Received Audit, which re-injects any misses as carryovers.
-  freshItems.forEach(function(it){ _forgetItem(it.oracle); });
+  // The week's items move into "awaiting receipt" (the Parts Received tab),
+  // staying in the active order flagged as carryover so they group under this
+  // reset's week. Items already received are done and clear out.
+  freshItems.forEach(function(it){
+    if((it.status==='received')||(it.auditStatus==='received')){ _forgetItem(it.oracle); }
+    else { backorderFlag[it.oracle]=true; }
+  });
   // Stamp lastReset with the *cutoff* — "we've processed up to this Mon-8am boundary".
   lastReset=cutoff;
   save();
@@ -3560,7 +3819,7 @@ function maybeAutoReset(){
   if(typeof badges==='function') badges();
   if(typeof renderAuditBanner==='function') renderAuditBanner();
   if(freshItems.length){
-    toast('Weekly reset: '+freshItems.length+' item'+(freshItems.length===1?'':'s')+' moved to History — run the Parts Received Audit '+DAYS[schedule.auditDay]);
+    toast('Weekly reset: '+freshItems.length+' item'+(freshItems.length===1?'':'s')+' moved to the Parts Received tab — mark receipts and Submit Audit as they arrive');
   }
   return true;
 }
@@ -3724,13 +3983,13 @@ function _bannerExpired(){
 const BANNER_MSGS = {
   admin: [
     `<span class="upd-em">🆕 CURRENT WEEKLY ORDER</span> — "My Order" is now <strong>Current Weekly Order</strong>, split into <strong>Items requested this week</strong> and <strong>Items not received from previous week</strong>, grouped by department.`,
-    `<span class="upd-em">📋 PARTS RECEIVED AUDIT</span> — every week in History now has an audit. When the order arrives, anyone checks off how many of each part came in. Misses surface as "not received" so they aren't ordered again.`,
-    `<span class="upd-em">📦 "BACKORDER" IS GONE</span> — items now simply show as <strong>not received from previous week</strong>, set by the audit (not automatically at reset).`,
-    `<span class="upd-em">🔔 AUDIT REMINDER</span> — a banner nags in the days before the audit is due until it's done. Admins can snooze or ignore it for special circumstances, and set the schedule under Admin → Weekly Schedule.`,
+    `<span class="upd-em">📋 PARTS RECEIVED AUDIT</span> — each week's order lands on the <strong>Parts Received</strong> tab. As parts arrive, anyone marks how many came in and hits Submit Audit; misses stay as awaiting fulfillment so they aren't ordered again.`,
+    `<span class="upd-em">📦 "BACKORDER" IS GONE</span> — unreceived items now show on the <strong>Parts Received</strong> tab as <strong>awaiting fulfillment</strong> until they're received.`,
+    `<span class="upd-em">🔔 AUDIT REMINDER</span> — a banner nags until the audit's done. Admins can reset it for everyone or dismiss it for themselves, and set the schedule under Admin → Weekly Schedule.`,
   ],
   user: [
     `<span class="upd-em">🆕 CURRENT WEEKLY ORDER</span> — your order tab is renamed and split into <strong>requested this week</strong> and <strong>not received from previous week</strong>, by department.`,
-    `<span class="upd-em">📋 PARTS RECEIVED AUDIT</span> — when parts arrive, <strong>anyone</strong> can open History and check off how many were received. Please help keep it current!`,
+    `<span class="upd-em">📋 PARTS RECEIVED AUDIT</span> — when parts arrive, <strong>anyone</strong> can mark them on the <strong>Parts Received</strong> tab and Submit Audit. Please help keep it current!`,
     `<span class="upd-em">⚠️ NO DOUBLE-ORDERS</span> — if you request a part that's still awaiting fulfillment from a previous week, the app warns you.`,
   ],
 };
@@ -3911,6 +4170,7 @@ function dismissUpdateBanner(){
 // Saturday — amber → red → pulsing red — until it's completed. Admins can
 // snooze it for special circumstances; the snooze syncs to everyone.
 var AUDIT_SNOOZE_KEY='f6_audit_snooze';
+var AUDIT_DISMISS_KEY='f6_audit_dismissed';
 function _auditSnoozeUntil(){
   var v=0; try{ v=parseInt(localStorage.getItem(AUDIT_SNOOZE_KEY)||'0',10)||0; }catch(e){}
   return v;
@@ -3925,15 +4185,15 @@ function _auditDueTime(weekEndedMs){            // configured audit day/time, af
   if(due.getTime() <= weekEndedMs) due=new Date(due.getTime()+7*86400000);  // keep due after the reset
   return due.getTime();
 }
-function _auditRemindStart(weekEndedMs){        // reminder opens the day before the audit, at midnight
+function _auditRemindStart(weekEndedMs){        // gentle reminder opens 2 days before the audit, at midnight
   var due=new Date(_auditDueTime(weekEndedMs));
-  return new Date(due.getFullYear(),due.getMonth(),due.getDate()-1,0,0,0,0).getTime();
+  return new Date(due.getFullYear(),due.getMonth(),due.getDate()-2,0,0,0,0).getTime();
 }
 function _snapAudited(h){
   if(h && h.auditIgnored) return true;   // admin chose to skip this week's audit
   var items=(h&&h.items)||[];
   if(!items.length) return true;
-  for(var i=0;i<items.length;i++){ var a=items[i].auditStatus||''; if(a!=='received'&&a!=='not_received') return false; }
+  for(var i=0;i<items.length;i++){ var a=items[i].auditStatus||''; if(a!=='received'&&a!=='not_received'&&a!=='untracked') return false; }
   return true;
 }
 // The unaudited weekly snapshot to nag about right now: the OLDEST one whose
@@ -3976,56 +4236,47 @@ function renderAuditBanner(){
     else { bg='linear-gradient(90deg,#8a1410,#b3160f)'; border='#ff5a47'; pulse='animation:auditPulse 1.1s ease-in-out infinite;'; }
     var why='Confirming what came in (and what didn\'t) keeps all four departments in sync and stops the same parts being ordered twice.';
     var msg;
-    if(s.phase==='remind') msg='📦 <strong>Parts Received Audit coming up.</strong> When this week\'s order arrives, open History and check off what came in. '+why;
-    else if(s.tier===1)    msg='⚠️ <strong>Parts Received Audit is due.</strong> Confirm what was received so nothing outstanding gets re-ordered. '+why;
-    else if(s.tier===2)    msg='⛔ <strong>OVERDUE — Parts Received Audit still not done.</strong> It needs completing today. '+why;
-    else                   msg='🚨 <strong>Parts Received Audit is '+Math.round(s.hrsOverdue)+' hours overdue and must be completed.</strong> '+why;
-    var runBtn=(idx>=0)?'<button onclick="openAudit('+idx+')" style="background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.4);border-radius:3px;padding:5px 11px;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;">📋 Run audit</button>':'';
-    var ignoreBtn = isAdmin ? '<button onclick="adminIgnoreAudit()" title="Admin: ignore this audit and reset the reminder for the next order" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:3px;padding:5px 9px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;">🚫 Ignore</button>' : '';
-    var snoozeBtn = isAdmin ? '<button onclick="adminSnoozeAudit()" title="Admin: snooze 12h for special circumstances" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:3px;padding:5px 9px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;">😴 Snooze</button>' : '';
-    var right;
-    if(s.phase==='remind') right=runBtn+ignoreBtn+'<button onclick="dismissAuditBanner()" title="Dismiss" style="background:transparent;color:#fff;border:none;font-size:15px;cursor:pointer;opacity:.85;">✕</button>';
-    else right=runBtn+snoozeBtn+ignoreBtn;
+    if(s.phase==='remind') msg='📦 <strong>Parts Received Audit coming up.</strong> When this week\'s order arrives, open the <strong>Parts Received</strong> tab, mark what came in, and hit <strong>Submit Audit</strong>. '+why;
+    else if(s.tier===1)    msg='⚠️ <strong>Parts Received Audit is due.</strong> On the <strong>Parts Received</strong> tab, mark what was received and <strong>Submit Audit</strong> so nothing outstanding gets re-ordered. '+why;
+    else if(s.tier===2)    msg='⛔ <strong>OVERDUE — Parts Received Audit still not done.</strong> Mark receipts on the <strong>Parts Received</strong> tab and Submit Audit today. '+why;
+    else                   msg='🚨 <strong>Parts Received Audit is '+Math.round(s.hrsOverdue)+' hours overdue.</strong> Submit it from the <strong>Parts Received</strong> tab. '+why;
+    // Admins can dismiss for themselves (persists per snapshot); normal users
+    // cannot dismiss — it persists for them until an admin resets it for all.
+    // Gentle (remind) phase: anyone can dismiss for themselves. Once due and
+    // escalating, only admins can dismiss (24/7); normal users get the
+    // persistent, escalating, flashing reminder. Admins can Reset for everyone.
+    try{ if(localStorage.getItem(AUDIT_DISMISS_KEY)===String(s.snap.weekEnded||s.snap.date) && (isAdmin || s.phase==='remind')){ el.style.display='none'; el.innerHTML=''; return; } }catch(e){}
+    var canDismiss = isAdmin || s.phase==='remind';
+    var resetBtn   = isAdmin ? '<button onclick="resetAuditBanner()" title="Admin: clear this reminder for everyone" style="background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.4);border-radius:3px;padding:5px 11px;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;">↺ Reset for all</button>' : '';
+    var dismissBtn = canDismiss ? '<button onclick="dismissAuditBanner()" title="'+(isAdmin?'Hide this for me':'Dismiss reminder')+'" style="background:transparent;color:#fff;border:none;font-size:16px;cursor:pointer;opacity:.85;padding:0 4px;">✕</button>' : '';
+    var right = resetBtn + dismissBtn;
     el.style.cssText='display:flex;align-items:center;gap:12px;padding:10px 14px;margin:0 0 12px;border-radius:3px;color:#fff;font-size:12.5px;line-height:1.5;background:'+bg+';border:1px solid '+border+';'+pulse;
     el.innerHTML='<div style="flex:1;min-width:0;">'+msg+'</div><div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">'+right+'</div>';
     el.style.display='flex';
   }catch(e){ console.warn('renderAuditBanner failed', e); }
 }
 function dismissAuditBanner(){
+  if(!user) return;
+  var ds=null; try{ ds=auditBannerState(); }catch(e){}
+  if(user.role!=='Administrative' && (!ds || ds.phase!=='remind')) return;  // normal users: gentle phase only
+  try{ if(ds&&ds.snap) localStorage.setItem(AUDIT_DISMISS_KEY, String(ds.snap.weekEnded||ds.snap.date)); }catch(e){}
   var el=document.getElementById('auditBanner'); if(el){ el.style.display='none'; el.innerHTML=''; }
 }
-function adminSnoozeAudit(){
-  if(!user||user.role!=='Administrative'){ toast('Admin only — ask an admin to snooze'); return; }
-  if(!confirm('Snooze the Parts Received Audit reminder for 12 hours?\n\nUse only under special circumstances (e.g. the order genuinely hasn\'t arrived yet). It will return automatically.')) return;
-  var until=Date.now()+12*3600000;
-  try{ localStorage.setItem(AUDIT_SNOOZE_KEY,String(until)); }catch(e){}
-  if(typeof fbReady!=='undefined' && fbReady){ try{ fbDb.ref('auditSnooze').set(until); }catch(e){} }
-  if(typeof writeLog==='function') writeLog('SNOOZE','','Audit reminder snoozed 12h','',user.name,user.role);
+function resetAuditBanner(){
+  if(!user || user.role!=='Administrative'){ toast('Admin only'); return; }
+  var snap=_latestUnauditedSnapshot();
+  if(snap){ snap.auditIgnored=true; snap.auditIgnoredBy=user.name; snap.auditIgnoredAt=Date.now(); }
+  try{ localStorage.setItem(AUDIT_SNOOZE_KEY,'0'); localStorage.removeItem(AUDIT_DISMISS_KEY); }catch(e){}
+  if(typeof fbReady!=='undefined' && fbReady){ try{ fbDb.ref('auditSnooze').set(0); }catch(e){} }
+  save();
+  if(typeof writeLog==='function') writeLog('AUDIT','','Audit reminder reset for everyone', snap?String(snap.date||'').replace(' (weekly-reset)','').replace(' (pre-reset)',''):'', user.name, user.role);
+  if(typeof renderHistory==='function') renderHistory();
   renderAuditBanner();
-  toast('Audit reminder snoozed 12h');
+  toast('Audit reminder reset for everyone');
 }
 // Admin: ignore an audit entirely — clears the banner and resets the
 // escalation so it starts fresh for the NEXT parts order. The week can still
 // be audited later from History.
-function _ignoreSnapshot(snap){
-  if(!user||user.role!=='Administrative'){ toast('Admin only'); return; }
-  if(!snap){ renderAuditBanner(); return; }
-  var weekLabel=String(snap.date||'').replace(' (weekly-reset)','').replace(' (pre-reset)','');
-  if(!confirm('Ignore the Parts Received Audit for '+weekLabel+'?\n\nThe reminder banner clears and the progression resets for the next parts order. You can still run this audit later from History.')) return;
-  snap.auditIgnored=true; snap.auditIgnoredBy=user.name; snap.auditIgnoredAt=Date.now();
-  try{ localStorage.setItem(AUDIT_SNOOZE_KEY,'0'); }catch(e){}   // clear any snooze
-  if(typeof fbReady!=='undefined' && fbReady){ try{ fbDb.ref('auditSnooze').set(0); }catch(e){} }
-  save();
-  if(typeof writeLog==='function') writeLog('IGNORE','','Parts Received Audit ignored — '+weekLabel,'',user.name,user.role);
-  closeMod();
-  renderAuditBanner();
-  if(typeof renderHistory==='function') renderHistory();
-  toast('Audit ignored — reminder reset for next order');
-}
-function adminIgnoreAudit(){ _ignoreSnapshot(_latestUnauditedSnapshot()); }
-function adminIgnoreAuditCurrent(){ _ignoreSnapshot(hist[_auditIdx]); }
-
-
 // ── DATAVAN NOTICE ─────────────────────────────────────────
 function clickDatavan() {
   // Show the notice modal — don't select the role yet
@@ -5704,16 +5955,7 @@ function setFavColor(oracle, colorKey){
   renderFavs();
 }
 
-function setFavNick(oracle, val){
-  var v = val.trim();
-  if(!v) delete favNicks[oracle];
-  else favNicks[oracle] = v;
-  save();
-}
 // Global handlers so onclick/oninput in HTML strings don't need inner quotes
-function onSwatch(el){
-  setFavColor(el.getAttribute('data-oracle'), el.getAttribute('data-ckey'));
-}
 function onColorChange(el){
   setFavColor(el.getAttribute('data-oracle'), el.value);
 }
