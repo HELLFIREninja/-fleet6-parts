@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Fleet 6 Parts Order — Evolution Well Services</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/7.0.0/fuse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -6406,6 +6406,11 @@ updateCustomPartsStatus();
 
 <!-- PRINT STYLES -->
 <style>
+@media(max-width:620px){
+  /* 16px inputs stop iOS auto-zooming on focus (pinch-zoom now allowed) */
+  input,select,textarea{font-size:16px;}
+  .qi,.fsel,.sbox{font-size:16px;}
+}
 @media print {
   /* Hide the whole app by REMOVING it from layout (display:none), not just
      visibility:hidden — otherwise the app's height paginates into blank pages.
@@ -6564,4 +6569,8 @@ function exportCSV() {
     window.__motion = { animate: m.animate, stagger: m.stagger };
     if(typeof window.__initMotionFX==='function') window.__initMotionFX();
     if(typeof window.fxEnterView==='function') window.fxEnterView();
-    window.dispatchEvent(new Even
+    window.dispatchEvent(new Event('motionready'));
+  }catch(err){ console.warn('[Motion] animations disabled — could not load library:', err); }
+</script>
+</body>
+</html>
