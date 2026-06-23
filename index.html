@@ -660,6 +660,20 @@ input,select{outline:none;font-family:inherit;}
   .cfg-stack > div > div{min-width:0 !important;}
 }
 
+/* ── NATIVE MOBILE SYMMETRY — even tab bar, fitted top bar, no h-scroll ── */
+@media(max-width:620px){
+  body{overflow-x:clip;}
+  /* equal-width bottom tabs */
+  .tab-btn{flex:1 1 0 !important;min-width:0 !important;}
+  /* short single-line tab labels (full text hidden, data-m shown) */
+  .tlabel{font-size:0 !important;line-height:1;white-space:nowrap;}
+  .tlabel::after{content:attr(data-m);font-size:10px;font-weight:800;letter-spacing:.2px;color:inherit;}
+  /* top bar fits one row: icon-only walkthrough, role pill hidden */
+  .topbar .dpill{display:none;}
+  .guide-btn .gb-txt{display:none;}
+  .guide-btn{padding:7px 10px !important;font-size:15px !important;gap:0 !important;}
+}
+
 @media(min-width:621px){.tab-btn .ticon{display:none;}}
 
 /* =========================================================================
@@ -849,7 +863,7 @@ html,body{
         .guide-btn{display:inline-flex;align-items:center;gap:6px;background:#2f8cca;color:#fff;border:1px solid #6bb4e6;border-radius:5px;padding:6px 14px;font-size:12px;font-weight:800;letter-spacing:.3px;cursor:pointer;white-space:nowrap;margin-right:8px;animation:guideGlow 1.8s ease-in-out infinite;transition:transform .15s ease,background .15s ease;}
         .guide-btn:hover{background:#3a9bdb;transform:translateY(-1px);}
       </style>
-      <button class="guide-btn" onclick="openWalkthrough()" title="Watch the walkthrough video for your role">📺 Watch the Walkthrough</button>
+      <button class="guide-btn" onclick="openWalkthrough()" title="Watch the walkthrough video for your role">📺 <span class="gb-txt">Watch the Walkthrough</span></button>
       <button class="exit-btn" onclick="logout()">Exit</button>
     </div>
   </div>
@@ -867,12 +881,12 @@ html,body{
     <style>@keyframes auditPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,90,71,.5);}50%{box-shadow:0 0 0 7px rgba(255,90,71,0);}}</style>
     <div id="auditBanner" role="status" aria-live="polite" style="display:none;"></div>
     <div class="tabs">
-      <button class="tab-btn active" onclick="switchTab('order')" data-tab="order"><span class="ticon">🛒</span>Current Weekly Order<span class="tbadge tb-zero" id="oBadge">0</span></button>
-      <button class="tab-btn" onclick="switchTab('received')" data-tab="received"><span class="ticon">📦</span>Parts Received<span class="tbadge tb-zero" id="rBadge">0</span></button>
-      <button class="tab-btn" onclick="switchTab('browse')" data-tab="browse"><span class="ticon">📋</span>Master List</button>
-      <button class="tab-btn" onclick="switchTab('favorites')" data-tab="favorites"><span class="ticon">⭐</span>Favorites<span class="tbadge tb-zero" id="fBadge">0</span></button>
-      <button class="tab-btn" onclick="switchTab('history')" data-tab="history"><span class="ticon">📜</span>History</button>
-      <button class="tab-btn" id="adminTab" style="display:none" onclick="switchTab('admin')" data-tab="admin"><span class="ticon">🔐</span>Admin</button>
+      <button class="tab-btn active" onclick="switchTab('order')" data-tab="order"><span class="ticon">🛒</span><span class="tlabel" data-m="Order">Current Weekly Order</span><span class="tbadge tb-zero" id="oBadge">0</span></button>
+      <button class="tab-btn" onclick="switchTab('received')" data-tab="received"><span class="ticon">📦</span><span class="tlabel" data-m="Received">Parts Received</span><span class="tbadge tb-zero" id="rBadge">0</span></button>
+      <button class="tab-btn" onclick="switchTab('browse')" data-tab="browse"><span class="ticon">📋</span><span class="tlabel" data-m="Master">Master List</span></button>
+      <button class="tab-btn" onclick="switchTab('favorites')" data-tab="favorites"><span class="ticon">⭐</span><span class="tlabel" data-m="Favorites">Favorites</span><span class="tbadge tb-zero" id="fBadge">0</span></button>
+      <button class="tab-btn" onclick="switchTab('history')" data-tab="history"><span class="ticon">📜</span><span class="tlabel" data-m="History">History</span></button>
+      <button class="tab-btn" id="adminTab" style="display:none" onclick="switchTab('admin')" data-tab="admin"><span class="ticon">🔐</span><span class="tlabel" data-m="Admin">Admin</span></button>
     </div>
 
     <!-- ORDER TAB -->
