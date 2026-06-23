@@ -1,0 +1,23 @@
+name: Auto-sync from master app
+on:
+  schedule:
+    - cron: "17 11 * * *"   # ~6:17am US Central, daily
+  workflow_dispatch: {}
+permissions:
+  contents: write
+jobs:
+  sync:
+    if: github.repository != 'HELLFIREninja/-fleet6-parts'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Pull the latest app from master
+        run: |
+          git config user.name  "fleet-sync-bot"
+          git config user.email "fleet-sync-bot@users.noreply.github.com"
+          git remote add upstream https://github.com/HELLFIREninja/-fleet6-parts.git
+          git fetch upstream
+          git merge upstream/main --no-edit -X ours
+          git push
