@@ -1790,7 +1790,7 @@ function favsKey(){ return 'f6_fv_' + (user ? user.role : 'default'); }
 // │ change — the reset/audit schedule is set in-app at Admin → Weekly         │
 // │ Schedule, so the same code serves any fleet.                              │
 // └─────────────────────────────────────────────────────────────────────────┘
-var firebaseConfig = window.FIREBASE_CONFIG || {};
+var firebaseConfig = window.FIREBASE_CONFIG || window.firebaseConfig || {};
 var fbApp=null, fbDb=null, fbReady=false, fbInitDone=false;
 var roleListeners=[]; // unsubscribe functions for role-scoped listeners
 var _fbSaveTimer=null;
