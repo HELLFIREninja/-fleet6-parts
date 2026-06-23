@@ -604,6 +604,62 @@ input,select{outline:none;font-family:inherit;}
   .stat-box{padding:7px 2px;}
 }
 
+/* ── PARTS RECEIVED cards — stack into clean rows on mobile (were one cramped line) ── */
+@media(max-width:620px){
+  .bo-card{padding:12px;}
+  .bo-row{flex-wrap:wrap;gap:8px 10px;align-items:flex-start;}
+  /* description (age badge + status + part name) — full-width top row */
+  .bo-card .odesc{flex:0 0 100% !important;order:-1;font-size:14px;font-weight:600;line-height:1.45;white-space:normal;}
+  /* meta line — full-width second row */
+  .bo-card .ometa{flex:0 0 100% !important;order:0;line-height:1.55;}
+  /* admin status dropdown a touch taller for taps */
+  .bo-card .status-sel{height:32px;font-size:12px;}
+  /* action cluster — full-width third row with comfy taps */
+  .recv-cluster{flex:0 0 100% !important;order:1;width:100%;gap:8px;padding-top:12px;border-top:1px solid var(--border);margin-top:6px;}
+  .recv-cluster .qwrap{flex:0 0 auto;}
+  .recv-cluster .qb{width:40px;height:44px;}
+  .recv-cluster .qi{height:44px;}
+  .recv-cluster .pullb{flex:1 1 auto;min-height:44px;padding:0 14px;font-size:12px;font-weight:800;letter-spacing:.5px;}
+  .bo-age{font-size:11px;}
+}
+
+/* ── PREMIUM MOBILE POLISH — depth, frosted nav, rhythm, tactile feel ── */
+@media(max-width:620px){
+  html{scroll-behavior:smooth;}
+  .content{padding:16px 14px calc(86px + env(safe-area-inset-bottom));}
+  /* topbar reads as an elevated fixed surface */
+  .topbar{position:sticky;top:0;z-index:90;box-shadow:0 1px 0 var(--border),0 6px 18px rgba(0,0,0,.28);}
+  /* frosted, elevated bottom nav */
+  .tabs{background:rgba(15,17,21,.82);-webkit-backdrop-filter:saturate(160%) blur(14px);backdrop-filter:saturate(160%) blur(14px);box-shadow:0 -6px 22px rgba(0,0,0,.38);overflow:visible;}
+  .tab-btn{position:relative;border-top:none !important;color:var(--muted2);transition:color .18s ease;}
+  .tab-btn.active{color:var(--teal-l);}
+  .tab-btn.active::before{content:"";position:absolute;top:5px;left:50%;width:44px;height:30px;margin-left:-22px;border-radius:14px;background:radial-gradient(ellipse at center,rgba(30,180,116,.20),transparent 72%);pointer-events:none;}
+  /* count badges → floating pill at the icon corner; hidden at zero */
+  .tbadge{position:absolute;top:4px;left:50%;margin-left:6px;min-width:16px;height:16px;line-height:14px;text-align:center;font-size:9px;padding:0 4px;border-radius:9px;background:var(--teal) !important;color:#04170f !important;font-weight:800;border:1.5px solid var(--nav);}
+  .tbadge.tb-zero{display:none;}
+  /* unified premium card surface + tactile press (shadow only) */
+  .part-card,.bo-card,.ord-item,.fav-card,.hcard,.acard,.krow{border-radius:14px;box-shadow:0 1px 2px rgba(0,0,0,.20);transition:box-shadow .16s ease,border-color .16s ease;}
+  .part-card:active,.bo-card:active,.ord-item:active,.fav-card:active{box-shadow:0 6px 18px rgba(0,0,0,.34);border-color:var(--border2);}
+  /* consistent 44px tap buttons + crisp press */
+  .btn-primary,.btn-ghost,.btn-danger,.pullb,.ab,.btn-login{min-height:44px;border-radius:11px;transition:filter .12s ease;}
+  .btn-primary:active,.pullb:active,.ab:active,.btn-login:active,.btn-ghost:active,.btn-danger:active{filter:brightness(1.14);}
+  .qb,.fb,.pb{border-radius:11px;}
+  /* inputs/selects — softer corners to match */
+  .fsel,.sbox input,.fg input,.bo-note-input,.status-sel,.qi{border-radius:11px;}
+  /* stat chips — clearer hierarchy, subtle elevation */
+  .stats-row{gap:6px !important;}
+  .stat-box{background:var(--card2);border:1px solid var(--border);border-radius:13px;padding:10px 4px !important;box-shadow:0 1px 2px rgba(0,0,0,.18);}
+  .sn{font-size:19px !important;font-weight:800 !important;}
+  .sl{font-size:9px !important;letter-spacing:.2px !important;}
+  /* section header rhythm */
+  .sec-hd{margin-bottom:12px;}
+  /* admin schedule config — stack label over full-width control */
+  .cfg-stack > div{flex-direction:column !important;align-items:stretch !important;gap:6px !important;}
+  .cfg-stack label{width:auto !important;padding-top:0 !important;}
+  .cfg-stack .fsel,.cfg-stack input,.cfg-stack select{width:100% !important;min-width:0 !important;}
+  .cfg-stack > div > div{min-width:0 !important;}
+}
+
 @media(min-width:621px){.tab-btn .ticon{display:none;}}
 
 /* =========================================================================
@@ -811,10 +867,10 @@ html,body{
     <style>@keyframes auditPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,90,71,.5);}50%{box-shadow:0 0 0 7px rgba(255,90,71,0);}}</style>
     <div id="auditBanner" role="status" aria-live="polite" style="display:none;"></div>
     <div class="tabs">
-      <button class="tab-btn active" onclick="switchTab('order')" data-tab="order"><span class="ticon">🛒</span>Current Weekly Order<span class="tbadge" id="oBadge">0</span></button>
-      <button class="tab-btn" onclick="switchTab('received')" data-tab="received"><span class="ticon">📦</span>Parts Received<span class="tbadge" id="rBadge">0</span></button>
+      <button class="tab-btn active" onclick="switchTab('order')" data-tab="order"><span class="ticon">🛒</span>Current Weekly Order<span class="tbadge tb-zero" id="oBadge">0</span></button>
+      <button class="tab-btn" onclick="switchTab('received')" data-tab="received"><span class="ticon">📦</span>Parts Received<span class="tbadge tb-zero" id="rBadge">0</span></button>
       <button class="tab-btn" onclick="switchTab('browse')" data-tab="browse"><span class="ticon">📋</span>Master List</button>
-      <button class="tab-btn" onclick="switchTab('favorites')" data-tab="favorites"><span class="ticon">⭐</span>Favorites<span class="tbadge" id="fBadge">0</span></button>
+      <button class="tab-btn" onclick="switchTab('favorites')" data-tab="favorites"><span class="ticon">⭐</span>Favorites<span class="tbadge tb-zero" id="fBadge">0</span></button>
       <button class="tab-btn" onclick="switchTab('history')" data-tab="history"><span class="ticon">📜</span>History</button>
       <button class="tab-btn" id="adminTab" style="display:none" onclick="switchTab('admin')" data-tab="admin"><span class="ticon">🔐</span>Admin</button>
     </div>
@@ -921,7 +977,7 @@ html,body{
       <div class="acard">
         <h3>🗓️ Weekly Schedule</h3>
         <div style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.6;">Set when the weekly order <strong>resets</strong> and when the <strong>Parts Received Audit</strong> is due. Applies to everyone in this fleet — change these when deploying to a fleet that runs on a different weekly cycle.</div>
-        <div style="display:flex;flex-direction:column;gap:12px;max-width:540px;">
+        <div class="cfg-stack" style="display:flex;flex-direction:column;gap:12px;max-width:540px;">
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
             <label style="font-size:12px;color:var(--muted);width:110px;flex-shrink:0;">Fleet number</label>
             <span style="font-size:13px;color:var(--text);font-weight:600;">Fleet</span>
@@ -4089,6 +4145,7 @@ function closeMod(){document.querySelectorAll('.mov').forEach(m=>m.classList.rem
 let tT;
 function toast(msg){
   const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  _haptic(14);
   var _ta=(typeof fxToastShow==='function')?fxToastShow(t):null;
   clearTimeout(tT);tT=setTimeout(function(){
     var _th=(typeof fxToastHide==='function')?fxToastHide(t):null;
@@ -4134,6 +4191,7 @@ function _setBadge(id, val){
   var el=document.getElementById(id); if(!el) return;
   var changed=String(el.textContent)!==String(val);
   el.textContent=val;
+  el.classList.toggle('tb-zero', !val || String(val)==='0');
   if(changed){ var m=_mfx(); if(m){ try{ m.animate(el, {scale:[1,1.4,1]}, {duration:0.45, ease:_BACK}); }catch(e){} } }
 }
 
@@ -4171,6 +4229,7 @@ function fxPulseTab(tab){
 }
 // A quick success burst — a checkmark that springs in and fades out.
 function fxCelebrate(){
+  _haptic([14,40,22]);
   var m=_mfx(); if(!m) return;
   var el=document.createElement('div'); el.textContent='✓';
   el.style.cssText='position:fixed;left:50%;top:42%;transform:translate(-50%,-50%);font-size:84px;line-height:1;z-index:99999;pointer-events:none;color:#2dd47e;text-shadow:0 6px 30px rgba(45,212,126,.55);';
@@ -4231,14 +4290,19 @@ function fxLogoShimmer(){
   setTimeout(sweep,900);
   img.__shimTimer=setInterval(sweep,6500);
 }
+// Subtle haptic feedback. Android Chrome fires navigator.vibrate; iOS Safari has
+// no Vibration API, so this is a silent no-op there (visual feedback still applies).
+function _haptic(p){ try{ if(window.navigator && navigator.vibrate) navigator.vibrate(p); }catch(e){} }
 function __initMotionFX(){
   if(window.__mfxInit) return; window.__mfxInit=true;
   try{ fxLogoShimmer(); }catch(e){}
   // Tactile press, delegated so it covers every present & future button.
   document.addEventListener('pointerdown', function(ev){
-    var m=_mfx(); if(!m) return;
     var b=ev.target && ev.target.closest ? ev.target.closest('button, .pullb') : null;
-    if(!b || b.classList.contains('qb')) return;
+    if(!b) return;
+    _haptic(b.classList.contains('qb') ? 3 : 8);
+    var m=_mfx(); if(!m) return;
+    if(b.classList.contains('qb')) return;
     try{ m.animate(b, {scale:0.93}, {duration:0.08, ease:'easeOut'}); }catch(e){}
     var up=function(){ try{ m.animate(b, {scale:1}, {type:'spring', stiffness:520, damping:15}); }catch(e){}
       window.removeEventListener('pointerup',up); window.removeEventListener('pointercancel',up); };
