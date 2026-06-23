@@ -674,6 +674,21 @@ input,select{outline:none;font-family:inherit;}
   .guide-btn{padding:7px 10px !important;font-size:15px !important;gap:0 !important;}
 }
 
+/* ── COMPACT ITEM CARDS — fit more per screen, still thumb-usable ── */
+@media(max-width:620px){
+  .ord-item{padding:8px 10px !important;margin-bottom:5px !important;gap:6px !important;}
+  .ord-item .odesc{font-size:13px !important;line-height:1.3 !important;margin-bottom:0 !important;}
+  .ord-item .ometa{font-size:10.5px !important;line-height:1.35 !important;}
+  .bo-card{padding:9px 10px !important;margin-bottom:6px !important;}
+  .bo-card .odesc{font-size:13px !important;line-height:1.32 !important;}
+  .bo-card .ometa{font-size:10.5px !important;line-height:1.4 !important;}
+  .recv-cluster{padding-top:8px !important;margin-top:4px !important;gap:6px !important;}
+  .recv-cluster .pullb{min-height:40px !important;}
+  .bo-age{padding:2px 6px !important;}
+  /* tighter group/section rhythm so headers don't eat space */
+  .sec-hd{margin-bottom:8px !important;}
+}
+
 @media(min-width:621px){.tab-btn .ticon{display:none;}}
 
 /* =========================================================================
@@ -3679,7 +3694,7 @@ function openWalkthrough(which){
   var isAdmin = user && user.role==='Administrative';
   if(!which) which = isAdmin ? 'admin' : 'user';
   if(which==='admin' && !isAdmin) which='user';   // non-admins only get the user guide
-  var file = which==='admin' ? 'https://github.com/HELLFIREninja/-fleet6-parts/releases/download/v1.0/Fleet6_Admin_Walkthrough.mp4' : 'https://github.com/HELLFIREninja/-fleet6-parts/releases/download/v1.0/Fleet6_User_Walkthrough.mp4';
+  var file = which==='admin' ? 'https://media.githubusercontent.com/media/HELLFIREninja/-fleet6-parts/main/Fleet6_Admin_Walkthrough.mp4' : 'https://media.githubusercontent.com/media/HELLFIREninja/-fleet6-parts/main/Fleet6_User_Walkthrough.mp4';
   var v=document.getElementById('wtVideo');
   document.getElementById('wtTitle').textContent = (which==='admin'?'📺 Admin Walkthrough':'📺 User Walkthrough');
   var miss=document.getElementById('wtMissing'); miss.style.display='none';
