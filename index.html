@@ -6,7 +6,8 @@
 <title>Fleet 6 Parts Order — Evolution Well Services</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/7.0.0/fuse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="firebase-config.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -1789,15 +1790,7 @@ function favsKey(){ return 'f6_fv_' + (user ? user.role : 'default'); }
 // │ change — the reset/audit schedule is set in-app at Admin → Weekly         │
 // │ Schedule, so the same code serves any fleet.                              │
 // └─────────────────────────────────────────────────────────────────────────┘
-var firebaseConfig = {
-  apiKey: "AIzaSyA6na2bzIxk1QFlmn2mOi-H3QoSI7sgRSM",
-  authDomain: "ews-fleet6.firebaseapp.com",
-  databaseURL: "https://ews-fleet6-default-rtdb.firebaseio.com",
-  projectId: "ews-fleet6",
-  storageBucket: "ews-fleet6.firebasestorage.app",
-  messagingSenderId: "577833479907",
-  appId: "1:577833479907:web:830c03ec5410116f675fd6"
-};
+var firebaseConfig = window.FIREBASE_CONFIG || {};
 var fbApp=null, fbDb=null, fbReady=false, fbInitDone=false;
 var roleListeners=[]; // unsubscribe functions for role-scoped listeners
 var _fbSaveTimer=null;
@@ -6571,8 +6564,4 @@ function exportCSV() {
     window.__motion = { animate: m.animate, stagger: m.stagger };
     if(typeof window.__initMotionFX==='function') window.__initMotionFX();
     if(typeof window.fxEnterView==='function') window.fxEnterView();
-    window.dispatchEvent(new Event('motionready'));
-  }catch(err){ console.warn('[Motion] animations disabled — could not load library:', err); }
-</script>
-</body>
-</html>
+    window.dispatchEvent(new Even
