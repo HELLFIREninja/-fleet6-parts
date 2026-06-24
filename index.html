@@ -2572,52 +2572,90 @@ function lrSearch(){
     return '<div class="hitem" style="display:flex;justify-content:space-between;align-items:center;gap:8px;cursor:pointer;" onclick="lrPick(\''+p[0]+'\')"><div><div class="hidesc">'+DI[p[4]]+' '+e(p[2])+aw+'</div><div class="himeta">Oracle: '+p[0]+' · SAGE: '+p[1]+' · '+DN[p[4]]+'</div></div><button class="pullb" style="background:#2d6a2d;border:none;white-space:nowrap;" onclick="event.stopPropagation();lrPick(\''+p[0]+'\')">Select</button></div>';
   }).join('');
 }
+function _lrPresence(oracle){
+  var isAwaiting = !!(backorderFlag[oracle] && (order[oracle]||0)>0);
+  var inCurrent = (order[oracle]||0)>0 && !backorderFlag[oracle];
+  var inHistory=false;
+  for(var i=hist.length-1;i>=0 && !inHistory;i--){
+    var h=hist[i];
+    if(!h || (String(h.date||'').indexOf('weekly-reset')<0 && String(h.date||'').indexOf('pre-reset')<0)) continue;
+    var its=h.items||[];
+    for(var j=0;j<its.length;j++){ if(its[j].oracle===oracle && (its[j].auditStatus||'')!=='received'){ inHistory=true; break; } }
+  }
+  return { isAwaiting:isAwaiting, inCurrent:inCurrent, inHistory:inHistory, hasPrev:(isAwaiting||inHistory) };
+}
 function lrPick(oracle){
   _lrOracle=oracle;
   var p=gp(oracle);
+  var pr=_lrPresence(oracle);
   var aw=(backorderFlag[oracle] && (order[oracle]||0)>0)?order[oracle]:0;
+  var where = pr.hasPrev ? ('<strong style="color:#d4890a;">on a previous / awaiting order'+(aw?(' ('+aw+' awaiting)'):'')+'</strong>')
+            : (pr.inCurrent ? '<strong style="color:#3f9bd6;">already on this week\'s order</strong>' : 'not on any open order');
+  var actions;
+  if(pr.hasPrev && pr.inCurrent){
+    actions='<div style="font-size:11px;color:var(--muted2);margin-bottom:8px;line-height:1.5;">This part is on a previous order <em>and</em> this week\'s order — where should this receipt go?</div>'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;">'+
+      '<button class="btn-primary" onclick="lrConfirm(\'history\')" style="background:#2d6a2d;border:none;white-space:nowrap;">✓ Previous / awaiting order</button>'+
+      '<button class="btn-primary" onclick="lrConfirm(\'current\')" style="background:#2d6a2d;border:none;white-space:nowrap;">✓ This week\'s order</button></div>';
+  } else if(pr.hasPrev){
+    actions='<div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn-primary" onclick="lrConfirm(\'history\')" style="background:#2d6a2d;border:none;">✓ Record received</button></div>';
+  } else if(pr.inCurrent){
+    actions='<div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn-primary" onclick="lrConfirm(\'current\')" style="background:#2d6a2d;border:none;">✓ Record received</button></div>';
+  } else {
+    actions='<div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn-primary" onclick="lrConfirm(\'new\')" style="background:#2d6a2d;border:none;white-space:nowrap;">✓ Add to this week as received</button></div>';
+  }
   var box=document.getElementById('lrPicked'); box.style.display='block';
   box.innerHTML='<div style="border-top:1px solid var(--border);padding-top:12px;margin-top:2px;">'+
     '<div style="font-size:13px;color:var(--text);font-weight:600;margin-bottom:4px;">'+(p?e(p[2]):('Oracle #'+oracle))+'</div>'+
-    '<div style="font-size:11px;color:var(--muted);margin-bottom:10px;">Oracle: '+(p?p[0]:oracle)+(aw?(' &nbsp;·&nbsp; <strong style="color:#d4890a;">'+aw+' currently awaiting</strong>'):' &nbsp;·&nbsp; not in the awaiting list')+'</div>'+
-    '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;"><label style="font-size:12px;color:var(--muted);">Quantity received:</label>'+
-    '<input id="lrQty" type="number" min="1" value="'+(aw||1)+'" style="width:84px;padding:7px 9px;background:var(--bg);border:1px solid var(--border);border-radius:2px;color:var(--text);font-size:15px;text-align:center;" />'+
-    '<button class="btn-primary" onclick="lrConfirm()" style="background:#2d6a2d;border:none;">✓ Record received</button></div>'+
-    '<textarea id="lrComment" rows="2" class="bo-note-input" style="min-height:46px;margin-top:10px;" placeholder="Optional comment — e.g. rushed to pad before the weekly order arrived"></textarea>'+
+    '<div style="font-size:11px;color:var(--muted);margin-bottom:10px;">Oracle: '+(p?p[0]:oracle)+' &nbsp;·&nbsp; '+where+'</div>'+
+    '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;"><label style="font-size:12px;color:var(--muted);">Quantity received:</label>'+
+    '<input id="lrQty" type="number" min="1" value="'+(aw||1)+'" style="width:84px;padding:7px 9px;background:var(--bg);border:1px solid var(--border);border-radius:2px;color:var(--text);font-size:15px;text-align:center;" /></div>'+
+    '<textarea id="lrComment" rows="2" class="bo-note-input" style="min-height:46px;margin-bottom:10px;" placeholder="Optional comment — e.g. rushed to pad before the weekly order arrived"></textarea>'+
+    actions+
     '</div>';
 }
-function lrConfirm(){
+function lrConfirm(mode){
   if(!user || !_lrOracle) return;
   var oracle=_lrOracle;
   var qty=parseInt((document.getElementById('lrQty')||{}).value,10)||0;
   if(qty<1){ toast('Enter a quantity of 1 or more'); return; }
   var cmt=((document.getElementById('lrComment')||{}).value||'').trim();
-  var p=gp(oracle), recorded=false;
-  for(var i=hist.length-1;i>=0;i--){
-    var h=hist[i];
-    if(!h || (String(h.date||'').indexOf('weekly-reset')<0 && String(h.date||'').indexOf('pre-reset')<0)) continue;
-    var items=h.items||[];
-    for(var j=0;j<items.length;j++){
-      var it=items[j];
-      if(it.oracle===oracle && (it.auditStatus||'')!=='received'){
-        var oq=it.qty||qty;
-        it.receivedQty=(it.receivedQty||0)+qty;
-        it.receivedBy=user.name; it.receivedAt=Date.now();
-        if(cmt){ it.receiptNote=cmt; it.receiptNoteBy=user.name; }
-        if(it.receivedQty>=oq){ it.auditStatus='received'; it.status='received'; }
-        else { it.auditStatus='not_received'; }
-        recorded=true; break;
+  var p=gp(oracle);
+  if(!mode){ var pr=_lrPresence(oracle); mode = pr.hasPrev ? 'history' : (pr.inCurrent ? 'current' : 'new'); }
+  var note='';
+  if(mode==='history'){
+    var recorded=false;
+    for(var i=hist.length-1;i>=0;i--){
+      var h=hist[i];
+      if(!h || (String(h.date||'').indexOf('weekly-reset')<0 && String(h.date||'').indexOf('pre-reset')<0)) continue;
+      var items=h.items||[];
+      for(var j=0;j<items.length;j++){
+        var it=items[j];
+        if(it.oracle===oracle && (it.auditStatus||'')!=='received'){
+          var oq=it.qty||qty;
+          it.receivedQty=(it.receivedQty||0)+qty; it.receivedBy=user.name; it.receivedAt=Date.now();
+          if(cmt){ it.receiptNote=cmt; it.receiptNoteBy=user.name; }
+          if(it.receivedQty>=oq){ it.auditStatus='received'; it.status='received'; } else { it.auditStatus='not_received'; }
+          recorded=true; break;
+        }
       }
+      if(recorded) break;
     }
-    if(recorded) break;
-  }
-  if(backorderFlag[oracle] && (order[oracle]||0)>0){
-    var nr=(order[oracle]||0)-qty;
-    if(nr<=0){ _forgetItem(oracle); delete backorderFlag[oracle]; }
-    else order[oracle]=nr;
+    if(backorderFlag[oracle] && (order[oracle]||0)>0){
+      var nr=(order[oracle]||0)-qty;
+      if(nr<=0){ _forgetItem(oracle); delete backorderFlag[oracle]; } else order[oracle]=nr;
+    }
+    note=recorded?' (previous order)':' (no matching previous order)';
+  } else {
+    if(!((order[oracle]||0)>0)) order[oracle]=qty;
+    orderStatus[oracle]='received';
+    if(!orderAdded[oracle]) orderAdded[oracle]=Date.now();
+    delete backorderFlag[oracle];
+    if(cmt && typeof orderNotes!=='undefined'){ orderNotes[oracle]={ by:user.name, text:cmt, at:Date.now() }; }
+    note=(mode==='new')?' (added to this week as received)':' (this week\'s order)';
   }
   save();
-  if(typeof writeLog==='function') writeLog('RECEIVE', oracle, p?p[2]:'Oracle #'+oracle, qty+(cmt?(' · "'+cmt+'"'):'')+(recorded?'':' (not on an open order)'), user.name, user.role);
+  if(typeof writeLog==='function') writeLog('RECEIVE', oracle, p?p[2]:'Oracle #'+oracle, qty+(cmt?(' · "'+cmt+'"'):'')+note, user.name, user.role);
   closeMod(); _lrOracle=null;
   renderOrder(); if(typeof renderReceived==='function') renderReceived();
   if(typeof renderHistory==='function') renderHistory();
@@ -3878,7 +3916,7 @@ function setItemStatus(oracle, newStatus){
   var toastMap = { 'pending':'Reverted to pending', 'submitted':'Marked submitted', 'received':'Marked received' };
   toast(toastMap[newStatus]);
 }
-function pullPart(oracle){ setItemStatus(oracle, 'submitted'); }
+function pullPart(oracle){ setItemStatus(oracle, stat(oracle)==='submitted' ? 'pending' : 'submitted'); }
 // Render the single-button status dropdown for an oracle. Admin only —
 // non-admin views show just the status badge. Uses a native <select> styled
 // as a button, so mobile users get their OS picker and keyboard users get
