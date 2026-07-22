@@ -728,6 +728,96 @@ input:focus,select:focus,textarea:focus{background:#12151a;box-shadow:inset 0 1p
 @media (min-width:900px){ #cs-home.on{min-height:calc(100dvh - 140px)} }
 @media (prefers-reduced-motion:reduce){ .home-ground{animation:none} }
 </style>
+<style>
+/* ============================================================
+   SIGNATURE PASS · "15K" — personality in high-impact moments.
+   The boot, the atmosphere, and a sign-of-life sync pulse carry
+   the character; the data-entry screens stay fast + legible.
+   All GPU-cheap (transform/opacity/shadow); reduced-motion safe.
+   ============================================================ */
+
+/* --- cinematic boot: the placard stamps in, the teal rule sweeps, light rakes across --- */
+@keyframes stampIn{0%{opacity:0;transform:translateY(-11px) scale(.955)}58%{opacity:1}100%{opacity:1;transform:none}}
+@keyframes ruleSweep{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes placardSheen{from{background-position:-130% 0}to{background-position:180% 0}}
+@keyframes riseFade{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+header.placard .placard-in{animation:stampIn .55s cubic-bezier(.2,1.35,.35,1) both}
+.placard-in::before{transform-origin:left center;animation:ruleSweep .72s .16s cubic-bezier(.45,0,.15,1) both}
+.placard-in::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.11) 50%,transparent 60%);
+  background-size:250% 100%;background-position:-130% 0;animation:placardSheen 1.15s .4s ease-out both}
+.placard-in > *{position:relative;z-index:1}
+h1.brand{animation:riseFade .5s .12s ease both}
+.brand-sub{animation:riseFade .5s .26s ease both}
+
+/* --- living atmosphere: a slow ambient glow drift behind everything --- */
+body::after{content:"";position:fixed;inset:-8%;z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(680px 460px at 50% -6%, rgba(30,180,116,.06), transparent 66%),
+    radial-gradient(560px 400px at 106% 6%, rgba(47,140,202,.05), transparent 58%);
+  animation:ambientDrift 17s ease-in-out infinite alternate}
+@keyframes ambientDrift{from{transform:translate3d(-3.5%,-1.5%,0) scale(1.02)}to{transform:translate3d(3.5%,1.5%,0) scale(1.06)}}
+
+/* --- sign of life: the Synced dot breathes a slow radar ring --- */
+@keyframes syncPulse{0%{box-shadow:0 0 0 0 rgba(30,180,116,.55)}70%{box-shadow:0 0 0 8px rgba(30,180,116,0)}100%{box-shadow:0 0 0 0 rgba(30,180,116,0)}}
+.sync-dot.live{background:var(--acc)!important;animation:syncPulse 2.1s ease-out infinite}
+
+@media (prefers-reduced-motion:reduce){
+  header.placard .placard-in,.placard-in::before,.placard-in::after,h1.brand,.brand-sub,body::after,.sync-dot.live{animation:none!important}
+}
+</style>
+<style>
+/* ============================================================
+   FEATURE PASS · pump-trailer walk + manufacture (chrome) band
+   ============================================================ */
+.act-pump.bigbtn{box-shadow:inset 4px 0 0 #a78bfa, inset 22px 0 34px -24px rgba(167,139,250,.72), var(--e-1)}
+.ptbtn.bigbtn{min-height:56px;font-size:20px}
+.ptpiece{width:100%;display:flex;align-items:center;gap:12px;text-align:left;padding:11px 13px;margin-bottom:9px;
+  background:var(--panel);border:1.5px solid var(--line2);border-radius:14px;box-shadow:var(--e-1);transition:transform .07s ease,border-color .14s ease,background .14s ease}
+.ptpiece:active{transform:scale(.985)}
+.ptpiece.done{border-color:rgba(30,180,116,.5);background:linear-gradient(90deg,rgba(30,180,116,.10),var(--panel) 62%)}
+.ptpiece .ptp-img{flex:0 0 auto;width:66px;height:50px;display:flex;align-items:center;justify-content:center}
+.ptpiece .ptp-img img{max-width:100%;max-height:100%;object-fit:contain;filter:drop-shadow(0 6px 8px rgba(0,0,0,.6))}
+.ptpiece .ptp-img svg{width:80%;height:80%}
+.ptpiece .ptp-txt{flex:1;min-width:0}
+.ptpiece .ptp-txt b{display:block;font-family:var(--disp);font-weight:800;font-size:16px;letter-spacing:.03em;text-transform:uppercase;line-height:1.05}
+.ptpiece .ptp-txt span{display:block;font-size:12px;color:var(--ink2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ptpiece.done .ptp-txt span{color:var(--acc-l);font-weight:600}
+.ptpiece .ptp-go{flex:0 0 auto;font-size:20px;color:var(--ink3)}
+/* chrome / manufacture band */
+.band.chrome-band{background:linear-gradient(135deg,#eef1f4 0%,#c2c9d0 42%,#e9edf0 58%,#a7afb8 100%);color:#20242a;border:1px solid rgba(0,0,0,.4)}
+.band.chrome-band .cn{opacity:.7}
+.band.chrome-band.on{box-shadow:0 0 0 2px var(--acc), inset 0 3px 6px rgba(255,255,255,.55), inset 0 -4px 7px rgba(0,0,0,.2)}
+.mini-band.chrome{background:linear-gradient(135deg,#eef1f4,#c2c9d0 45%,#e9edf0 62%,#a7afb8);color:#20242a}
+#mfgPanel{margin-top:14px}
+#mfgPanel.open{background:var(--panel);border:1.5px solid var(--line2);border-radius:14px;padding:13px;box-shadow:var(--e-1)}
+#mfgPanel .mfg-h{font-size:12.5px;color:var(--ink2);line-height:1.45;margin-bottom:8px}
+/* per-trailer report */
+.pt-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;margin-bottom:10px;overflow:hidden;box-shadow:var(--e-1)}
+.pt-card .pt-h{display:flex;align-items:center;gap:8px;padding:11px 13px;font-family:var(--disp);font-weight:800;font-size:15px;letter-spacing:.06em;text-transform:uppercase}
+.pt-card .pt-h .pt-q{margin-left:auto;font-size:12px;color:var(--ink3);font-family:var(--body);letter-spacing:.04em}
+.pt-card .pt-h .pt-exp{color:var(--danger-l);font-family:var(--body);font-size:11px;font-weight:700;margin-left:8px}
+.pt-body{padding:0 13px 8px}
+.pt-hl{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--acc-l);font-weight:700;margin:8px 0 3px}
+.pt-row{display:flex;gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid var(--line);font-size:13px}
+.pt-row:last-child{border-bottom:none}
+.pt-row .pt-nm{flex:1;min-width:0}
+.pt-row .pt-meta{font-size:11px;color:var(--ink3)}
+/* pump overview matrix */
+table.pumpmx{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;font-size:11px}
+.pumpmx th{font-family:var(--disp);font-weight:800;letter-spacing:.04em;font-size:9px;color:var(--ink3);text-transform:uppercase;padding:4px 2px 8px;text-align:center}
+.pumpmx th.pm-t{text-align:left;width:41%}
+.pumpmx td{padding:5px 2px;text-align:center;border-bottom:1px solid var(--line)}
+.pumpmx td.pm-t{text-align:left;font-family:var(--disp);font-weight:800;font-size:11.5px;letter-spacing:.02em;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pumpmx td.pm-t .pm-hh{color:var(--ink3);font-family:var(--body);font-weight:600;font-size:10px;margin-left:3px;letter-spacing:.02em}
+.pumpmx tr.pm-start td{border-top:1.5px solid var(--line2)}
+.pumpmx tr:first-child td{border-top:none}
+.pm-b{display:inline-block;min-width:36px;padding:3px 5px;border-radius:5px;font-family:var(--disp);font-weight:800;font-size:10.5px;letter-spacing:.03em;border:1px solid rgba(0,0,0,.4);box-shadow:inset 0 1px 2px rgba(255,255,255,.25)}
+.pm-b.x{box-shadow:0 0 0 2px var(--danger), inset 0 1px 2px rgba(255,255,255,.25)}
+.pm-b.d{box-shadow:0 0 0 2px var(--amber), inset 0 1px 2px rgba(255,255,255,.25)}
+.pm-miss{color:var(--ink3);opacity:.5;font-weight:700}
+.pm-cf{color:var(--acc-l);font-weight:800;font-size:11px;letter-spacing:.06em}
+</style>
 </head>
 <body>
 <header class="placard">
@@ -769,6 +859,7 @@ input:focus,select:focus,textarea:focus{background:#12151a;box-shadow:inset 0 1p
         <button class="bigbtn act-fail" data-k="fail">FAIL AN ITEM<span class="sub">SUBTRACT FROM THE RUNNING TOTAL</span></button>
         <button class="bigbtn act-true" data-k="trueup">TRUE-UP RUNNING LIST<span class="sub">FULL RECOUNT — COMPARES &amp; RESETS TOTALS</span></button>
       </div>
+      <button class="bigbtn act-pump st2" id="pumpWalkBtn" style="margin-top:9px">⛓ PUMP TRAILERS<span class="sub">WALK EACH PUMP · CANNONBALL · 2" TEE · CO-FLEX</span></button>
       <div class="tiny muted st3" style="margin-top:10px">Running list right now: <b id="homeRunning">0</b> pieces. True-up counts <b>everything on location</b> — the submitted count becomes the new running list.</div>
     </div>
     <div class="home-ground" aria-hidden="true"><span class="hg-mark">EVOLUTION WELL SERVICES</span><span class="hg-sub">Treating Iron · 15K · Fleet 6</span></div>
@@ -823,6 +914,20 @@ input:focus,select:focus,textarea:focus{background:#12151a;box-shadow:inset 0 1p
       <span class="tiny muted" id="bandhint"></span>
     </div>
     <div class="bandgrid" id="bandgrid"></div>
+    <div id="mfgPanel"></div>
+  </div>
+
+  <!-- PUMP TRAILER guided walk -->
+  <div class="cstep" id="cs-ptlist">
+    <div class="wiz-head st1"><span class="wiz-step">PUMP TRAILERS</span><h2 class="wiz-t">Walk the pumps</h2></div>
+    <div class="tiny muted st2" style="margin:0 2px 12px">Tap a trailer, then band the iron on each fluid end — the cannonball 90, the 2" tee and the co-flex are already listed for Head 1 and Head 2.</div>
+    <div class="bigcol st2" id="ptGrid"></div>
+  </div>
+  <div class="cstep" id="cs-pthead">
+    <div class="crumbs" id="crumbPt"></div>
+    <div class="wiz-head st1"><span class="wiz-step">PUMP TRAILER</span><h2 class="wiz-t" id="ptTitle">Pump</h2></div>
+    <div class="modeseg st2" id="ptHeadSeg" style="grid-template-columns:1fr 1fr"></div>
+    <div class="st3" id="ptPieces"></div>
   </div>
 </section>
 
@@ -872,6 +977,9 @@ input:focus,select:focus,textarea:focus{background:#12151a;box-shadow:inset 0 1p
 
   <h2 class="sec">Running total — what's on location</h2>
   <div class="card" style="padding:6px 10px"><table class="rpt" id="rItems"></table></div>
+
+  <h2 class="sec">Pump trailers — by fluid end</h2>
+  <div id="rPumps"></div>
 
   <h2 class="sec">Iron expiring by month</h2>
   <div class="card" id="rChart" style="padding:12px 10px 6px"></div>
@@ -1040,6 +1148,28 @@ const BANDS = [
   {m:'DEC', name:'Seafoam',     bg:'#84d9bd', tx:'#0d3527'},
 ];
 const MONTHS_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+/* ---- pump trailers: Pump Trailer 1–8 on frac + one on Pump Down.
+   Fluid-end tag format (stored in variant for cannonball/coflex, and in area for the per-pump walk):
+   "PT 3 · Head 2"  or  "Pump Down · Head 1" ---- */
+const TRAILERS = ['PT 1','PT 2','PT 3','PT 4','PT 5','PT 6','PT 7','PT 8','Pump Down'];
+const trailerLabel = t => (t && t.indexOf('PT ') === 0) ? 'Pump Trailer ' + t.slice(3) : (t || '');
+const fluidEnd = (trailer, head) => `${trailer} · Head ${head}`;
+const PUMP_RE = /^(PT \d+|Pump Down) · Head ([12])$/;
+function pumpOf(e){   // which pump fluid end an entry belongs to — area first, then legacy variant
+  for(const s of [e && e.area, e && e.variant]){ const m = s && String(s).match(PUMP_RE); if(m) return {trailer:m[1], head:Number(m[2])}; }
+  return null;
+}
+/* the standard iron that rides on every fluid end, pad to pad */
+const HEAD_TEMPLATE = [
+  {itemId:'dhubell', label:'Cannonball 90',  size:'3"', conn:'D', variant:''},
+  {itemId:'tee',     label:'2" T×W×W Tee',    size:'2"', conn:'T', variant:'T×W×W'},
+  {itemId:'coflex',  label:'HP Co-flex Hose', size:'3"', conn:'D', variant:'', coflex:true},
+];
+/* chrome / manufacture band — mechanically a normal month band (color = mfg month, year = mfg year),
+   just shown as chrome. Expiry = mfg month + interval, exactly like a recert band. */
+const CHROME = {bg:'linear-gradient(135deg,#eef1f4 0%,#c2c9d0 42%,#e9edf0 58%,#a7afb8 100%)', tx:'#20242a', m:'MFG', name:'Chrome'};
+function bandOf(e){ return (e && e.chrome) ? CHROME : (e && e.color >= 0 ? BANDS[e.color] : null); }
 
 /* ---------- sections on location ---------- */
 const SYSTEMS  = ['Frac','Pump Down'];
@@ -1263,7 +1393,7 @@ function load(){
     // merge duplicate lines the combine may have created (only plain lines without serials/notes)
     const seen = {};
     S.entries = S.entries.filter(e => {
-      const k = [e.itemId, e.size||'', e.variant||'', e.conn||'', e.color, e.year, e.area||''].join('|');
+      const k = [e.itemId, e.size||'', e.variant||'', e.conn||'', e.color, e.year, e.area||'', (e.chrome?'C':'')].join('|');
       const plain = !(e.serials && e.serials.length) && !e.note && !e.inspDate;
       if(seen[k] && plain){ seen[k].qty += e.qty; return false; }
       if(!seen[k]) seen[k] = e;
@@ -1287,7 +1417,7 @@ function load(){
     S.archives.forEach(a => (a.entries || []).forEach(fix));
     const seen = {};
     S.entries = S.entries.filter(e => {
-      const k = [e.itemId, e.size||'', e.variant||'', e.conn||'', e.color, e.year, e.area||''].join('|');
+      const k = [e.itemId, e.size||'', e.variant||'', e.conn||'', e.color, e.year, e.area||'', (e.chrome?'C':'')].join('|');
       const plain = !(e.serials && e.serials.length) && !e.note && !e.inspDate;
       if(seen[k] && plain){ seen[k].qty += e.qty; return false; }
       if(!seen[k]) seen[k] = e;
@@ -1358,6 +1488,14 @@ function labelFor(e){
   if(e.conn && e.conn !== 'T' && it && (it.conns || ['T']).length > 1) bits.push(CONN_NAME[e.conn]);
   return bits.join(' ');
 }
+function labelForNoPump(e){   // for the per-trailer report: drop the pump tag (the card already shows it), keep real variants like the tee pattern
+  const it = item(e.itemId);
+  const bits = [];
+  if(e.size && e.size !== SZ_ML) bits.push(e.size);
+  bits.push(it ? it.name : e.itemId);
+  if(e.variant && !PUMP_RE.test(e.variant) && e.variant !== 'Spare' && e.variant !== 'PD Monoline') bits.push(e.variant);
+  return bits.join(' ');
+}
 
 /* ---------- date math ---------- */
 const today = () => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); };
@@ -1390,12 +1528,13 @@ function statusOf(e){
 const fmtDate = d => d ? d.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) : '—';
 const fmtISO  = d => d ? `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` : '';
 function bandLabel(e){
+  if(e.chrome) return `Chrome · MFG ${BANDS[e.color].m} ${e.year} (exp +${S.settings.interval||6}mo)`;
   if(e.color == null || e.color < 0) return 'No band';
   return `${BANDS[e.color].name} · ${BANDS[e.color].m} ${e.year}`;
 }
 
 /* ---------- entry aggregation ---------- */
-const keyOf = e => [e.itemId, e.size||'', e.variant||'', e.conn||'', e.color, e.year, e.area||''].join('|');
+const keyOf = e => [e.itemId, e.size||'', e.variant||'', e.conn||'', e.color, e.year, e.area||'', (e.chrome?'C':'')].join('|');
 let uid = () => 'e' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
 
 function addPiece(itemId, size, variant, conn, color, area){
@@ -1417,21 +1556,24 @@ function addPiece(itemId, size, variant, conn, color, area){
 
 /* ---------- draft sessions → submit → running list + history ---------- */
 const sameKey = (a, b) => a.itemId === b.itemId && (a.size||'') === (b.size||'') && (a.variant||'') === (b.variant||'')
-  && (a.conn||'') === (b.conn||'') && a.color === b.color && a.year === b.year;
+  && (a.conn||'') === (b.conn||'') && a.color === b.color && a.year === b.year && !!a.chrome === !!b.chrome;
 const KIND_NAME = {recv:'Received', insp:'Inspection', fail:'Failed iron', trueup:'True-up', iron:'Pad count'};
 const KIND_VERB = {recv:'RECEIVING', insp:'SENDING FOR INSPECTION', fail:'FAILING IRON', trueup:'TRUE-UP COUNT'};
 function startSession(kind){
   S.session = {user:S.currentUser, kind, startedAt:Date.now(), entries:[]};
   save();
 }
-function addToSession(itemId, size, variant, conn, color, area){
-  const year = color >= 0 ? assumedYear(color) : 0;
-  const probe = {itemId, size, variant, conn, color, year};
+function addToSession(itemId, size, variant, conn, color, area, opts){
+  opts = opts || {};
+  const chrome = !!opts.chrome;
+  const year = opts.year != null ? opts.year : (color >= 0 ? assumedYear(color) : 0);
+  const probe = {itemId, size, variant, conn, color, year, chrome};
   let e = S.session.entries.find(x => sameKey(x, probe) && (x.area||'') === (area||''));
   if(e){ e.qty++; e.updated = Date.now(); }
   else {
     e = {id:uid(), itemId, size:size||'', variant:variant||'', conn:conn||'', color, year, area:area||'',
          qty:1, serials:[], note:'', inspDate:'', created:Date.now(), updated:Date.now()};
+    if(chrome) e.chrome = true;
     S.session.entries.push(e);
   }
   S.usage[itemId] = (S.usage[itemId] || 0) + 1;
@@ -1448,7 +1590,7 @@ function entryOptDef(it, size){
 function entryNeeds(e){
   const it = item(e.itemId); if(!it || it.coflex) return null;
   const segs = (e.variant || '').split(' · ').filter(Boolean);
-  if(it.pair) return (segs.includes('Spare') || (segs.some(s => /^PT \d+$/.test(s)) && segs.some(s => /^Head [12]$/.test(s)))) ? null : 'Pump';
+  if(it.pair) return (String(e.variant||'').includes('Spare') || pumpOf(e)) ? null : 'Pump';
   if(it.figs && !it.figs.items.some(f => segs.includes(f.v))) return it.figs.label.split(' — ')[0];
   const d = entryOptDef(it, e.size);
   if(d && d.values.length){
@@ -1463,7 +1605,7 @@ function restoreToCurrent(e, qty){
   let cur = S.entries.find(x => sameKey(x, e) && (x.area||'') === (e.area||''));
   if(cur){ cur.qty += qty; cur.updated = Date.now(); }
   else S.entries.push({id:uid(), itemId:e.itemId, size:e.size, variant:e.variant, conn:e.conn, color:e.color,
-    year:e.year, area:e.area, qty:qty, serials:e.serials ? e.serials.slice() : [], note:'', inspDate:'', created:Date.now(), updated:Date.now()});
+    year:e.year, area:e.area, qty:qty, serials:e.serials ? e.serials.slice() : [], note:'', inspDate:e.inspDate || '', chrome:e.chrome, created:Date.now(), updated:Date.now()});
 }
 function deductFromCurrent(e, qty){       // returns how many were actually on the count
   let took = 0;
@@ -1500,7 +1642,7 @@ function submitSession(){
     });
   } else if(s.kind === 'trueup'){
     // discrepancy report: counted vs running, per item+size+variant+band
-    const keyOfE = e => [e.itemId, e.size||'', e.variant||'', e.conn||'', e.color, e.year].join('|');
+    const keyOfE = e => [e.itemId, e.size||'', e.variant||'', e.conn||'', e.color, e.year, (e.chrome?'C':'')].join('|');
     const wasM = new Map(), nowM = new Map(), labels = new Map();
     S.entries.forEach(e => { const k = keyOfE(e); wasM.set(k, (wasM.get(k)||0) + e.qty); labels.set(k, e); });
     s.entries.forEach(e => { const k = keyOfE(e); nowM.set(k, (nowM.get(k)||0) + e.qty); labels.set(k, e); });
@@ -1539,8 +1681,9 @@ function toast(msg){
    UI — stepped count wizard: op/section → conn/size → piece ⇄ band
    ============================================================ */
 let sel = {itemId:null, variant:''};
-let coflexSel = {trailer:0, head:0};   // sticky within session — hoses are logged per pump trailer + head
-let pairSel = {trailer:0, head:0, spare:false};   // cannonball 90s pair to a pump too (or ride as spares)
+let coflexSel = {trailer:'', head:0, pdmono:false};   // hoses log per pump trailer + head, or ride the PD monoline
+let pairSel = {trailer:'', head:0, spare:false};      // cannonball 90s pair to a pump too (or ride as spares)
+let pumpCtx = {on:false, trailer:'', head:1};         // the per-pump guided walk (Pump Trailer button)
 let countStep = 'op';
 let lastAdd = null;
 let lastbarT = null;
@@ -1550,6 +1693,7 @@ const STEP_ORDER = ['op','setup','pieces','band'];
 const CS = () => S.settings.count;
 
 function curArea(){
+  if(pumpCtx.on) return fluidEnd(pumpCtx.trailer, pumpCtx.head);
   const c = CS();
   if(c.extra) return c.extra;
   if(c.sys && c.sec) return c.sys + ' ' + c.sec;
@@ -1587,7 +1731,8 @@ function goStep(step, dir){
   window.scrollTo(0,0);
 }
 function renderCount(dir){
-  const map = {home:'cs-home', op:'cs-op', setup:'cs-setup', pieces:'cs-pieces', band:'cs-band'};
+  const map = {home:'cs-home', op:'cs-op', setup:'cs-setup', pieces:'cs-pieces', band:'cs-band', ptlist:'cs-ptlist', pthead:'cs-pthead'};
+  if(countStep === 'home' || countStep === 'op' || countStep === 'setup' || countStep === 'pieces') pumpCtx.on = false;
   ensureHome();
   renderSessbar();
   if(countStep === 'home') renderHome();
@@ -1595,6 +1740,8 @@ function renderCount(dir){
   if(countStep === 'setup') renderSetupStep();
   if(countStep === 'pieces'){ renderCrumbs('crumbPieces'); renderPieces(); }
   if(countStep === 'band'){ renderCrumbs('crumbBand', true); renderBand(); }
+  if(countStep === 'ptlist') renderPtList();
+  if(countStep === 'pthead') renderPtHead();
   $$('.cstep').forEach(el => {
     const on = el.id === map[countStep];
     el.classList.remove('fwd','bck');
@@ -1612,6 +1759,12 @@ function crumbHTML(){
 }
 function renderCrumbs(id, withBack){
   const el = $('#' + id); if(!el) return;
+  if(pumpCtx.on){
+    el.innerHTML = `<button class="crumb back" data-go="pthead">‹</button>
+      <button class="crumb" data-go="pthead"><span class="k">PUMP</span><span class="v">${esc(trailerLabel(pumpCtx.trailer))} · H${pumpCtx.head}</span></button>`;
+    el.querySelectorAll('.crumb').forEach(b => b.onclick = () => goStep('pthead', 'bck'));
+    return;
+  }
   const {where, iron} = crumbHTML();
   el.innerHTML = (withBack ? `<button class="crumb back" data-go="pieces">‹</button>` : '') +
     `<button class="crumb" data-go="op"><span class="k">SECTION</span><span class="v">${esc(where)}</span></button>
@@ -1710,6 +1863,68 @@ $('#actionBtns').querySelectorAll('button').forEach(b => b.onclick = () => {
   countStep = startStep();
   renderCount('fwd');
 });
+
+/* ---------- PUMP TRAILER guided walk ---------- */
+$('#pumpWalkBtn').onclick = () => {
+  if(!S.currentUser || !S.settings.pad){ countStep = 'home'; renderCount('bck'); toast('Log in with your name and pad first'); return; }
+  if(!S.session) startSession('recv');
+  pumpCtx = {on:true, trailer:'', head:1};
+  pairSel = {trailer:'', head:0, spare:false};
+  coflexSel = {trailer:'', head:0, pdmono:false};
+  buzz(20);
+  toast('Walk each pump — tap the trailer, then band its iron');
+  goStep('ptlist', 'fwd');
+};
+function sessPumpEntries(){ return (S.session && S.session.entries) ? S.session.entries.filter(e => pumpOf(e)) : []; }
+function pumpCount(trailer){ return sessPumpEntries().filter(e => pumpOf(e).trailer === trailer).reduce((s,e) => s + e.qty, 0); }
+function headCount(trailer, head){ return sessPumpEntries().filter(e => { const p = pumpOf(e); return p.trailer === trailer && p.head === head; }).reduce((s,e) => s + e.qty, 0); }
+function pumpPieceEntry(trailer, head, itemId){
+  return sessPumpEntries().find(e => { const p = pumpOf(e); return p.trailer === trailer && p.head === head && e.itemId === itemId; }) || null;
+}
+function renderPtList(){
+  const g = $('#ptGrid'); if(!g) return;
+  g.innerHTML = TRAILERS.map(t => {
+    const n = pumpCount(t);
+    return `<button class="bigbtn ptbtn" data-t="${esc(t)}">${esc(trailerLabel(t))}<span class="sub">${n ? '● ' + n + ' LOGGED THIS WALK' : 'HEAD 1 · HEAD 2'}</span></button>`;
+  }).join('');
+  g.querySelectorAll('.ptbtn').forEach(b => b.onclick = () => { pumpCtx.on = true; pumpCtx.trailer = b.dataset.t; pumpCtx.head = 1; buzz(15); goStep('pthead', 'fwd'); });
+}
+function renderPtHead(){
+  if(!pumpCtx.trailer){ goStep('ptlist', 'bck'); return; }
+  pumpCtx.on = true;
+  $('#ptTitle').textContent = trailerLabel(pumpCtx.trailer);
+  const seg = $('#ptHeadSeg');
+  seg.innerHTML = [1,2].map(h => `<button class="${pumpCtx.head === h ? 'on' : ''}" data-h="${h}">HEAD ${h}<span class="ms">${headCount(pumpCtx.trailer, h)} PCS LOGGED</span></button>`).join('');
+  seg.querySelectorAll('button').forEach(b => b.onclick = () => { pumpCtx.head = Number(b.dataset.h); buzz(10); renderPtHead(); });
+  const cp = $('#crumbPt');
+  cp.innerHTML = `<button class="crumb back" id="ptBack">‹</button>
+    <button class="crumb" id="ptCrumb"><span class="k">WALKING</span><span class="v">All pumps</span></button>`;
+  $('#ptBack').onclick = () => goStep('ptlist', 'bck');
+  $('#ptCrumb').onclick = () => goStep('ptlist', 'bck');
+  const box = $('#ptPieces');
+  box.innerHTML = HEAD_TEMPLATE.map(tp => {
+    const e = pumpPieceEntry(pumpCtx.trailer, pumpCtx.head, tp.itemId);
+    const it = item(tp.itemId); const im = pieceImg(it);
+    const sub = e ? (tp.coflex ? (e.serials.length ? 'S/N ' + esc(e.serials.join(', ')) : 'logged — no band') : esc(bandLabel(e)))
+                  : (tp.coflex ? 'tap → serial (no band)' : 'tap → set the band');
+    return `<button class="ptpiece ${e ? 'done' : ''}" data-i="${tp.itemId}">
+      <span class="ptp-img">${im.html}</span>
+      <span class="ptp-txt"><b>${esc(tp.label)}</b><span>${e ? '✓ ' + sub : sub}</span></span>
+      <span class="ptp-go">${e ? '↺' : '›'}</span></button>`;
+  }).join('') +
+  `<div class="tiny muted" style="margin-top:12px;text-align:center">Everything you band here lands on <b>${esc(fluidEnd(pumpCtx.trailer, pumpCtx.head))}</b>. Hit SUBMIT up top when the walk is done.</div>`;
+  box.querySelectorAll('.ptpiece').forEach(b => b.onclick = () => launchPumpPiece(b.dataset.i));
+}
+function launchPumpPiece(itemId){
+  const tp = HEAD_TEMPLATE.find(x => x.itemId === itemId); if(!tp) return;
+  sel = {itemId:itemId, variant:'', fig:(itemId === 'tee' ? 'T×W×W' : '')};
+  mfgOpen = false; mfgMonth = null;
+  CS().size = tp.size;                 // resolveSize lands on the template size (e.g. 2" tee, 3" cannonball)
+  pairSel = {trailer:pumpCtx.trailer, head:pumpCtx.head, spare:false};
+  coflexSel = {trailer:pumpCtx.trailer, head:pumpCtx.head, pdmono:false};
+  buzz(15);
+  goStep('band', 'fwd');
+}
 
 /* ---------- session bar ---------- */
 function renderSessbar(){
@@ -1880,6 +2095,7 @@ function renderPieces(){
 }
 function pickItem(id){
   sel = {itemId:id, variant:'', fig:''};
+  mfgOpen = false; mfgMonth = null;
   buzz(15);
   goStep('band', 'fwd');
 }
@@ -1908,31 +2124,36 @@ function renderBand(){
   document.querySelector('#cs-band .bandlbl').style.display = isCoflex ? 'none' : '';
   $('#bandgrid').style.display = isCoflex ? 'none' : '';
   if(isCoflex){
-    html += `<div class="optlbl st1">Pump trailer</div><div class="optrow st1">` +
-      Array.from({length:20}, (_,i) => i+1).map(n =>
-        `<button class="opt ${coflexSel.trailer === n ? 'on' : ''}" data-t="${n}" style="min-width:44px;text-align:center">${n}</button>`).join('') + `</div>`;
-    html += `<div class="optlbl st1">Head</div><div class="optrow st1">` +
-      [1,2].map(h => `<button class="opt ${coflexSel.head === h ? 'on' : ''}" data-h="${h}" style="min-width:86px;text-align:center">Head ${h}</button>`).join('') + `</div>`;
+    if(pumpCtx.on){
+      html += `<div class="optlbl st1">On ${esc(trailerLabel(pumpCtx.trailer))} · Head ${pumpCtx.head}</div>`;
+    } else {
+      html += `<div class="optlbl st1">Pump trailer</div><div class="optrow st1" style="flex-wrap:wrap">` +
+        TRAILERS.map(t =>
+          `<button class="opt ${!coflexSel.pdmono && coflexSel.trailer === t ? 'on' : ''}" data-t="${esc(t)}" style="min-width:${t==='Pump Down'?'60':'44'}px;text-align:center">${t==='Pump Down'?'PD':t.slice(3)}</button>`).join('') + `</div>`;
+      html += `<div class="optlbl st1">Head</div><div class="optrow st1" style="flex-wrap:wrap">` +
+        [1,2].map(h => `<button class="opt ${!coflexSel.pdmono && coflexSel.head === h ? 'on' : ''}" data-h="${h}" style="min-width:86px;text-align:center">Head ${h}</button>`).join('') +
+        `<button class="opt ${coflexSel.pdmono ? 'on' : ''}" data-cpd="1" style="min-width:150px;text-align:center">PD MONOLINE — no pump</button></div>`;
+    }
     html += `<div class="optlbl st1">Serial number <span style="opacity:.6;letter-spacing:0;text-transform:none">(optional)</span></div>
       <input type="text" id="cfSerial" placeholder="Hose serial…" autocomplete="off" autocapitalize="characters" class="st1" style="margin-bottom:12px">
       <button class="bigbtn st2" id="cfAdd">ADD HOSE<span class="sub">NO INSPECTION BAND</span></button>`;
     $('#bandSel').innerHTML = html;
-    $('#bandSel').querySelectorAll('.opt[data-t]').forEach(o => o.onclick = () => {
-      coflexSel.trailer = coflexSel.trailer === Number(o.dataset.t) ? 0 : Number(o.dataset.t);
-      const s = $('#cfSerial') ? $('#cfSerial').value : '';
-      renderBand(); if($('#cfSerial')) $('#cfSerial').value = s;
-    });
-    $('#bandSel').querySelectorAll('.opt[data-h]').forEach(o => o.onclick = () => {
-      coflexSel.head = coflexSel.head === Number(o.dataset.h) ? 0 : Number(o.dataset.h);
-      const s = $('#cfSerial') ? $('#cfSerial').value : '';
-      renderBand(); if($('#cfSerial')) $('#cfSerial').value = s;
-    });
+    const keepSerial = fn => { const s = $('#cfSerial') ? $('#cfSerial').value : ''; fn(); renderBand(); if($('#cfSerial')) $('#cfSerial').value = s; };
+    $('#bandSel').querySelectorAll('.opt[data-t]').forEach(o => o.onclick = () => keepSerial(() => {
+      coflexSel.pdmono = false; coflexSel.trailer = coflexSel.trailer === o.dataset.t ? '' : o.dataset.t;
+    }));
+    $('#bandSel').querySelectorAll('.opt[data-h]').forEach(o => o.onclick = () => keepSerial(() => {
+      coflexSel.pdmono = false; coflexSel.head = coflexSel.head === Number(o.dataset.h) ? 0 : Number(o.dataset.h);
+    }));
+    $('#bandSel').querySelectorAll('.opt[data-cpd]').forEach(o => o.onclick = () => keepSerial(() => { coflexSel.pdmono = !coflexSel.pdmono; }));
     $('#cfAdd').onclick = () => {
-      if(!coflexSel.trailer || !coflexSel.head){ toast('Pick pump trailer & head'); buzz(30); return; }
-      const variant = `PT ${coflexSel.trailer} · Head ${coflexSel.head}`;
+      const pd = !pumpCtx.on && coflexSel.pdmono;
+      if(!pumpCtx.on && !pd && (!coflexSel.trailer || !coflexSel.head)){ toast('Pick pump trailer & head — or PD Monoline'); buzz(30); return; }
       if(!S.session){ toast('Pick an action first'); countStep = 'home'; renderCount('bck'); return; }
+      const variant = pumpCtx.on ? fluidEnd(pumpCtx.trailer, pumpCtx.head) : pd ? 'PD Monoline' : fluidEnd(coflexSel.trailer, coflexSel.head);
+      const area = pd ? 'Pump Down Monoline' : curArea();
       const serial = ($('#cfSerial').value || '').trim().toUpperCase();
-      const entry = addToSession('coflex', resolveSize(it), variant, resolveConn(it), -1, curArea());
+      const entry = addToSession('coflex', resolveSize(it), variant, resolveConn(it), -1, area);
       lastAdd = {list:'sess', id:entry.id};
       if(serial && !entry.serials.includes(serial)){ entry.serials.push(serial); save(); }
       buzz([18,25,45]);
@@ -1943,14 +2164,18 @@ function renderBand(){
     return;
   }
   if(it.pair){
-    const ok = pairSel.spare || (pairSel.trailer && pairSel.head);
-    html += `<div class="optlbl st1">Which pump? <span class="pickone ${ok ? 'done' : ''}">${ok ? '✓' : 'PICK ONE'}</span></div>
-      <div id="pairRow"><div class="optrow st1">` +
-      Array.from({length:20}, (_,i) => i+1).map(n =>
-        `<button class="opt ${!pairSel.spare && pairSel.trailer === n ? 'on' : ''}" data-pt="${n}" style="min-width:44px;text-align:center">${n}</button>`).join('') + `</div>
-      <div class="optrow st1" style="margin-top:6px">` +
-      [1,2].map(h2 => `<button class="opt ${!pairSel.spare && pairSel.head === h2 ? 'on' : ''}" data-ph="${h2}" style="min-width:86px;text-align:center">Head ${h2}</button>`).join('') +
-      `<button class="opt ${pairSel.spare ? 'on' : ''}" data-psp="1" style="min-width:120px;text-align:center">SPARE — no pump</button></div></div>`;
+    if(pumpCtx.on){
+      html += `<div class="optlbl st1">On ${esc(trailerLabel(pumpCtx.trailer))} · Head ${pumpCtx.head}</div>`;
+    } else {
+      const ok = pairSel.spare || (pairSel.trailer && pairSel.head);
+      html += `<div class="optlbl st1">Which pump? <span class="pickone ${ok ? 'done' : ''}">${ok ? '✓' : 'PICK ONE'}</span></div>
+        <div id="pairRow"><div class="optrow st1" style="flex-wrap:wrap">` +
+        TRAILERS.map(t =>
+          `<button class="opt ${!pairSel.spare && pairSel.trailer === t ? 'on' : ''}" data-pt="${esc(t)}" style="min-width:${t==='Pump Down'?'60':'44'}px;text-align:center">${t==='Pump Down'?'PD':t.slice(3)}</button>`).join('') + `</div>
+        <div class="optrow st1" style="margin-top:6px;flex-wrap:wrap">` +
+        [1,2].map(h2 => `<button class="opt ${!pairSel.spare && pairSel.head === h2 ? 'on' : ''}" data-ph="${h2}" style="min-width:86px;text-align:center">Head ${h2}</button>`).join('') +
+        `<button class="opt ${pairSel.spare ? 'on' : ''}" data-psp="1" style="min-width:120px;text-align:center">SPARE — no pump</button></div></div>`;
+    }
   }
   if(it.figs){
     html += `<div class="optlbl st1">${esc(it.figs.label)} <span class="pickone ${sel.fig ? 'done' : ''}">${sel.fig ? '✓' : 'PICK ONE'}</span></div><div class="figgrid st1" id="figRow">` +
@@ -1973,7 +2198,7 @@ function renderBand(){
   });
   $('#bandSel').querySelectorAll('.opt[data-pt]').forEach(o => o.onclick = () => {
     pairSel.spare = false;
-    pairSel.trailer = pairSel.trailer === Number(o.dataset.pt) ? 0 : Number(o.dataset.pt);
+    pairSel.trailer = pairSel.trailer === o.dataset.pt ? '' : o.dataset.pt;
     buzz(10); renderBand();
   });
   $('#bandSel').querySelectorAll('.opt[data-ph]').forEach(o => o.onclick = () => {
@@ -1994,8 +2219,48 @@ function renderBand(){
   g.innerHTML = BANDS.map((b,i) =>
     `<button class="band" data-c="${i}" style="background:${b.bg};color:${b.tx}">
        <span class="mo">${b.m}</span><span class="cn">${esc(b.name)}</span></button>`).join('') +
+    `<button class="band chrome-band ${mfgOpen ? 'on' : ''}" data-mfg="1"><span class="mo">MFG</span><span class="cn">chrome</span></button>` +
     `<button class="band nb" data-c="-1"><span class="mo">NO BAND</span><span class="cn">unknown</span></button>`;
-  g.querySelectorAll('.band').forEach(btn => btn.onclick = () => tapBand(Number(btn.dataset.c)));
+  g.querySelectorAll('.band[data-c]').forEach(btn => btn.onclick = () => tapBand(Number(btn.dataset.c)));
+  g.querySelector('.band[data-mfg]').onclick = (ev) => { mfgOpen = !mfgOpen; ev.currentTarget.classList.toggle('on', mfgOpen); renderMfgPanel(); if(mfgOpen) setTimeout(() => { const p = $('#mfgPanel'); if(p) p.scrollIntoView({behavior:'smooth', block:'center'}); }, 40); };
+  renderMfgPanel();
+}
+/* ---- manufacture (chrome) band: pick the month + year it was MADE; expires interval months later ---- */
+let mfgOpen = false, mfgMonth = null;
+function renderMfgPanel(){
+  const p = $('#mfgPanel'); if(!p) return;
+  if(!mfgOpen){ p.innerHTML = ''; p.classList.remove('open'); return; }
+  p.classList.add('open');
+  const yrNow = today().getFullYear();
+  const years = []; for(let y = yrNow; y >= yrNow - 15; y--) years.push(y);
+  p.innerHTML =
+    `<div class="mfg-h">⛓ <b>Manufacture band</b> — chrome, never recertified. Enter when it was <b>made</b>; it expires ${S.settings.interval || 6} months after.</div>
+     <div class="optlbl">Month made</div>
+     <div class="optrow" style="flex-wrap:wrap" id="mfgMon">` +
+       BANDS.map((b, i) => `<button class="opt ${mfgMonth === i ? 'on' : ''}" data-m="${i}" style="min-width:52px">${b.m}</button>`).join('') + `</div>
+     <div class="optlbl">Year made</div>
+     <select id="mfgYear" style="max-width:150px">` + years.map(y => `<option value="${y}">${y}</option>`).join('') + `</select>
+     <button class="bigbtn" id="mfgSet" style="margin-top:12px">SET MFG BAND<span class="sub">CHROME · EXPIRES +${S.settings.interval || 6} MONTHS</span></button>`;
+  p.querySelectorAll('#mfgMon .opt').forEach(o => o.onclick = () => { mfgMonth = mfgMonth === Number(o.dataset.m) ? null : Number(o.dataset.m); renderMfgPanel(); });
+  $('#mfgSet').onclick = () => {
+    if(mfgMonth == null){ toast('Pick the month it was made'); buzz(30); return; }
+    tapMfg(mfgMonth, Number($('#mfgYear').value));
+  };
+}
+function tapMfg(month, year){
+  const it = item(sel.itemId); if(!it) return;
+  const miss = missingSel(it, resolveSize(it));
+  if(miss){ toast('Pick the ' + miss.what + ' first — every piece gets counted exact'); buzz([30,40,30]);
+    const row = document.getElementById(miss.row); if(row){ row.scrollIntoView({behavior:'smooth', block:'center'}); row.classList.remove('needflash'); void row.offsetWidth; row.classList.add('needflash'); } return; }
+  const variant = it.pair ? (pairSel.spare ? 'Spare' : fluidEnd(pairSel.trailer, pairSel.head))
+                          : [sel.fig, sel.variant].filter(Boolean).join(' · ');
+  if(!S.session){ toast('Pick an action first'); countStep = 'home'; renderCount('bck'); return; }
+  const entry = addToSession(sel.itemId, resolveSize(it), variant, resolveConn(it), month, curArea(), {chrome:true, year:year});
+  lastAdd = {list:'sess', id:entry.id};
+  mfgOpen = false; mfgMonth = null;
+  buzz([18,25,45]);
+  playSubmitFX(it, entry, month, S.session.kind !== 'recv' && S.session.kind !== 'trueup' ? S.session.kind : null);
+  renderSessbar();
 }
 /* the choke drive chips only apply to a powered choke — hide otherwise */
 function bandOptDef(it, size){
@@ -2030,7 +2295,7 @@ function tapBand(color){
       row.classList.remove('needflash'); void row.offsetWidth; row.classList.add('needflash'); }
     return;
   }
-  const variant = it.pair ? (pairSel.spare ? 'Spare' : `PT ${pairSel.trailer} · Head ${pairSel.head}`)
+  const variant = it.pair ? (pairSel.spare ? 'Spare' : fluidEnd(pairSel.trailer, pairSel.head))
                           : [sel.fig, sel.variant].filter(Boolean).join(' · ');
   if(!S.session){ toast('Pick an action first'); countStep = 'home'; renderCount('bck'); return; }
   const entry = addToSession(sel.itemId, resolveSize(it), variant, resolveConn(it), color, curArea());
@@ -2045,7 +2310,7 @@ let fxT = null;
 function playSubmitFX(it, entry, color, out){
   const fx = $('#submitfx');
   const im = pieceImg(it);
-  const band = color >= 0 ? BANDS[color] : null;
+  const band = (entry && entry.chrome) ? CHROME : (color >= 0 ? BANDS[color] : null);
   let parts = '';
   for(let i = 0; i < 10; i++){
     const ang = (i / 10) * Math.PI * 2 + (i % 2 ? .3 : 0);
@@ -2067,7 +2332,7 @@ function playSubmitFX(it, entry, color, out){
   fxT = setTimeout(() => {
     fx.classList.remove('show'); fx.innerHTML = '';
     sel = {itemId:null, variant:'', fig:''};
-    goStep('pieces', 'bck');
+    goStep(pumpCtx.on ? 'pthead' : 'pieces', 'bck');
     showLastbar();
   }, 700);
 }
@@ -2173,6 +2438,7 @@ function statusBadge(st, x){
   return `<span class="badge none">no band</span>`;
 }
 function miniBand(e){
+  if(e.chrome) return `<span class="mini-band chrome" title="Chrome / manufacture band">MFG</span>`;
   if(e.color == null || e.color < 0) return `<span class="mini-band nb">—</span>`;
   const b = BANDS[e.color];
   return `<span class="mini-band" style="background:${b.bg};color:${b.tx}">${b.m}</span>`;
@@ -2602,6 +2868,76 @@ function renderRecertGrid(){
     buzz(12); renderRecertGrid();
   });
 }
+let pumpView = 'grid';
+function pumpEntry(t, h, itemId){ return S.entries.find(x => { const p = pumpOf(x); return p && p.trailer === t && p.head === h && x.itemId === itemId; }) || null; }
+function pumpTrailersWithData(){
+  const set = new Set();
+  S.entries.forEach(e => { const p = pumpOf(e); if(p) set.add(p.trailer); });
+  const order = t => { const i = TRAILERS.indexOf(t); return i < 0 ? 99 : i; };
+  return [...set].sort((a,b) => order(a) - order(b));
+}
+function renderPumpReport(){
+  const wrap = $('#rPumps'); if(!wrap) return;
+  const trailers = pumpTrailersWithData();
+  if(!trailers.length){ wrap.innerHTML = '<div class="tiny muted" style="padding:2px 4px 8px">No pump-trailer iron logged yet — use the ⛓ Pump Trailers walk on the Count tab.</div>'; return; }
+  let tot = 0, exp = 0;
+  S.entries.forEach(e => { if(pumpOf(e)){ tot += e.qty; if(statusOf(e) === 'exp') exp += e.qty; } });
+  wrap.innerHTML =
+    `<div class="rowflex" style="justify-content:space-between;margin-bottom:9px">
+       <div class="chiprow" style="padding:0"><button class="chip ${pumpView === 'grid' ? 'on' : ''}" data-pv="grid">▦ Overview</button><button class="chip ${pumpView === 'cards' ? 'on' : ''}" data-pv="cards">☰ Detail</button></div>
+       <div class="tiny muted" style="white-space:nowrap">${trailers.length} pump${trailers.length === 1 ? '' : 's'} · ${tot} pc${tot === 1 ? '' : 's'}${exp ? ` · <b style="color:var(--danger-l)">${exp} exp</b>` : ''}</div>
+     </div>` +
+    (pumpView === 'grid' ? pumpGridHTML(trailers) : pumpCardsHTML(trailers));
+  wrap.querySelectorAll('.chip[data-pv]').forEach(b => b.onclick = () => { pumpView = b.dataset.pv; renderPumpReport(); });
+}
+function pumpGridHTML(trailers){
+  const cols = HEAD_TEMPLATE.map(tp => tp.itemId === 'dhubell' ? 'Cannon' : tp.itemId === 'tee' ? '2" Tee' : 'Co-flex');
+  let h = '<div class="gridwrap"><table class="pumpmx"><tr><th class="pm-t">Pump · Head</th>' + cols.map(c => `<th>${esc(c)}</th>`).join('') + '</tr>';
+  trailers.forEach(t => {
+    [1, 2].forEach(head => {
+      h += `<tr class="${head === 1 ? 'pm-start' : ''}"><td class="pm-t">${esc(trailerLabel(t))}<span class="pm-hh">· H${head}</span></td>`;
+      HEAD_TEMPLATE.forEach(tp => {
+        const e = pumpEntry(t, head, tp.itemId);
+        if(!e){ h += `<td class="pm-c"><span class="pm-miss">—</span></td>`; return; }
+        if(tp.itemId === 'coflex'){
+          h += `<td class="pm-c"><span class="pm-cf" title="${esc(e.serials.join(', ') || 'logged')}">${e.serials.length ? 'S/N' : '✓'}</span></td>`;
+          return;
+        }
+        const st = statusOf(e), b = bandOf(e), ring = st === 'exp' ? ' x' : st === 'due' ? ' d' : '';
+        const style = e.chrome ? 'background:linear-gradient(135deg,#eef1f4,#c2c9d0,#a7afb8);color:#20242a' : b ? `background:${b.bg};color:${b.tx}` : '';
+        h += `<td class="pm-c"><span class="pm-b${ring}" style="${style}">${e.chrome ? 'MFG' : (b ? b.m : '—')}</span></td>`;
+      });
+      h += '</tr>';
+    });
+  });
+  h += '</table></div><div class="tiny muted" style="margin-top:7px;line-height:1.5">Cell = band month · <b style="color:var(--danger-l)">red ring</b> expired · <b style="color:var(--amber)">amber ring</b> due soon · <span style="opacity:.55">—</span> not logged. Tap <b>Detail</b> for dates &amp; serials.</div>';
+  return h;
+}
+function pumpCardsHTML(trailers){
+  let html = '';
+  trailers.forEach(t => {
+    const heads = new Map();
+    S.entries.forEach(e => { const p = pumpOf(e); if(p && p.trailer === t){ if(!heads.has(p.head)) heads.set(p.head, []); heads.get(p.head).push(e); } });
+    let tTot = 0, tExp = 0;
+    heads.forEach(arr => arr.forEach(e => { tTot += e.qty; if(statusOf(e) === 'exp') tExp += e.qty; }));
+    html += `<div class="pt-card"><div class="pt-h">${esc(trailerLabel(t))}<span class="pt-q">${tTot} pc${tTot === 1 ? '' : 's'}</span>${tExp ? `<span class="pt-exp">${tExp} EXPIRED</span>` : ''}</div><div class="pt-body">`;
+    [1, 2].forEach(head => {
+      const arr = heads.get(head); if(!arr || !arr.length) return;
+      html += `<div class="pt-hl">Head ${head}</div>`;
+      arr.sort((a,b) => labelForNoPump(a).localeCompare(labelForNoPump(b)));
+      arr.forEach(e => {
+        const st = statusOf(e), x = expiryOf(e);
+        const stTxt = st === 'exp' ? `<span style="color:var(--danger-l)">✕ exp ${fmtDate(x)}</span>`
+                    : st === 'due' ? `<span style="color:var(--amber)">⚠ ${fmtDate(x)}</span>`
+                    : x ? `<span style="color:var(--acc-l)">✓ ${fmtDate(x)}</span>` : '';
+        const sn = e.serials && e.serials.length ? ` · S/N ${esc(e.serials.join(', '))}` : '';
+        html += `<div class="pt-row"><span class="pt-nm">${e.qty > 1 ? e.qty + '× ' : ''}${esc(labelForNoPump(e))}${sn}</span>${miniBand(e)}<span class="pt-meta">${stTxt}</span></div>`;
+      });
+    });
+    html += `</div></div>`;
+  });
+  return html;
+}
 function renderReport(){
   const t = tallies();
   $('#rTotal').textContent = t.total; $('#rOk').textContent = t.ok;
@@ -2624,6 +2960,7 @@ function renderReport(){
     ih += `<tr><td>${esc(k)}${o.needs ? ` <b style="color:#f2b63c;font-size:10px;letter-spacing:.08em">— ${esc(o.needs.toUpperCase())} NOT SET · FIX IN LIST</b>` : ''}</td><td style="text-align:right;font-weight:700">${o.q}</td></tr>`;
   });
   $('#rItems').innerHTML = irows.length ? ih : '<tr><td class="muted">Nothing on the running list yet.</td></tr>';
+  renderPumpReport();
 
   // submission history
   const KL = {insp:'INSPECTION', fail:'FAILED', iron:'PAD', recv:'RECEIVED', trueup:'TRUE-UP'};
@@ -2679,7 +3016,7 @@ function buildPrint(){
       const st = statusOf(e), x = expiryOf(e);
       const stTxt = st === 'exp' ? 'EXPIRED' : st === 'due' ? 'DUE SOON' : st === 'ok' ? 'OK' : '—';
       const extra = [e.serials.join(', '), e.note].filter(Boolean).join(' — ');
-      const b = e.color >= 0 ? BANDS[e.color] : null;
+      const b = bandOf(e);
       html += `<tr><td class="q">${e.qty}</td><td>${esc(labelFor(e))}</td>
         <td class="bandcell">${b ? `<span class="swatch" style="background:${b.bg}"></span>${b.name} (${b.m} ${e.year})` : '—'}</td>
         <td>${x ? fmtDate(x) : '—'}</td><td class="${st === 'exp' ? 'bexp' : ''}">${stTxt}</td>
@@ -2698,6 +3035,7 @@ $('#btnPrint').onclick = () => {
 
 /* ---------- colorful PDF report ---------- */
 function pdfBandChip(e){
+  if(e.chrome) return `<span class="pdf-band" style="background:linear-gradient(135deg,#eef1f4,#c2c9d0,#a7afb8);color:#20242a">MFG ${BANDS[e.color].m} ${e.year}</span>`;
   if(e.color < 0) return '<span class="pdf-band" style="background:#e8ebee;color:#4a525b">NO BAND</span>';
   const b = BANDS[e.color];
   return `<span class="pdf-band" style="background:${b.bg};color:${b.tx}">${b.m} ${e.year}</span>`;
@@ -2879,7 +3217,7 @@ function csvString(entries){
     const it = item(e.itemId); const st = statusOf(e); const x = expiryOf(e);
     lines.push([
       catName(it ? it.cat : 'CUST'), it ? it.name : e.itemId, e.size, e.conn ? CONN_NAME[e.conn] : '', e.variant,
-      e.color >= 0 ? BANDS[e.color].name : 'None', e.color >= 0 ? BANDS[e.color].m : '', e.color >= 0 ? e.year : '',
+      bandOf(e) ? bandOf(e).name : 'None', e.color >= 0 ? BANDS[e.color].m : '', e.color >= 0 ? e.year : '',
       e.inspDate || '', x ? fmtISO(x) : '',
       st === 'exp' ? 'EXPIRED' : st === 'due' ? 'DUE SOON' : st === 'ok' ? 'OK' : 'NO BAND',
       e.qty, e.area, e.serials.join(' | '), e.note
@@ -3143,7 +3481,7 @@ function _ivAdopt(remote){
 }
 function _ivIndicator(on){
   var dot = document.getElementById('syncDot'), lbl = document.getElementById('syncLbl');
-  if(dot){ dot.style.background = on ? 'var(--acc)' : '#7a828c'; dot.style.boxShadow = on ? '0 0 0 3px rgba(30,180,116,.18)' : '0 0 0 3px rgba(122,130,140,.14)'; }
+  if(dot){ dot.classList.toggle('live', !!on); dot.style.background = on ? '' : '#7a828c'; dot.style.boxShadow = on ? '' : '0 0 0 3px rgba(122,130,140,.14)'; }
   if(lbl){ lbl.textContent = on ? 'Synced' : 'Offline'; lbl.style.color = on ? 'var(--acc)' : '#7a828c'; }
 }
 function ivSyncInit(){
