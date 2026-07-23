@@ -2009,7 +2009,7 @@ $('#actionBtns').querySelectorAll('button').forEach(b => b.onclick = () => {
   toast(b.dataset.k === 'trueup' ? 'True-up — pick an operation and count EVERYTHING in it, then submit'
       : b.dataset.k === 'recv' ? 'Adding — tap everything going on the list, then submit'
       : 'Removing — tap everything coming off the list, then submit');
-  countStep = startStep();
+  countStep = 'op';                       // every new list starts by picking its operation
   renderCount('fwd');
 });
 
@@ -3733,7 +3733,7 @@ $('#btnWipe').onclick = () => confirmSheet('Erase everything?',
    ============================================================ */
 function renderAll(){
   $('#hdrFleet').textContent = (S.settings.fleet || 'FLEET').toUpperCase();
-  countStep = startStep();
+  if(!S.session) countStep = startStep();   // mid-count, a sync adopt must not move the crew off their page
   renderCount('fwd'); renderCatalog(); renderList(); renderReport(); renderSetup();
 }
 /* ============================================================
