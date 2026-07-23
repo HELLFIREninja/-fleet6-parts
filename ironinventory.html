@@ -275,6 +275,10 @@ tr.needflash{animation:trflash 1.6s ease 1}
 .sumcell.exp .v{color:var(--danger-l)}.sumcell.due .v{color:var(--amber)}
 .grp{margin-bottom:14px}
 .grp-h{display:flex;align-items:baseline;gap:8px;margin:0 2px 6px;font-family:var(--disp);font-weight:800;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink2)}
+.grp-h.pump{color:#a78bfa}
+.grp.pumpgrp{padding-left:9px;border-left:3px solid rgba(167,139,250,.55);border-radius:2px}
+.pump-hh{font-family:var(--disp);font-weight:800;font-size:11.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink3);margin:10px 2px 5px}
+.pump-hh b{color:var(--ink2)}
 .grp-h .ct{margin-left:auto;font-family:var(--body);font-size:11.5px;letter-spacing:.05em;color:var(--ink3)}
 .invrow{
   width:100%;display:flex;align-items:center;gap:10px;padding:10px 11px;text-align:left;
@@ -904,7 +908,7 @@ table.pumpmx{width:100%;border-collapse:separate;border-spacing:0;table-layout:f
       <div id="draftsWrap"></div>
       <div class="tiny muted st3" style="margin-top:10px">Running list right now: <b id="homeRunning">0</b> pieces. True-up counts <b>everything on location</b> — the submitted count becomes the new running list.</div>
     </div>
-    <div class="home-ground" aria-hidden="true"><span class="hg-mark">EVOLUTION WELL SERVICES</span><span class="hg-sub">Treating Iron · 15K · Fleet 6 · build 7.23-H</span></div>
+    <div class="home-ground" aria-hidden="true"><span class="hg-mark">EVOLUTION WELL SERVICES</span><span class="hg-sub">Treating Iron · 15K · Fleet 6 · build 7.23-I</span></div>
   </div>
 
   <!-- session bar (visible while a list is being built) -->
@@ -2811,8 +2815,10 @@ function renderList(){
   $('#sumDue').textContent = due; $('#sumExp').textContent = exp;
 
   let list = S.entries.filter(e => listFilter === 'all' ? true : statusOf(e) === listFilter);
+  const pumpList = list.filter(e => pumpOf(e));       // pump-trailer iron lives in its own section
+  list = list.filter(e => !pumpOf(e));
   const wrap = $('#invlist');
-  if(!list.length){
+  if(!list.length && !pumpList.length){
     wrap.innerHTML = `<div class="emptymsg"><div class="big">${S.entries.length ? 'Nothing in this filter' : 'No iron counted yet'}</div>${S.entries.length ? '' : 'Head to Count, pick your section, tap the iron.'}</div>`;
     return;
   }
@@ -2830,6 +2836,40 @@ function renderList(){
     bn.innerHTML = `⚠ <b>${vague} line${vague === 1 ? '' : 's'}</b> missing the exact type — tap the line and set it right there. The running total can only be as precise as its lines.`;
     wrap.appendChild(bn);
   }
+  const mkRow = (e, hideArea) => {
+    const st = statusOf(e), x = expiryOf(e);
+    const r = document.createElement('button');
+    r.className = 'invrow' + (st === 'exp' ? ' expd' : '');
+    const nd = entryNeeds(e);
+    r.innerHTML = `<div class="qb">${e.qty}</div>
+      <div class="grow">
+        <div class="nm">${esc(labelFor(e))}${nd ? ` <b class="needtag">SET THE ${esc(nd.toUpperCase())}</b>` : ''}</div>
+        <div class="sub">${miniBand(e)} ${statusBadge(st, x)}${!hideArea && e.area ? `<span>· ${esc(e.area)}</span>` : ''}${e.serials.length ? `<span>· ${e.serials.length === 1 ? 'S/N ' + esc(e.serials[0]) : e.serials.length + ' S/N'}</span>` : ''}${e.note ? '<span>· ✎</span>' : ''}</div>
+      </div><span style="color:var(--ink3)">›</span>`;
+    r.onclick = () => openDetail(e.id);
+    return r;
+  };
+  // ⛓ pump-trailer iron — its own section, each head of each trailer
+  if(pumpList.length){
+    const pq = pumpList.reduce((s,e) => s + e.qty, 0);
+    const sec = document.createElement('div');
+    sec.className = 'grp pumpgrp';
+    sec.innerHTML = `<div class="grp-h pump">⛓ Pump Trailers<span class="ct">${pq} pc${pq === 1 ? '' : 's'}</span></div>`;
+    const tplOrder = e => { const i = HEAD_TEMPLATE.findIndex(tp => tp.itemId === e.itemId); return i < 0 ? 99 : i; };
+    TRAILERS.forEach(t => {
+      [1, 2].forEach(h => {
+        const arr = pumpList.filter(e => { const p = pumpOf(e); return p.trailer === t && p.head === h; });
+        if(!arr.length) return;
+        arr.sort((a,b) => tplOrder(a) - tplOrder(b) || labelFor(a).localeCompare(labelFor(b)));
+        const hh = document.createElement('div');
+        hh.className = 'pump-hh';
+        hh.innerHTML = `<b>${esc(trailerLabel(t))}</b> · Head ${h}`;
+        sec.appendChild(hh);
+        arr.forEach(e => sec.appendChild(mkRow(e, true)));
+      });
+    });
+    wrap.appendChild(sec);
+  }
   sortedGroups.forEach(([gname, arr]) => {
     arr.sort((a,b) => {
       const xa = expiryOf(a), xb = expiryOf(b);
@@ -2840,19 +2880,7 @@ function renderList(){
     const qty = arr.reduce((s,e) => s + e.qty, 0);
     const g = document.createElement('div'); g.className = 'grp';
     g.innerHTML = `<div class="grp-h">${esc(gname)}<span class="ct">${qty} pc${qty === 1 ? '' : 's'}</span></div>`;
-    arr.forEach(e => {
-      const st = statusOf(e), x = expiryOf(e);
-      const r = document.createElement('button');
-      r.className = 'invrow' + (st === 'exp' ? ' expd' : '');
-      const nd = entryNeeds(e);
-      r.innerHTML = `<div class="qb">${e.qty}</div>
-        <div class="grow">
-          <div class="nm">${esc(labelFor(e))}${nd ? ` <b class="needtag">SET THE ${esc(nd.toUpperCase())}</b>` : ''}</div>
-          <div class="sub">${miniBand(e)} ${statusBadge(st, x)}${e.area ? `<span>· ${esc(e.area)}</span>` : ''}${e.serials.length ? `<span>· ${e.serials.length} S/N</span>` : ''}${e.note ? '<span>· ✎</span>' : ''}</div>
-        </div><span style="color:var(--ink3)">›</span>`;
-      r.onclick = () => openDetail(e.id);
-      g.appendChild(r);
-    });
+    arr.forEach(e => g.appendChild(mkRow(e, false)));
     wrap.appendChild(g);
   });
 }
