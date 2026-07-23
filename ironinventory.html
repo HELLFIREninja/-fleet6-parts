@@ -903,7 +903,7 @@ table.pumpmx{width:100%;border-collapse:separate;border-spacing:0;table-layout:f
       <div id="draftsWrap"></div>
       <div class="tiny muted st3" style="margin-top:10px">Running list right now: <b id="homeRunning">0</b> pieces. True-up counts <b>everything on location</b> — the submitted count becomes the new running list.</div>
     </div>
-    <div class="home-ground" aria-hidden="true"><span class="hg-mark">EVOLUTION WELL SERVICES</span><span class="hg-sub">Treating Iron · 15K · Fleet 6</span></div>
+    <div class="home-ground" aria-hidden="true"><span class="hg-mark">EVOLUTION WELL SERVICES</span><span class="hg-sub">Treating Iron · 15K · Fleet 6 · build 7.23-E</span></div>
   </div>
 
   <!-- session bar (visible while a list is being built) -->
@@ -1730,6 +1730,7 @@ function submitSession(){
     disc.sort((a,b) => Math.abs(b.diff) - Math.abs(a.diff));
     rec.disc = disc;
     rec.wasTotal = scopeWas.reduce((a,e) => a + e.qty, 0);
+    rec.replaced = scopeWas;                                   // snapshot what this true-up replaces — makes it undoable
     S.entries = S.entries.filter(e => !inScope(e));            // keep every OTHER operation exactly as it was
     s.entries.forEach(e => {
       if(inScope(e)) S.entries.push(e);                        // the count becomes this operation's list
@@ -2853,15 +2854,35 @@ function renderHistList(){
         body.innerHTML = reasonHtml + dhtml + (a.entries.map(e =>
           `<div class="hrow"><span class="hq">${e.qty}</span><span class="grow">${esc(labelFor(e))}${e.area ? ` <span class="muted">· ${esc(e.area)}</span>` : ''}${e.serials.length ? ` <span class="muted">· ${esc(e.serials.join(', '))}</span>` : ''}${e.note ? ` <span style="color:#f2b63c">· ${esc(e.note)}</span>` : ''}</span>${miniBand(e)}</div>`).join('')
           || '<div class="tiny muted" style="padding:6px 0">Empty list.</div>') +
-          (kind !== 'trueup' && a.entries.length ? `<div style="padding:9px 0 4px"><button class="btn slim red" data-rst="1">⟲ RE-INSTATE — ADD ${a.total} PC${a.total === 1 ? '' : 'S'} BACK</button></div>` : '');
+          (() => {
+            const tuUndo = kind === 'trueup' && a.replaced && a.replaced.length;
+            if(kind !== 'trueup' && a.entries.length) return `<div style="padding:9px 0 4px"><button class="btn slim red" data-rst="1">⟲ RE-INSTATE — ADD ${a.total} PC${a.total === 1 ? '' : 'S'} BACK</button></div>`;
+            if(tuUndo) return `<div style="padding:9px 0 4px"><button class="btn slim red" data-rst="1">⟲ UNDO THIS TRUE-UP — PUT BACK WHAT IT REPLACED</button></div>`;
+            if(kind === 'trueup' && a.entries.length) return `<div style="padding:9px 0 4px"><button class="btn slim red" data-rst="1">⟲ RE-INSTATE — ADD ITS ${a.total} COUNTED PC${a.total === 1 ? '' : 'S'} BACK</button></div>`;
+            return '';
+          })();
         const rb = body.querySelector('[data-rst]');
-        if(rb) rb.onclick = () => confirmSheet('Re-instate this list?',
-          `Adds its ${a.total} piece${a.total === 1 ? '' : 's'} back onto the running list — bands, serials and sections included. Good for undoing a wrong removal, or bringing back iron a true-up wiped.`,
-          'Add them back', () => {
-            a.entries.forEach(e => restoreToCurrent(e, e.qty));
-            save(); renderList(); buzz([18,25,45]);
-            toast('Re-instated — ' + a.total + ' pcs back on the running list');
-          }, false);
+        if(rb) rb.onclick = () => {
+          if(kind === 'trueup' && a.replaced && a.replaced.length){
+            const rn = a.replaced.reduce((s,e) => s + e.qty, 0);
+            confirmSheet('Undo this true-up?',
+              `Pulls its ${a.total} counted piece${a.total === 1 ? '' : 's'} back off and restores the ${rn} piece${rn === 1 ? '' : 's'} it replaced — bands, serials and sections included.`,
+              'Undo it', () => {
+                a.entries.forEach(e => { const i = S.entries.findIndex(x => x.id === e.id); if(i >= 0) S.entries.splice(i, 1); });
+                a.replaced.forEach(e => restoreToCurrent(e, e.qty));
+                save(); renderList(); buzz([18,25,45]);
+                toast('True-up undone — the old lines are back');
+              }, false);
+          } else {
+            confirmSheet('Re-instate this list?',
+              `Adds its ${a.total} piece${a.total === 1 ? '' : 's'} back onto the running list — bands, serials and sections included. Good for undoing a wrong removal, or bringing back iron a true-up wiped.`,
+              'Add them back', () => {
+                a.entries.forEach(e => restoreToCurrent(e, e.qty));
+                save(); renderList(); buzz([18,25,45]);
+                toast('Re-instated — ' + a.total + ' pcs back on the running list');
+              }, false);
+          }
+        };
       }
     };
     wrap.appendChild(card);
