@@ -856,6 +856,7 @@ table.pumpmx{width:100%;border-collapse:separate;border-spacing:0;table-layout:f
 #sessCt{cursor:pointer}
 .bigbtn.oplock{opacity:.45;filter:saturate(.45)}
 .chip.oplock{opacity:.45}
+.ptpiece.off{opacity:.45;filter:saturate(.5)}
 .hs-lab{font-family:var(--disp);font-weight:800;font-size:15px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink2);text-align:center;line-height:1.05}
 .headsel-btn.on .hs-lab{color:var(--acc-l)}
 .hs-lab span{display:block;font-family:var(--body);font-weight:600;font-size:9.5px;letter-spacing:.04em;color:var(--ink3);margin-top:2px}
@@ -903,7 +904,7 @@ table.pumpmx{width:100%;border-collapse:separate;border-spacing:0;table-layout:f
       <div id="draftsWrap"></div>
       <div class="tiny muted st3" style="margin-top:10px">Running list right now: <b id="homeRunning">0</b> pieces. True-up counts <b>everything on location</b> — the submitted count becomes the new running list.</div>
     </div>
-    <div class="home-ground" aria-hidden="true"><span class="hg-mark">EVOLUTION WELL SERVICES</span><span class="hg-sub">Treating Iron · 15K · Fleet 6 · build 7.23-E</span></div>
+    <div class="home-ground" aria-hidden="true"><span class="hg-mark">EVOLUTION WELL SERVICES</span><span class="hg-sub">Treating Iron · 15K · Fleet 6 · build 7.23-H</span></div>
   </div>
 
   <!-- session bar (visible while a list is being built) -->
@@ -968,7 +969,7 @@ table.pumpmx{width:100%;border-collapse:separate;border-spacing:0;table-layout:f
   <div class="cstep" id="cs-ptlist">
     <button class="wiz-back st1" type="button"><span class="bk">‹</span>BACK</button>
     <div class="wiz-head st1"><h2 class="wiz-t">Pump trailers</h2></div>
-    <div class="tiny muted st2" style="margin:0 2px 10px">Tap a trailer, then band the iron on each fluid end — the cannonball 90, the 2" tee and the co-flex are already listed for Head 1 and Head 2.</div>
+    <div class="tiny muted st2" style="margin:0 2px 10px" id="ptIntro">Tap a trailer, then band the iron on each fluid end — the cannonball 90, the 2" tee and the co-flex are already listed for Head 1 and Head 2.</div>
     <div class="pt-illus st2" id="ptIllus"></div>
     <div class="bigcol st2" id="ptGrid"></div>
   </div>
@@ -1282,7 +1283,7 @@ const CATALOG = [
       {v:'T×T×W', img:'teeE'},
       {v:'T×W×W', img:'teeC'},
     ]},
-    optBySize:{label:'Branch size', map:{'3"':['3" br','2" br'],'4"':['4" br','3" br','2" br']}}},
+    optBySize:{label:'Branch size', map:{'2"':['2" br'],'3"':['3" br','2" br'],'4"':['4" br','3" br','2" br']}}},
   {id:'cross',    cat:'FIT',  name:'Cross',                  sizes:['2"','3"','4"'], conns:['T'],
     figs:{label:'Pattern — around the cross', items:[
       {v:'T×T×T×T', img:'crossAT'},
@@ -1673,7 +1674,15 @@ function entryNeeds(e){
 }
 function restoreToCurrent(e, qty){
   let cur = S.entries.find(x => sameKey(x, e) && (x.area||'') === (e.area||''));
-  if(cur){ cur.qty += qty; cur.updated = Date.now(); }
+  const headHose = ['coflex','dhubell','tee'].includes(e.itemId) && pumpOf(e);   // a fluid end carries exactly ONE cannonball, ONE tee, ONE hose
+  if(cur){
+    cur.qty = headHose ? 1 : cur.qty + qty;
+    if(e.serials && e.serials.length){
+      cur.serials = headHose ? e.serials.slice() : [...new Set([...(cur.serials || []), ...e.serials])];
+    }
+    if(!cur.inspDate && e.inspDate) cur.inspDate = e.inspDate;
+    cur.updated = Date.now();
+  }
   else S.entries.push({id:uid(), itemId:e.itemId, size:e.size, variant:e.variant, conn:e.conn, color:e.color,
     year:e.year, area:e.area, qty:qty, serials:e.serials ? e.serials.slice() : [], note:'', inspDate:e.inspDate || '', chrome:e.chrome, created:Date.now(), updated:Date.now()});
 }
@@ -1739,6 +1748,7 @@ function submitSession(){
   }
   S.archives.push(rec);
   S.session = null;
+  load2();          // normalize (tee branches, one-hose rule, twin merge) before it hits the fleet
   save();
   return rec;
 }
@@ -2022,7 +2032,7 @@ function startPumpWalk(){
   pairSel = {trailer:'', head:0, spare:false};
   coflexSel = {trailer:'', head:0, pdmono:false};
   buzz(20);
-  toast('Pump Trailers — tap a trailer, then band its iron');
+  toast(S.session && S.session.kind === 'rem' ? 'Pump Trailers — mark what\u2019s coming off each fluid end' : 'Pump Trailers — tap a trailer, then band its iron');
   goStep('ptlist', 'fwd');
 }
 function sessPumpEntries(){ return (S.session && S.session.entries) ? S.session.entries.filter(e => pumpOf(e)) : []; }
@@ -2031,12 +2041,23 @@ function headCount(trailer, head){ return sessPumpEntries().filter(e => { const 
 function pumpPieceEntry(trailer, head, itemId){
   return sessPumpEntries().find(e => { const p = pumpOf(e); return p.trailer === trailer && p.head === head && e.itemId === itemId; }) || null;
 }
+function curPumpCount(trailer){ return S.entries.filter(e => { const p = pumpOf(e); return p && p.trailer === trailer; }).reduce((s,e) => s + e.qty, 0); }
+function curHeadCount(trailer, head){ return S.entries.filter(e => { const p = pumpOf(e); return p && p.trailer === trailer && p.head === head; }).reduce((s,e) => s + e.qty, 0); }
 function renderPtList(){
   const il = $('#ptIllus'); if(il) il.innerHTML = PUMP_TRAILER_SVG;
+  const remMode = S.session && S.session.kind === 'rem';
+  const intro = $('#ptIntro');
+  if(intro) intro.textContent = remMode
+    ? 'Tap a trailer, then mark what\u2019s coming off each fluid end — bands and serial numbers ride along automatically.'
+    : 'Tap a trailer, then band the iron on each fluid end — the cannonball 90, the 2" tee and the co-flex are already listed for Head 1 and Head 2.';
   const g = $('#ptGrid'); if(!g) return;
   g.innerHTML = TRAILERS.map(t => {
-    const n = pumpCount(t);
-    return `<button class="bigbtn ptbtn" data-t="${esc(t)}">${esc(trailerLabel(t))}<span class="sub">${n ? '● ' + n + ' ON THIS LIST' : 'HEAD 1 · HEAD 2'}</span></button>`;
+    const marked = pumpCount(t);
+    const rigged = remMode ? curPumpCount(t) : 0;
+    const sub = remMode
+      ? (rigged ? rigged + ' RIGGED IN' + (marked ? ' · ' + marked + ' MARKED' : '') : 'NOTHING LOGGED HERE')
+      : (marked ? '● ' + marked + ' ON THIS LIST' : 'HEAD 1 · HEAD 2');
+    return `<button class="bigbtn ptbtn" data-t="${esc(t)}">${esc(trailerLabel(t))}<span class="sub">${sub}</span></button>`;
   }).join('');
   g.querySelectorAll('.ptbtn').forEach(b => b.onclick = () => { pumpCtx.on = true; pumpCtx.trailer = b.dataset.t; pumpCtx.head = 1; buzz(15); goStep('pthead', 'fwd'); });
 }
@@ -2045,14 +2066,33 @@ function renderPtHead(){
   pumpCtx.on = true;
   $('#ptTitle').textContent = trailerLabel(pumpCtx.trailer);
   const seg = $('#ptHeadSeg');
+  const remMode = S.session && S.session.kind === 'rem';
   seg.innerHTML = [2, 1].map(h => {                 // Head 2 on the left, Head 1 on the right — matches the pump
     const on = pumpCtx.head === h;
+    const n = remMode ? curHeadCount(pumpCtx.trailer, h) : headCount(pumpCtx.trailer, h);
     return `<button class="headsel-btn ${on ? 'on' : ''}" data-h="${h}">
       <div class="hs-img${h === 2 ? ' flip' : ''}">${FLUID_END_SVG}</div>
-      <div class="hs-lab">HEAD ${h}<span>${headCount(pumpCtx.trailer, h)} pcs logged</span></div></button>`;
+      <div class="hs-lab">HEAD ${h}<span>${n} pcs ${remMode ? 'rigged in' : 'logged'}</span></div></button>`;
   }).join('');
   seg.querySelectorAll('button').forEach(b => b.onclick = () => { pumpCtx.head = Number(b.dataset.h); buzz(10); renderPtHead(); });
   const box = $('#ptPieces');
+  if(remMode){
+    box.innerHTML = HEAD_TEMPLATE.map(tp => {
+      const cur = pumpEntry(pumpCtx.trailer, pumpCtx.head, tp.itemId);
+      const marked = pumpPieceEntry(pumpCtx.trailer, pumpCtx.head, tp.itemId);
+      const it = item(tp.itemId); const im = pieceImg(it);
+      const sub = marked ? '✓ coming off — tap to keep it'
+        : cur ? ((tp.coflex ? (cur.serials.length ? 'S/N ' + esc(cur.serials.join(', ')) : 'on this head') : esc(bandLabel(cur))) + ' · tap → remove')
+        : 'nothing on this head';
+      return `<button class="ptpiece ${marked ? 'done' : ''}${!cur && !marked ? ' off' : ''}" data-i="${tp.itemId}">
+        <span class="ptp-img">${im.html}</span>
+        <span class="ptp-txt"><b>${esc(tp.label)}</b><span>${sub}</span></span>
+        <span class="ptp-go">${marked ? '↺' : cur ? '✕' : '—'}</span></button>`;
+    }).join('') +
+    `<div class="tiny muted" style="margin-top:12px;text-align:center">Everything you mark comes OFF <b>${esc(fluidEnd(pumpCtx.trailer, pumpCtx.head))}</b> when you submit.</div>`;
+    box.querySelectorAll('.ptpiece').forEach(b => b.onclick = () => remPumpPiece(b.dataset.i));
+    return;
+  }
   box.innerHTML = HEAD_TEMPLATE.map(tp => {
     const e = pumpPieceEntry(pumpCtx.trailer, pumpCtx.head, tp.itemId);
     const it = item(tp.itemId); const im = pieceImg(it);
@@ -2066,9 +2106,29 @@ function renderPtHead(){
   `<div class="tiny muted" style="margin-top:12px;text-align:center">Everything you band here lands on <b>${esc(fluidEnd(pumpCtx.trailer, pumpCtx.head))}</b>. Hit SUBMIT up top when you\u2019re done.</div>`;
   box.querySelectorAll('.ptpiece').forEach(b => b.onclick = () => launchPumpPiece(b.dataset.i));
 }
+function remPumpPiece(itemId){
+  const marked = pumpPieceEntry(pumpCtx.trailer, pumpCtx.head, itemId);
+  if(marked){
+    const i = S.session.entries.indexOf(marked);
+    if(i >= 0) S.session.entries.splice(i, 1);
+    save(); buzz(10); toast('Kept on the pump');
+    renderPtHead(); renderSessbar();
+    return;
+  }
+  const cur = pumpEntry(pumpCtx.trailer, pumpCtx.head, itemId);
+  if(!cur){ toast('Nothing logged on this head for that piece'); buzz(30); return; }
+  const entry = addToSession(cur.itemId, cur.size, cur.variant, cur.conn, cur.color, cur.area, {chrome:cur.chrome, year:cur.year});
+  entry.qty = 1;
+  if(cur.serials && cur.serials.length) entry.serials = cur.serials.slice();
+  entry.inspDate = cur.inspDate || '';
+  lastAdd = {list:'sess', id:entry.id};
+  save(); buzz([18,25,45]);
+  toast('Marked — comes off at submit');
+  renderPtHead(); renderSessbar(); showLastbar();
+}
 function launchPumpPiece(itemId){
   const tp = HEAD_TEMPLATE.find(x => x.itemId === itemId); if(!tp) return;
-  sel = {itemId:itemId, variant:'', fig:(itemId === 'tee' ? 'T×W×W' : '')};
+  sel = {itemId:itemId, variant:(itemId === 'tee' ? '2" br' : ''), fig:(itemId === 'tee' ? 'T×W×W' : '')};
   mfgOpen = false; mfgMonth = null;
   CS().size = tp.size;                 // resolveSize lands on the template size (e.g. 2" tee, 3" cannonball)
   pairSel = {trailer:pumpCtx.trailer, head:pumpCtx.head, spare:false};
@@ -2446,6 +2506,7 @@ function renderBand(){
       }).join('') + `</div>`;
   }
   const optDef = bandOptDef(it, size);
+  if(optDef && optDef.values.length === 1 && !sel.variant) sel.variant = optDef.values[0];   // only one possibility — set it automatically
   if(optDef){
     html += `<div class="optlbl st1">${esc(optDef.label)} <span class="pickone ${sel.variant ? 'done' : ''}">${sel.variant ? '✓' : 'PICK ONE'}</span></div><div class="optrow st1" id="optRow">` +
       optDef.values.map(v => `<button class="opt ${sel.variant === v ? 'on' : ''}" data-v="${esc(v)}">${esc(v)}</button>`).join('') + `</div>`;
@@ -2870,7 +2931,7 @@ function renderHistList(){
               'Undo it', () => {
                 a.entries.forEach(e => { const i = S.entries.findIndex(x => x.id === e.id); if(i >= 0) S.entries.splice(i, 1); });
                 a.replaced.forEach(e => restoreToCurrent(e, e.qty));
-                save(); renderList(); buzz([18,25,45]);
+                load2(); save(); renderList(); buzz([18,25,45]);
                 toast('True-up undone — the old lines are back');
               }, false);
           } else {
@@ -2878,7 +2939,7 @@ function renderHistList(){
               `Adds its ${a.total} piece${a.total === 1 ? '' : 's'} back onto the running list — bands, serials and sections included. Good for undoing a wrong removal, or bringing back iron a true-up wiped.`,
               'Add them back', () => {
                 a.entries.forEach(e => restoreToCurrent(e, e.qty));
-                save(); renderList(); buzz([18,25,45]);
+                load2(); save(); renderList(); buzz([18,25,45]);
                 toast('Re-instated — ' + a.total + ' pcs back on the running list');
               }, false);
           }
@@ -3611,6 +3672,25 @@ function load2(){ // re-run guards after restore / after adopting a synced snaps
   const fixE = e => { if(e && !Array.isArray(e.serials)) e.serials = []; };  // every line must render safely
   S.entries.forEach(fixE);
   S.archives.forEach(a => { if(a && Array.isArray(a.entries)) a.entries.forEach(fixE); });
+  // fleet rules baked into the data: every 2" tee carries its 2" branch; a fluid end holds exactly ONE hose
+  S.entries.forEach(e => {
+    if(e.itemId === 'tee' && e.size === '2"' && e.variant && e.variant.indexOf('br') < 0) e.variant = e.variant + ' · 2" br';
+  });
+  const _nk = e => [e.itemId, e.size||'', e.variant||'', e.conn||'', e.color, e.year, e.chrome?'C':'', e.area||''].join('|');
+  const _nm = new Map(); const _nl = [];
+  S.entries.forEach(e => {
+    const k = _nk(e);
+    const prev = _nm.get(k);
+    if(prev){
+      const hh = ['coflex','dhubell','tee'].includes(e.itemId) && typeof pumpOf === 'function' && pumpOf(e);
+      prev.qty = hh ? 1 : prev.qty + e.qty;
+      prev.serials = [...new Set([...(prev.serials || []), ...(e.serials || [])])];
+      if(!prev.note && e.note) prev.note = e.note;
+      prev.updated = Math.max(prev.updated || 0, e.updated || 0);
+    } else { _nm.set(k, e); _nl.push(e); }
+  });
+  S.entries = _nl;
+  S.entries.forEach(e => { if(['coflex','dhubell','tee'].includes(e.itemId) && typeof pumpOf === 'function' && pumpOf(e) && e.qty > 1) e.qty = 1; });   // one of each per fluid end
 }
 
 /* ============================================================
