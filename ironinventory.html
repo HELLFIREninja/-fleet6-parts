@@ -635,8 +635,26 @@ html,body{overscroll-behavior-y:contain}
   #pdfsheet th{text-align:left;font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;color:#67707b;
     border-bottom:1.5px solid #cfd6dd;padding:3px 6px}
   #pdfsheet td{border-bottom:1px solid #e7ebef;padding:4px 6px;vertical-align:top}
-  #pdfsheet .pdf-band{display:inline-block;border-radius:5px;padding:2px 8px;font-family:var(--disp);
-    font-weight:800;font-size:9.5px;letter-spacing:.08em;border:1px solid rgba(0,0,0,.18)}
+  #pdfsheet *, #printsheet *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}
+  #pdfsheet .pdf-band{display:inline-flex;align-items:center;gap:4px;border-radius:5px;padding:2px 7px;font-family:var(--disp);
+    font-weight:800;font-size:9px;letter-spacing:.05em;border:1px solid #b9c0c7;background:#fff;color:#16191d;white-space:nowrap}
+  #pdfsheet .pb-sw{display:inline-block;width:10px;height:10px;border-radius:2.5px;border:1px solid rgba(0,0,0,.4);flex:none}
+  #pdfsheet .pdash{display:flex;gap:12px;align-items:stretch;margin-bottom:10px}
+  #pdfsheet .pdon{flex:0 0 218px;border:1.5px solid #dfe4ea;border-radius:12px;padding:6px;display:flex;align-items:center;justify-content:center;background:#fbfcfd}
+  #pdfsheet .pdash .ptiles{flex:1;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:0}
+  #pdfsheet .pdash .ptile{display:flex;flex-direction:column;justify-content:center}
+  #pdfsheet .prun{display:flex;gap:6px}
+  #pdfsheet .prun-c{flex:1;border:1.5px solid #dfe4ea;border-radius:9px;text-align:center;background:#fff;overflow:hidden;padding-bottom:6px}
+  #pdfsheet .prun-c.dry{border-color:#d95f5f;background:#fdeeee}
+  #pdfsheet .prun-m{font-family:var(--disp);font-weight:800;font-size:9.5px;padding:5px 2px 3px;background:#f3f5f7;color:#1c1f22;letter-spacing:.04em}
+  #pdfsheet .prun-x{font-size:8.5px;color:#b04a3a;font-weight:700;margin-top:4px;min-height:11px}
+  #pdfsheet .prun-v{font-family:var(--disp);font-weight:800;font-size:21px;line-height:1.05}
+  #pdfsheet .prun-c.dry .prun-v{color:#c8332b}
+  #pdfsheet .prun-k{font-size:7.5px;letter-spacing:.1em;text-transform:uppercase;color:#67707b}
+  #pdfsheet .verdict{margin-top:7px;font-size:11px;font-weight:700;border-left:4px solid #27ca8b;background:#eafaf2;border-radius:0 7px 7px 0;padding:6px 10px}
+  #pdfsheet .verdict.dry{border-left-color:#d95f5f;background:#fdeeee;color:#8c1f18}
+  #pdfsheet .sno{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:16px;border-radius:4px;background:#178a58;color:#fff;font-size:9px;margin-right:7px;letter-spacing:.05em;padding:0 3px}
+  #pdfsheet .chartbox{border:1.5px solid #e3e8ed;border-radius:10px;padding:8px 8px 4px;background:#fbfcfd}
   #pdfsheet .exp-t{color:#c8332b;font-weight:700}
   #pdfsheet .due-t{color:#b07a10;font-weight:700}
   #pdfsheet .pgrid{table-layout:fixed;width:100%}
@@ -908,7 +926,7 @@ table.pumpmx{width:100%;border-collapse:separate;border-spacing:0;table-layout:f
       <div id="draftsWrap"></div>
       <div class="tiny muted st3" style="margin-top:10px">Running list right now: <b id="homeRunning">0</b> pieces. True-up counts <b>everything on location</b> — the submitted count becomes the new running list.</div>
     </div>
-    <div class="home-ground" aria-hidden="true"><span class="hg-mark">EVOLUTION WELL SERVICES</span><span class="hg-sub">Treating Iron · 15K · Fleet 6 · build 7.23-I</span></div>
+    <div class="home-ground" aria-hidden="true"><span class="hg-mark">EVOLUTION WELL SERVICES</span><span class="hg-sub">Treating Iron · 15K · Fleet 6 · build 7.23-J</span></div>
   </div>
 
   <!-- session bar (visible while a list is being built) -->
@@ -3414,6 +3432,16 @@ function buildPrint(){
     <div class="meta"><span><b>${esc(S.settings.fleet || '')}</b></span>${S.settings.pad ? `<span>Pad: <b>${esc(S.settings.pad)}</b></span>` : ''}
     <span>${now.toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric', year:'numeric'})} ${now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</span></div></div>
     <div class="psum"><span>Total <b>${t.total}</b></span><span>In date <b>${t.ok}</b></span><span>Due ≤${S.settings.dueSoonDays}d <b>${t.due}</b></span><span>EXPIRED <b>${t.exp}</b></span>${t.none ? `<span>No band <b>${t.none}</b></span>` : ''}</div>`;
+  const rw = runwayRows();
+  const vd = runwayVerdict(rw, t.none);
+  html += `<h2>In-date runway — next 6 months</h2><table><tr><th>Month</th><th>Expiring</th><th>In date after</th></tr>` +
+    rw.map(r => `<tr${r.after === 0 ? ' style="font-weight:bold"' : ''}><td>${MONTHS_FULL[r.m]} ${r.y}</td><td>${r.expiring || '—'}</td><td>${r.after}</td></tr>`).join('') +
+    `</table><div style="font-size:9.5pt;margin:4px 0 2px"><b>${esc(vd.text)}</b></div>`;
+  const ops = opBreakdown();
+  if(ops.length){
+    html += `<h2>By operation</h2><table><tr><th>Operation</th><th>In date</th><th>Due</th><th>Expired</th><th>No band</th><th>Total</th></tr>` +
+      ops.map(([op, o]) => `<tr><td><b>${esc(op)}</b></td><td>${o.ok || '—'}</td><td>${o.due || '—'}</td><td>${o.exp || '—'}</td><td>${o.none || '—'}</td><td><b>${o.total}</b></td></tr>`).join('') + `</table>`;
+  }
   [...groups.entries()].sort((a,b) => a[0].localeCompare(b[0])).forEach(([g, arr]) => {
     arr.sort((a,b) => labelFor(a).localeCompare(labelFor(b)));
     const gq = arr.reduce((s,e) => s + e.qty, 0);
@@ -3442,10 +3470,125 @@ $('#btnPrint').onclick = () => {
 
 /* ---------- colorful PDF report ---------- */
 function pdfBandChip(e){
-  if(e.chrome) return `<span class="pdf-band" style="background:linear-gradient(135deg,#eef1f4,#c2c9d0,#a7afb8);color:#20242a">MFG ${BANDS[e.color].m} ${e.year}</span>`;
-  if(e.color < 0) return '<span class="pdf-band" style="background:#e8ebee;color:#4a525b">NO BAND</span>';
+  if(e.chrome) return `<span class="pdf-band"><span class="pb-sw" style="background:linear-gradient(135deg,#eef1f4,#c2c9d0,#a7afb8)"></span>MFG ${BANDS[e.color].m} ${e.year} · CHROME</span>`;
+  if(e.color < 0) return `<span class="pdf-band"><span class="pb-sw" style="background:#fff;border-style:dashed"></span>NO BAND</span>`;
   const b = BANDS[e.color];
-  return `<span class="pdf-band" style="background:${b.bg};color:${b.tx}">${b.m} ${e.year}</span>`;
+  return `<span class="pdf-band"><span class="pb-sw" style="background:${b.bg}"></span>${b.m} ${e.year} · ${b.name.toUpperCase()}</span>`;
+}
+/* ---- planning + chart helpers for the field report ---- */
+function runwayRows(){
+  const t = today();
+  const nowK = t.getFullYear() * 12 + t.getMonth();
+  const byK = new Map();
+  S.entries.forEach(e => { const x = expiryOf(e); if(!x) return; const k = x.getFullYear() * 12 + x.getMonth(); if(k >= nowK) byK.set(k, (byK.get(k) || 0) + e.qty); });
+  const tal = tallies();
+  let remaining = tal.ok + tal.due;
+  const rows = [];
+  for(let i = 0; i < 6; i++){
+    const k = nowK + i;
+    const expiring = byK.get(k) || 0;
+    remaining = Math.max(0, remaining - expiring);
+    rows.push({y:Math.floor(k / 12), m:k % 12, expiring, after:remaining});
+  }
+  return rows;
+}
+function runwayVerdict(rw, noneCt){
+  const firstDry = rw.find(r => r.after === 0);
+  let v = firstDry
+    ? `⚠ At current bands, IN-DATE IRON RUNS OUT in ${MONTHS_FULL[firstDry.m]} ${firstDry.y}. Schedule recerts or order replacement iron before then.`
+    : `${rw[5].after} piece${rw[5].after === 1 ? '' : 's'} still in date after ${MONTHS_FULL[rw[5].m]} ${rw[5].y} — no shortfall inside six months.`;
+  if(noneCt) v += ` (${noneCt} unbanded piece${noneCt === 1 ? '' : 's'} not counted — verify their bands.)`;
+  return {text:v, dry:!!firstDry};
+}
+function donutSVG(t){
+  const segs = [[t.ok, '#1eb474', 'In date'], [t.due, '#f2b63c', 'Due soon'], [t.exp, '#d95f5f', 'Expired'], [t.none, '#9aa3ad', 'No band']].filter(s => s[0] > 0);
+  const total = Math.max(1, t.total);
+  const C = 100, R = 74, W = 26;
+  let a0 = -Math.PI / 2, paths = '';
+  const arc = (a1, a2, color) => {
+    const large = (a2 - a1) > Math.PI ? 1 : 0;
+    const x1 = C + R * Math.cos(a1), y1 = C + R * Math.sin(a1), x2 = C + R * Math.cos(a2), y2 = C + R * Math.sin(a2);
+    return `<path d="M ${x1.toFixed(1)} ${y1.toFixed(1)} A ${R} ${R} 0 ${large} 1 ${x2.toFixed(1)} ${y2.toFixed(1)}" fill="none" stroke="${color}" stroke-width="${W}"/>`;
+  };
+  segs.forEach(s => { const a1 = a0 + 0.02, a2 = a0 + (s[0] / total) * Math.PI * 2 - 0.02; if(a2 > a1) paths += arc(a1, Math.min(a2, a0 + Math.PI * 1.999), s[1]); a0 += (s[0] / total) * Math.PI * 2; });
+  const pct = Math.round((t.ok + t.due) / total * 100);
+  const legend = segs.map((s, i) =>
+    `<rect x="8" y="${186 + i * 0}" width="0" height="0"/>`).join('');
+  const legRow = segs.map(s => `<tspan dx="8" fill="${s[1]}">●</tspan><tspan dx="2" fill="#4a525b">${s[2]} ${s[0]}</tspan>`).join('');
+  return `<svg class="donut" viewBox="0 0 200 224" width="204"><g>${paths}</g>
+    <text x="100" y="92" text-anchor="middle" font-family="Arial" font-weight="800" font-size="30" fill="#16191d">${t.total}</text>
+    <text x="100" y="107" text-anchor="middle" font-size="8" letter-spacing="1.5" fill="#67707b">PIECES</text>
+    <text x="100" y="124" text-anchor="middle" font-weight="800" font-size="12" fill="${pct >= 80 ? '#178a58' : pct >= 50 ? '#b07a10' : '#c8332b'}">${pct}% usable</text>
+    <text x="100" y="214" text-anchor="middle" font-size="8.5">${legRow}</text></svg>`;
+}
+function opBreakdown(){
+  const m = new Map();
+  S.entries.forEach(e => {
+    const op = entryOp(e) || 'Unassigned';
+    const o = m.get(op) || {ok:0, due:0, exp:0, none:0, total:0};
+    const st = statusOf(e);
+    o[st === 'ok' ? 'ok' : st === 'due' ? 'due' : st === 'exp' ? 'exp' : 'none'] += e.qty;
+    o.total += e.qty;
+    m.set(op, o);
+  });
+  const order = ['Pump Trailers', 'Frac', 'Pump Down', 'On Standby'];
+  return [...m.entries()].sort((a, b) => {
+    const ia = order.indexOf(a[0]), ib = order.indexOf(b[0]);
+    return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || b[1].total - a[1].total;
+  });
+}
+function opBarsSVG(rows){
+  const W = 760, BH = 26, GAP = 12, L = 118, max = Math.max(1, ...rows.map(r => r[1].total));
+  const H = rows.length * (BH + GAP) + 6;
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%">`;
+  rows.forEach(([op, o], i) => {
+    const y = i * (BH + GAP) + 3;
+    s += `<text x="${L - 8}" y="${y + BH / 2 + 3.5}" text-anchor="end" font-family="Arial" font-weight="800" font-size="10.5" fill="#16191d">${esc(op)}</text>`;
+    let x = L;
+    [[o.ok, '#1eb474'], [o.due, '#f2b63c'], [o.exp, '#d95f5f'], [o.none, '#b7bec6']].forEach(([q, col]) => {
+      if(!q) return;
+      const w = Math.max(3, (W - L - 46) * q / max);
+      s += `<rect x="${x.toFixed(1)}" y="${y}" width="${w.toFixed(1)}" height="${BH}" rx="4" fill="${col}"/>`;
+      if(w > 15) s += `<text x="${(x + w / 2).toFixed(1)}" y="${y + BH / 2 + 3.5}" text-anchor="middle" font-size="10" font-weight="800" fill="#fff">${q}</text>`;
+      x += w;
+    });
+    s += `<text x="${x + 6}" y="${y + BH / 2 + 3.5}" font-size="10.5" font-weight="800" fill="#4a525b">${o.total}</text>`;
+  });
+  s += `</svg>`;
+  return s;
+}
+function bandMixSVG(){
+  const counts = BANDS.map(() => 0);
+  let chrome = 0, none = 0;
+  S.entries.forEach(e => { if(e.chrome) chrome += e.qty; else if(e.color >= 0) counts[e.color] += e.qty; else none += e.qty; });
+  const cols = BANDS.map((b, i) => ({lbl:b.m, col:b.bg, q:counts[i], name:b.name}));
+  cols.push({lbl:'MFG', col:'#c2c9d0', q:chrome, name:'Chrome'});
+  if(none) cols.push({lbl:'—', col:'#eceff2', q:none, name:'No band'});
+  const W = 760, H = 128, bw = W / cols.length;
+  const max = Math.max(1, ...cols.map(c => c.q));
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%">`;
+  cols.forEach((c, i) => {
+    const h = c.q ? Math.max(4, 84 * c.q / max) : 0;
+    const x = i * bw + 4, y = 100 - h;
+    if(c.q) s += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${(bw - 8).toFixed(1)}" height="${h.toFixed(1)}" rx="3.5" fill="${c.col}" stroke="rgba(0,0,0,.28)" stroke-width="1"/>
+      <text x="${(x + (bw - 8) / 2).toFixed(1)}" y="${(y - 4).toFixed(1)}" text-anchor="middle" font-family="Arial" font-weight="800" font-size="10.5" fill="#16191d">${c.q}</text>`;
+    s += `<text x="${(x + (bw - 8) / 2).toFixed(1)}" y="113" text-anchor="middle" font-size="8" font-weight="700" fill="#4a525b">${c.lbl}</text>
+      <text x="${(x + (bw - 8) / 2).toFixed(1)}" y="123" text-anchor="middle" font-size="6.6" fill="#8a929b">${esc(c.name)}</text>`;
+  });
+  s += `</svg>`;
+  return s;
+}
+function sizeConnRows(){
+  const m = new Map();
+  S.entries.forEach(e => {
+    const k = (e.size || '—') + '|' + (CONN_NAME[e.conn] || e.conn || '—');
+    const o = m.get(k) || {ok:0, due:0, exp:0, none:0, total:0};
+    const st = statusOf(e);
+    o[st === 'ok' ? 'ok' : st === 'due' ? 'due' : st === 'exp' ? 'exp' : 'none'] += e.qty;
+    o.total += e.qty;
+    m.set(k, o);
+  });
+  return [...m.entries()].sort((a, b) => b[1].total - a[1].total);
 }
 function buildPdfSheet(){
   const t = tallies();
@@ -3462,23 +3605,48 @@ function buildPdfSheet(){
   const failToday = gatherToday('fail');
   const remToday = gatherToday('rem');
   const outToday = (inspToday ? inspToday.total : 0) + (failToday ? failToday.total : 0) + (remToday ? remToday.total : 0);
+  const recvToday = gatherToday('recv');
+  const rw = runwayRows();
+  const vd = runwayVerdict(rw, t.none);
+  let sec = 0;
+  const secH = title => `<h2><span class="sno">${String(++sec).padStart(2, '0')}</span>${title}</h2>`;
+
   let html = `<div class="pdf-hero"><h1>IRON INVENTORY — FIELD REPORT</h1>
     <div class="m">${esc(S.settings.fleet || '')}${S.settings.pad ? ' · Pad: ' + esc(S.settings.pad) : ''} ·
     ${now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'})}
     ${now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})} ·
-    EWS Treating Line Standard · recert ${S.settings.interval} mo</div></div>`;
-  html += `<div class="ptiles">
-    <div class="ptile"><div class="v">${t.total}</div><div class="k">Total pieces</div></div>
-    <div class="ptile ok"><div class="v">${t.ok}</div><div class="k">In date</div></div>
-    <div class="ptile due"><div class="v">${t.due}</div><div class="k">Due ≤${S.settings.dueSoonDays}d</div></div>
-    <div class="ptile exp"><div class="v">${t.exp}</div><div class="k">Expired</div></div>
-    ${outToday ? `<div class="ptile"><div class="v">${outToday}</div><div class="k">Removed today</div></div>` : ''}
-  </div>`;
-  // 1 · ACT NOW — expired & due soon, right up front where it gets read
+    EWS Treating Line Standard · recert ${S.settings.interval} mo · for scheduling &amp; ordering</div></div>`;
+
+  // 01 · HEALTH AT A GLANCE — donut + tiles
+  html += `<div class="pdash">
+    <div class="pdon">${donutSVG(t)}</div>
+    <div class="ptiles">
+      <div class="ptile"><div class="v">${t.total}</div><div class="k">Total pieces</div></div>
+      <div class="ptile ok"><div class="v">${t.ok}</div><div class="k">In date</div></div>
+      <div class="ptile due"><div class="v">${t.due}</div><div class="k">Due ≤${S.settings.dueSoonDays}d</div></div>
+      <div class="ptile exp"><div class="v">${t.exp}</div><div class="k">Expired</div></div>
+      <div class="ptile"><div class="v">${t.none}</div><div class="k">No band</div></div>
+      <div class="ptile"><div class="v">${recvToday ? '+' + recvToday.total : '—'}${outToday ? ' / −' + outToday : ''}</div><div class="k">Added / removed today</div></div>
+    </div></div>`;
+
+  // 02 · RUNWAY — will the iron outlast the job?
+  html += `<div class="psec">${secH('In-date runway — the next six months')}
+    <div class="prun">` + rw.map(r => {
+      const b = BANDS[r.m];
+      return `<div class="prun-c${r.after === 0 ? ' dry' : ''}">
+        <div class="prun-m" style="border-top:5px solid ${b.bg}">${b.m} '${String(r.y).slice(2)}</div>
+        <div class="prun-x">${r.expiring ? '−' + r.expiring + ' expire' : ''}</div>
+        <div class="prun-v">${r.after}</div>
+        <div class="prun-k">in date after</div>
+      </div>`;
+    }).join('') + `</div>
+    <div class="verdict${vd.dry ? ' dry' : ''}">${esc(vd.text)}</div></div>`;
+
+  // 03 · NEEDS ATTENTION — expired & due soon
   const hot = S.entries.filter(e => ['exp','due'].includes(statusOf(e)))
     .sort((a,b) => (expiryOf(a) || 0) - (expiryOf(b) || 0));
   if(hot.length){
-    html += `<div class="psec"><h2>Needs attention — expired &amp; due soon</h2><table>
+    html += `<div class="psec">${secH('Needs attention — expired &amp; due soon')}<table>
       <tr><th>Qty</th><th>Item</th><th>Band</th><th>Expires</th><th>Status</th><th>Section</th></tr>`;
     hot.forEach(e => {
       const st = statusOf(e), x = expiryOf(e);
@@ -3489,16 +3657,45 @@ function buildPdfSheet(){
     });
     html += `</table></div>`;
   }
-  // 2 · PLAN — the month picture, then the exact grid
-  html += `<div class="psec"><h2>Iron expiring by month</h2><div class="pdf-chart">${expiryChartSVG(760, true)}</div></div>`;
 
-  // recert grid — items × expiry months, totals both ways
+  // 04 · WHERE THE RISK SITS — by operation
+  const ops = opBreakdown();
+  if(ops.length){
+    html += `<div class="psec">${secH('By operation — where the risk sits')}
+      <div class="chartbox">${opBarsSVG(ops)}</div>
+      <div style="font-size:9px;color:#67707b;padding:3px 2px 0">
+        <span style="color:#178a58;font-weight:800">■ in date</span> &nbsp;<span style="color:#b07a10;font-weight:800">■ due soon</span>
+        &nbsp;<span style="color:#c8332b;font-weight:800">■ expired</span> &nbsp;<span style="color:#7c858e;font-weight:800">■ no band</span></div></div>`;
+  }
+
+  // 05 · PUMP TRAILERS — every fluid end
+  const ptRows = [];
+  TRAILERS.forEach(tr => { [1, 2].forEach(h2 => {
+    const cells = HEAD_TEMPLATE.map(tp => pumpEntry(tr, h2, tp.itemId));
+    if(cells.some(Boolean)) ptRows.push({t:tr, h:h2, cells:cells});
+  }); });
+  if(ptRows.length){
+    html += `<div class="psec">${secH('Pump trailers — by fluid end')}<table>
+      <tr><th>Pump · Head</th><th>Cannonball 90</th><th>2" T×W×W Tee</th><th>HP Co-flex</th></tr>`;
+    ptRows.forEach(r => {
+      html += `<tr><td><b>${esc(trailerLabel(r.t))}</b> · H${r.h}</td>` + r.cells.map((e, i) => {
+        if(!e) return '<td>—</td>';
+        if(HEAD_TEMPLATE[i].itemId === 'coflex') return `<td>${esc(e.serials.join(', ') || '✓ logged')}</td>`;
+        const x = expiryOf(e), st = statusOf(e);
+        return `<td>${pdfBandChip(e)}${x ? ' exp ' + fmtDate(x) : ''}${st === 'exp' ? ' <span class="exp-t"><b>EXPIRED</b></span>' : st === 'due' ? ' <span class="due-t"><b>DUE</b></span>' : ''}</td>`;
+      }).join('') + '</tr>';
+    });
+    html += `</table></div>`;
+  }
+
+  // 06 · WHAT EXPIRES WHEN — chart + recert grid
+  html += `<div class="psec">${secH('Iron expiring by month')}<div class="chartbox pdf-chart">${expiryChartSVG(760, true)}</div></div>`;
   const G2 = recertGrid();
   if(G2.rows.length){
-    html += `<div class="psec"><h2>Recert grid — what expires when</h2><table class="pgrid"><tr><th style="text-align:left">Item</th>`;
+    html += `<div class="psec">${secH('Recert grid — exact iron by expiry month')}<table class="pgrid"><tr><th style="text-align:left">Item</th>`;
     G2.cols.forEach(c => {
       const b = BANDS[c.m];
-      html += `<th class="pg-m" style="background:${b.bg};color:${b.tx};${c.past ? 'box-shadow:inset 0 0 0 2px #d95f5f;' : c.cur ? 'box-shadow:inset 0 0 0 2px #b8860b;' : ''}">${b.m}<br>'${String(c.y).slice(2)}</th>`;
+      html += `<th class="pg-m" style="border-top:5px solid ${b.bg};background:${c.past ? '#fdeeee' : c.cur ? '#fdf6e4' : '#f3f5f7'};color:#1c1f22">${b.m}<br>'${String(c.y).slice(2)}</th>`;
     });
     html += `<th class="pg-t">TOTAL</th></tr>`;
     let grand2 = 0; const ct2 = new Map();
@@ -3518,38 +3715,34 @@ function buildPdfSheet(){
     html += `<td class="pg-t">${grand2}</td></tr></table></div>`;
   }
 
-  // 2b · PUMP TRAILERS — every fluid end, its cannonball / tee band and hose serial
-  const ptRows = [];
-  TRAILERS.forEach(t => { [1, 2].forEach(h2 => {
-    const cells = HEAD_TEMPLATE.map(tp => pumpEntry(t, h2, tp.itemId));
-    if(cells.some(Boolean)) ptRows.push({t:t, h:h2, cells:cells});
-  }); });
-  if(ptRows.length){
-    html += `<div class="psec"><h2>Pump trailers — by fluid end</h2><table>
-      <tr><th>Pump · Head</th><th>Cannonball 90</th><th>2" T×W×W Tee</th><th>HP Co-flex</th></tr>`;
-    ptRows.forEach(r => {
-      html += `<tr><td><b>${esc(trailerLabel(r.t))}</b> · H${r.h}</td>` + r.cells.map((e, i) => {
-        if(!e) return '<td>—</td>';
-        if(HEAD_TEMPLATE[i].itemId === 'coflex') return `<td>${esc(e.serials.join(', ') || '✓ logged')}</td>`;
-        const x = expiryOf(e), st = statusOf(e);
-        return `<td>${pdfBandChip(e)}${x ? ' exp ' + fmtDate(x) : ''}${st === 'exp' ? ' <span class="exp-t"><b>EXPIRED</b></span>' : st === 'due' ? ' <span class="due-t"><b>DUE</b></span>' : ''}</td>`;
-      }).join('') + '</tr>';
+  // 07 · BAND MIX — what colors are hanging on the iron right now
+  html += `<div class="psec">${secH('Band mix — inspection months on the iron today')}<div class="chartbox">${bandMixSVG()}</div></div>`;
+
+  // 08 · ORDERING VIEW — by size & connection
+  const sc = sizeConnRows();
+  if(sc.length){
+    html += `<div class="psec">${secH('Ordering view — by size &amp; connection')}<table>
+      <tr><th>Size · Connection</th><th style="text-align:right">In date</th><th style="text-align:right">Due soon</th><th style="text-align:right">Expired</th><th style="text-align:right">No band</th><th style="text-align:right">Total</th></tr>`;
+    sc.forEach(([k, o]) => {
+      const [sz, cn] = k.split('|');
+      html += `<tr><td><b>${esc(sz)}</b> · ${esc(cn)}</td><td style="text-align:right">${o.ok || '—'}</td><td style="text-align:right" class="${o.due ? 'due-t' : ''}">${o.due || '—'}</td><td style="text-align:right" class="${o.exp ? 'exp-t' : ''}">${o.exp || '—'}</td><td style="text-align:right">${o.none || '—'}</td><td style="text-align:right"><b>${o.total}</b></td></tr>`;
     });
     html += `</table></div>`;
   }
 
-  // 3 · WHAT'S ON HAND — precise running total
+  // 09 · RUNNING TOTAL BY ITEM
   const irows2 = preciseRollup();
   if(irows2.length){
-    html += `<div class="psec"><h2>Running total by item</h2><table><tr><th>Item</th><th>Type</th><th style="text-align:right">Qty</th></tr>`;
+    html += `<div class="psec">${secH('Running total by item')}<table><tr><th>Item</th><th>Type</th><th style="text-align:right">Qty</th></tr>`;
     irows2.forEach(([k,o]) => { html += `<tr><td>${esc(k)}${o.needs ? ` <span class="due-t" style="font-size:9px">— ${esc(o.needs.toUpperCase())} NOT SET</span>` : ''}</td><td>${esc(o.cat)}</td><td style="text-align:right"><b>${o.q}</b></td></tr>`; });
     html += `</table></div>`;
   }
-  // 4 · MOVEMENT — usage rate + today's true-up
+
+  // 10 · MOVEMENT — flow by month
   const FL2 = flowByMonth();
   if(FL2.length){
-    html += `<div class="psec"><h2>Iron flow by month</h2><table>
-      <tr><th>Month</th><th style="text-align:right">Added</th><th style="text-align:right">Removed</th><th style="text-align:right">Failed</th><th style="text-align:right">Count adj</th><th style="text-align:right">Net change</th></tr>`;
+    html += `<div class="psec">${secH('Iron flow by month')}<table>
+      <tr><th>Month</th><th style="text-align:right">Added</th><th style="text-align:right">Removed</th><th style="text-align:right">Failed</th><th style="text-align:right">Count adj</th><th style="text-align:right">Net</th></tr>`;
     FL2.forEach(f => {
       html += `<tr><td>${f.lbl}</td><td style="text-align:right">${f.recv ? '+' + f.recv : '—'}</td>
         <td style="text-align:right">${f.insp ? '−' + f.insp : '—'}</td>
@@ -3563,7 +3756,7 @@ function buildPdfSheet(){
   // today's true-up differences, if any
   const tuToday = S.archives.slice().reverse().find(a => a.kind === 'trueup' && a.dayKey === dk);
   if(tuToday && tuToday.disc){
-    html += `<div class="psec"><h2>True-up${tuToday.op ? ' · ' + esc(tuToday.op) : ''} — ${esc(tuToday.user || '')} today (${tuToday.wasTotal} → ${tuToday.total}${tuToday.op ? ', other operations untouched' : ''})</h2>`;
+    html += `<div class="psec">${secH(`True-up${tuToday.op ? ' · ' + esc(tuToday.op) : ''} — ${esc(tuToday.user || '')} today (${tuToday.wasTotal} → ${tuToday.total}${tuToday.op ? ', other operations untouched' : ''})`)}`;
     if(tuToday.disc.length){
       html += `<table><tr><th>Item</th><th style="text-align:right">Was</th><th style="text-align:right">Counted</th><th style="text-align:right">Diff</th></tr>`;
       tuToday.disc.forEach(d => {
@@ -3581,7 +3774,7 @@ function buildPdfSheet(){
   const groups = new Map();
   S.entries.forEach(e => { const k = catName(item(e.itemId) ? item(e.itemId).cat : 'CUST');
     if(!groups.has(k)) groups.set(k, []); groups.get(k).push(e); });
-  html += `<div class="psec-long"><h2>Full count by type</h2><table>
+  html += `<div class="psec-long">${secH('Full count by type')}<table>
     <tr><th>Qty</th><th>Item</th><th>Band</th><th>Expires</th><th>Section</th><th>Serials / notes</th></tr>`;
   [...groups.entries()].sort((a,b) => a[0].localeCompare(b[0])).forEach(([g, arr]) => {
     const gq = arr.reduce((s,e) => s + e.qty, 0);
@@ -3599,7 +3792,7 @@ function buildPdfSheet(){
   [[remToday, 'Removed — today'], [inspToday, 'Sent for inspection — today'], [failToday, 'Failed iron — today']].forEach(([log, titleBase]) => {
     const title = log && log.users && log.users.length ? titleBase + ' (' + log.users.join(', ') + ')' : titleBase;
     if(!log || !log.entries.length) return;
-    html += `<div class="psec"><h2>${title} (${log.total} pcs)</h2><table>
+    html += `<div class="psec">${secH(`${title} (${log.total} pcs)`)}<table>
       <tr><th>Qty</th><th>Item</th><th>Band</th><th>From section</th><th>Notes</th></tr>`;
     log.entries.forEach(e => {
       html += `<tr><td>${e.qty}</td><td>${esc(labelFor(e))}</td><td>${pdfBandChip(e)}</td>
@@ -3611,7 +3804,7 @@ function buildPdfSheet(){
   const hist = S.archives.slice(-8).reverse();
   if(hist.length){
     const KL = {rem:'Removed', insp:'Inspection', fail:'Failed iron', iron:'Pad count', recv:'Added', trueup:'True-up'};
-    html += `<div class="psec"><h2>Submission history</h2><table><tr><th>List</th><th>Type</th><th>Operation</th><th>Pad</th><th>Date</th><th>Pieces</th><th>Reason</th></tr>`;
+    html += `<div class="psec">${secH('Submission history')}<table><tr><th>List</th><th>Type</th><th>Operation</th><th>Pad</th><th>Date</th><th>Pieces</th><th>Reason</th></tr>`;
     hist.forEach(a => {
       html += `<tr><td>${esc(a.name)}</td><td>${KL[a.kind] || a.kind || 'Pad count'}</td><td>${esc(a.op || '—')}</td><td>${esc(a.pad || '—')}</td><td>${esc(String(a.date || ''))}</td><td>${a.total}</td><td>${esc(a.reason || '')}</td></tr>`;
     });
