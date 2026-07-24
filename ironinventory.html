@@ -276,7 +276,7 @@ tr.needflash{animation:trflash 1.6s ease 1}
 .grp{margin-bottom:14px}
 .grp-h{display:flex;align-items:baseline;gap:8px;margin:0 2px 6px;font-family:var(--disp);font-weight:800;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink2)}
 .grp-h.pump{color:#58a6ff}
-.grp.pumpgrp{padding-left:9px;border-left:3px solid rgba(167,139,250,.55);border-radius:2px}
+.grp.pumpgrp{padding-left:9px;border-left:3px solid rgba(88,166,255,.55);border-radius:2px}
 .pump-hh{font-family:var(--disp);font-weight:800;font-size:11.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink3);margin:10px 2px 5px}
 .pump-hh b{color:var(--ink2)}
 .grp-h .ct{margin-left:auto;font-family:var(--body);font-size:11.5px;letter-spacing:.05em;color:var(--ink3)}
@@ -1020,7 +1020,7 @@ table.pumpmx{width:100%;border-collapse:separate;border-spacing:0;table-layout:f
     <div id="extraWrap" class="st3"></div>
     <div id="draftsWrap"></div>
     <div class="tiny muted st3" style="margin-top:10px">Running list right now: <b id="homeRunning">0</b> pieces across every operation.</div>
-    <div class="home-ground" aria-hidden="true"><span class="hg-mark">EVOLUTION WELL SERVICES</span><span class="hg-sub">Treating Iron · 15K · Fleet 6</span><span class="hg-build">build 7.24-C</span></div>
+    <div class="home-ground" aria-hidden="true"><span class="hg-mark">EVOLUTION WELL SERVICES</span><span class="hg-sub">Treating Iron · 15K · Fleet 6</span><span class="hg-build">build 7.24-D</span></div>
   </div>
 
   <!-- OPERATION HUB · current list or true-up -->
@@ -1780,6 +1780,7 @@ function entryOptDef(it, size){
 }
 function entryNeeds(e){
   const it = item(e.itemId); if(!it || it.coflex) return null;
+  if(e.itemId === 'tee' && typeof pumpOf === 'function' && pumpOf(e)) return null;   // pump tees are 2" T×W×W · 2" br by fleet rule — load2 keeps them that way
   const segs = (e.variant || '').split(' · ').filter(Boolean);
   if(it.pair) return (String(e.variant||'').includes('Spare') || pumpOf(e)) ? null : 'Pump';
   if(it.figs && !it.figs.items.some(f => segs.includes(f.v))) return it.figs.label.split(' — ')[0];
@@ -3266,7 +3267,7 @@ function renderList(){
     const pq = pumpList.reduce((s,e) => s + e.qty, 0);
     const sec = document.createElement('div');
     sec.className = 'grp pumpgrp';
-    sec.innerHTML = `<div class="grp-h pump">⛓ Pump Trailers<span class="ct">${pq} pc${pq === 1 ? '' : 's'}</span></div>`;
+    sec.innerHTML = `<div class="grp-h pump">Pump Trailers<span class="ct">${pq} pc${pq === 1 ? '' : 's'}</span></div>`;
     const tplOrder = e => { const i = HEAD_TEMPLATE.findIndex(tp => tp.itemId === e.itemId); return i < 0 ? 99 : i; };
     TRAILERS.forEach(t => {
       [1, 2].forEach(h => {
@@ -3489,10 +3490,12 @@ function openDetail(id, listKind){
   };
   refreshSub(); refreshSerials();
   // set/correct the exact type — rebuilds the variant, merges twin lines, re-opens fresh
-  const applyNewVariant = (v) => {
+  const applyNewVariant = (v, pumpMove) => {
     e.variant = v;
     e.updated = Date.now();
-    if(PUMP_RE.test(e.area || '')) e.area = PUMP_RE.test(v) ? v : '';   // pump iron carries its fluid end in area too — keep them in step
+    // ONLY a deliberate pump re-assign may touch the area — fixing a pattern/branch/length must
+    // never pull a piece off its fluid end (that bug stripped Mason's pump tees off their trailers)
+    if(pumpMove && PUMP_RE.test(e.area || '')) e.area = PUMP_RE.test(v) ? v : '';
     const twin = ARR.find(x => x.id !== e.id && sameKey(x, e) && (x.area||'') === (e.area||''));
     if(twin){
       twin.qty += e.qty;
@@ -3513,10 +3516,10 @@ function openDetail(id, listKind){
   if($('#dFigs')) $('#dFigs').querySelectorAll('.chip').forEach(c => c.onclick = () => applyVariant(c.dataset.f, optVal));
   if($('#dOpts')) $('#dOpts').querySelectorAll('.chip').forEach(c => c.onclick = () => applyVariant(figVal, c.dataset.v));
   if($('#dPT')) $('#dPT').querySelectorAll('.chip').forEach(c => c.onclick = () =>
-    applyNewVariant(curPH ? `PT ${c.dataset.t} · Head ${curPH}` : `PT ${c.dataset.t}`));
+    applyNewVariant(curPH ? `PT ${c.dataset.t} · Head ${curPH}` : `PT ${c.dataset.t}`, true));
   if($('#dPH')) $('#dPH').querySelectorAll('.chip[data-h]').forEach(c => c.onclick = () =>
-    applyNewVariant(curPT ? `PT ${curPT} · Head ${c.dataset.h}` : `Head ${c.dataset.h}`));
-  if($('#dSpare')) $('#dSpare').onclick = () => applyNewVariant('Spare');
+    applyNewVariant(curPT ? `PT ${curPT} · Head ${c.dataset.h}` : `Head ${c.dataset.h}`, true));
+  if($('#dSpare')) $('#dSpare').onclick = () => applyNewVariant('Spare', true);
   $('#dPlus').onclick = () => { e.qty++; e.updated = Date.now(); save(); $('#dQty').textContent = e.qty; if(inSess) renderSessbar(); };
   $('#dMinus').onclick = () => { if(e.qty > 1){ e.qty--; e.updated = Date.now(); save(); $('#dQty').textContent = e.qty; if(inSess) renderSessbar(); } };
   $('#dBand').onchange = ev => { e.color = Number(ev.target.value);
@@ -4361,7 +4364,9 @@ function opBarsSVG(rows){
   let s = `<svg viewBox="0 0 ${W} ${H}" width="100%">`;
   rows.forEach(([op, o], i) => {
     const y = i * (BH + GAP) + 3;
-    s += `<text x="${L - 8}" y="${y + BH / 2 + 3.5}" text-anchor="end" font-family="Arial" font-weight="800" font-size="10.5" fill="#16191d">${esc(op)}</text>`;
+    const oc = typeof opColor === 'function' ? opColor(op) : null;
+    if(oc && OP_COLORS[op]) s += `<rect x="3" y="${y + BH / 2 - 5.5}" width="11" height="11" rx="3" fill="${oc.c}" stroke="rgba(0,0,0,.3)" stroke-width="0.7"/>`;
+    s += `<text x="${L - 8}" y="${y + BH / 2 + 3.5}" text-anchor="end" font-family="Arial" font-weight="800" font-size="10.5" fill="${oc && OP_COLORS[op] ? oc.deep : '#16191d'}">${esc(op)}</text>`;
     let x = L;
     [[o.ok, '#1eb474'], [o.due, '#f2b63c'], [o.exp, '#d95f5f'], [o.none, '#b7bec6']].forEach(([q, col]) => {
       if(!q) return;
@@ -4521,7 +4526,7 @@ function buildPdfSheet(){
     if(cells.some(Boolean)) ptRows.push({t:tr, h:h2, cells:cells});
   }); });
   if(ptRows.length){
-    html += `<div class="psec">${secH('Pump trailers — by fluid end')}<table>
+    html += `<div class="psec">${secH('<span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#58a6ff;margin-right:7px;vertical-align:-1px"></span>Pump trailers — by fluid end')}<table>
       <tr><th>Pump · Head</th><th>Cannonball 90</th><th>2" T×W×W Tee</th><th>HP Co-flex</th></tr>`;
     ptRows.forEach(r => {
       html += `<tr><td><b>${esc(trailerLabel(r.t))}</b> · H${r.h}</td>` + r.cells.map((e, i) => {
@@ -4790,6 +4795,52 @@ $('#restoreFile').addEventListener('change', ev => {
   };
   rd.readAsText(f);
 });
+/* Pump tees that lost their fluid end (the old branch-edit bug wiped their area) get walked
+   back to their trailers: History remembers each head's tee band, so match band → head.
+   Runs inside load2 — idempotent, deterministic, and the same on every synced device. */
+function reunitePumpTees(){
+  if(typeof pumpOf !== 'function') return;
+  const floating = S.entries.filter(e => e.itemId === 'tee' && !pumpOf(e) && !(e.area || '') && /T×W×W/.test(e.variant || ''));
+  if(!floating.length) return;
+  const hasPiece = (t, h) => S.entries.some(e => { const p = pumpOf(e); return p && p.trailer === t && p.head === h; });
+  const hasTee = (t, h) => S.entries.some(e => { const p = pumpOf(e); return p && p.trailer === t && p.head === h && e.itemId === 'tee'; });
+  const need = [];
+  TRAILERS.forEach(t => [1, 2].forEach(h => { if(hasPiece(t, h) && !hasTee(t, h)) need.push({t, h}); }));
+  if(!need.length) return;
+  const bandAt = {};   // newest archive record wins
+  S.archives.forEach(a => (a.entries || []).forEach(x => {
+    if(x.itemId !== 'tee') return;
+    const p = pumpOf(x); if(!p) return;
+    bandAt[p.trailer + '|' + p.head] = {color:x.color, year:x.year, chrome:!!x.chrome};
+  }));
+  const take = b => {
+    const src = floating.find(f => f.qty > 0 && f.color === b.color && f.year === b.year && !!f.chrome === b.chrome);
+    if(src){ src.qty--; return true; }
+    return false;
+  };
+  const assign = (t, h, b) => {
+    const line = {id:uid(), itemId:'tee', size:'2"', variant:'T×W×W · 2" br', conn:'T', color:b.color, year:b.year,
+      area:fluidEnd(t, h), qty:1, serials:[], note:'', inspDate:'', created:Date.now(), updated:Date.now()};
+    if(b.chrome) line.chrome = true;
+    S.entries.push(line);
+  };
+  let rest = [];
+  need.forEach(n => {
+    const b = bandAt[n.t + '|' + n.h];
+    if(b && take(b)) assign(n.t, n.h, b);
+    else rest.push(n);
+  });
+  // unambiguous remainder: every leftover floating tee wears ONE band and they exactly cover
+  // the remaining tee-less PT heads — complete the walk-back (never guesses on Pump Down)
+  rest = rest.filter(n => n.t !== 'Pump Down');
+  const left = floating.filter(f => f.qty > 0);
+  const leftQty = left.reduce((s, f) => s + f.qty, 0);
+  const oneBand = left.length && left.every(f => f.color === left[0].color && f.year === left[0].year && !!f.chrome === !!left[0].chrome);
+  if(rest.length && oneBand && leftQty === rest.length){
+    rest.forEach(n => { const f = left.find(x => x.qty > 0); if(f){ f.qty--; assign(n.t, n.h, {color:f.color, year:f.year, chrome:!!f.chrome}); } });
+  }
+  S.entries = S.entries.filter(e => e.qty > 0);
+}
 function load2(){ // re-run guards after restore / after adopting a synced snapshot
   const fresh = freshState();
   S.settings = Object.assign(fresh.settings, S.settings || {});
@@ -4802,6 +4853,15 @@ function load2(){ // re-run guards after restore / after adopting a synced snaps
   S.entries.forEach(e => {
     if(e.itemId === 'tee' && e.size === '2"' && e.variant && e.variant.indexOf('br') < 0) e.variant = e.variant + ' · 2" br';
   });
+  // every ASSIGNED pump tee is a 2" T×W×W with a 2" branch — by fleet rule, no exceptions
+  S.entries.forEach(e => {
+    if(e.itemId === 'tee' && typeof pumpOf === 'function' && pumpOf(e)){
+      e.size = '2"';
+      if(!/T×W×W/.test(e.variant || '')) e.variant = 'T×W×W' + (e.variant ? ' · ' + e.variant : '');
+      if((e.variant || '').indexOf('br') < 0) e.variant = e.variant + ' · 2" br';
+    }
+  });
+  reunitePumpTees();
   const _nk = e => [e.itemId, e.size||'', e.variant||'', e.conn||'', e.color, e.year, e.chrome?'C':'', e.area||''].join('|');
   const _nm = new Map(); const _nl = [];
   S.entries.forEach(e => {
@@ -5065,6 +5125,7 @@ try{ const _oldPark = localStorage.getItem('ironInventory.parked');
 }catch(e){}
 if(S.session && S.session.entries && S.session.entries.length) draftSave(S.session, false);   // a reload/tab-eviction mid-count must never eat the draft — it lands in Saved lists on Home
 S.currentUser = ''; S.session = null;   // log out on every open — the crew re-picks their name each time (names stay saved on-device)
+load2();         // boot-time guard pass: fleet rules + walk orphaned pump tees back to their trailers
 save();          // also surfaces the storage warning if blocked
 renderAll();
 ivSyncInit();    // connect to Firebase and start live cross-device sync
