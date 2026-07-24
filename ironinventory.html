@@ -768,6 +768,29 @@ input:focus,select:focus,textarea:focus{background:#12151a;box-shadow:inset 0 1p
 .hg-mark{display:block;font-family:var(--disp);font-weight:800;font-size:13px;letter-spacing:.3em;text-transform:uppercase;color:rgba(153,162,173,.16)}
 .hg-sub{display:block;margin-top:6px;font-size:9px;font-weight:600;letter-spacing:.34em;text-transform:uppercase;color:rgba(103,112,123,.22)}
 .hg-build{display:inline-block;margin-top:9px;font-family:var(--disp);font-weight:800;font-size:12.5px;letter-spacing:.24em;text-transform:uppercase;color:rgba(154,163,173,.55);border:1px solid rgba(154,163,173,.28);border-radius:7px;padding:3px 11px 2px}
+/* ---- HOME button + CURRENT LIST page ---- */
+#homeBtn{position:fixed;top:12px;right:12px;z-index:60;font-family:var(--disp);font-weight:800;font-size:11px;letter-spacing:.12em;
+  color:var(--ink2);background:rgba(22,26,31,.94);border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:9px 15px;box-shadow:0 6px 18px rgba(0,0,0,.4);cursor:pointer}
+#homeBtn.hidden{display:none}
+.fab{position:fixed;right:18px;bottom:96px;z-index:55;width:58px;height:58px;border-radius:50%;background:var(--acc,#1eb474);color:#06130c;
+  font-size:30px;font-weight:800;border:none;box-shadow:0 10px 26px rgba(30,180,116,.45);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.fab:active{transform:scale(.94)}
+.olrow-wrap{position:relative;overflow:hidden;border-radius:12px;margin-bottom:8px}
+.ol-under{position:absolute;inset:0;display:flex;align-items:center;justify-content:flex-end;padding-right:18px;
+  background:linear-gradient(90deg,rgba(217,95,95,.05),rgba(217,95,95,.8));color:#fff;font-family:var(--disp);font-weight:800;font-size:12px;letter-spacing:.12em;border-radius:12px}
+.olrow{position:relative;z-index:1;display:flex;align-items:center;gap:10px;width:100%;padding:11px 12px;background:var(--panel);
+  border:1px solid var(--line);border-radius:12px;text-align:left;transition:transform .18s ease;touch-action:pan-y}
+.olrow .ol-band{flex:none;min-width:44px;text-align:center;font-family:var(--disp);font-weight:800;font-size:11px;border-radius:6px;padding:5px 6px}
+.olrow .ol-txt{flex:1;min-width:0}
+.olrow .ol-txt b{display:block;font-size:13.5px;color:var(--ink)}
+.olrow .ol-txt span{display:block;font-size:11px;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.olrow .ol-qty{flex:none;font-family:var(--disp);font-weight:800;font-size:15px;color:var(--ink2)}
+.olrow .ol-x{flex:none;width:30px;height:30px;border-radius:8px;border:1px solid rgba(217,95,95,.4);background:rgba(217,95,95,.12);color:#ec8383;font-size:13px;display:none;align-items:center;justify-content:center}
+@media (hover:hover){ .olrow .ol-x{display:flex} }
+.ol-new{flex:none;font-family:var(--disp);font-weight:800;font-size:9px;letter-spacing:.1em;color:#06130c;background:#3dd68c;border-radius:5px;padding:3px 6px}
+.ol-gh{display:flex;align-items:center;justify-content:space-between;font-family:var(--disp);font-weight:800;font-size:11px;letter-spacing:.14em;color:var(--ink3);text-transform:uppercase;margin:14px 2px 8px}
+.ol-strip{background:rgba(61,214,140,.1);border:1px solid rgba(61,214,140,.35);color:#3dd68c;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:700;margin-bottom:10px}
+.ptpiece .ptp-x{flex:none;width:28px;height:28px;border-radius:8px;border:1px solid rgba(217,95,95,.4);background:rgba(217,95,95,.12);color:#ec8383;display:flex;align-items:center;justify-content:center;font-size:13px;margin-left:4px}
 @media (min-width:900px){ #cs-home.on{min-height:calc(100dvh - 140px)} }
 @media (prefers-reduced-motion:reduce){ .home-ground{animation:none} }
 </style>
@@ -923,6 +946,7 @@ table.pumpmx{width:100%;border-collapse:separate;border-spacing:0;table-layout:f
 
 <!-- ============ COUNT (stepped wizard) ============ -->
 <section id="scr-count" class="screen on">
+  <button id="homeBtn" class="hidden" type="button">⌂ HOME</button>
 
   <!-- HOME · login + action picker (shows when no session is open) -->
   <div class="cstep" id="cs-home">
@@ -935,19 +959,6 @@ table.pumpmx{width:100%;border-collapse:separate;border-spacing:0;table-layout:f
       <input type="text" id="loginPad" placeholder="New pad name…" autocomplete="off" autocapitalize="words" class="st2 hidden" style="margin:8px 0 2px">
       <button class="bigbtn st3" id="loginGo" style="margin-top:12px">START<span class="sub">NAME + PAD — NO PASSWORD</span></button>
     </div>
-    <div id="homeActions" class="hidden">
-      <div class="wiz-head st1"><span class="wiz-step">LOGGED IN</span><h2 class="wiz-t"><span id="homeUser"></span></h2>
-        <div class="chiprow" style="margin-top:6px"><span class="chip" id="homePad" style="pointer-events:none"></span>
-        <button class="chip" id="switchUser">↺ switch</button></div></div>
-      <div class="bigcol st2" id="actionBtns">
-        <button class="bigbtn act-recv" data-k="recv">ADD ITEMS<span class="sub">ONTO THE RUNNING LIST — NEW OR RETURNING IRON</span></button>
-        <button class="bigbtn act-insp" data-k="rem">REMOVE ITEMS<span class="sub">OFF THE LIST — INSPECTION · FAILED · TRANSFERRED</span></button>
-        <button class="bigbtn act-true" data-k="trueup">TRUE-UP<span class="sub">RECOUNT ONE OPERATION — COMPARES &amp; RESETS IT</span></button>
-      </div>
-      <div id="draftsWrap"></div>
-      <div class="tiny muted st3" style="margin-top:10px">Running list right now: <b id="homeRunning">0</b> pieces. True-up counts <b>everything on location</b> — the submitted count becomes the new running list.</div>
-    </div>
-    <div class="home-ground" aria-hidden="true"><span class="hg-mark">EVOLUTION WELL SERVICES</span><span class="hg-sub">Treating Iron · 15K · Fleet 6</span><span class="hg-build">build 7.23-K</span></div>
   </div>
 
   <!-- session bar (visible while a list is being built) -->
@@ -958,12 +969,35 @@ table.pumpmx{width:100%;border-collapse:separate;border-spacing:0;table-layout:f
     <button class="sess-x" id="sessCancel">✕</button>
   </div>
 
-  <!-- STEP 1 · operation + section -->
+  <!-- HOME · operation picker -->
   <div class="cstep" id="cs-op">
-    <button class="wiz-back st1" type="button"><span class="bk">‹</span>BACK</button>
-    <div class="wiz-head st1"><span class="wiz-step">STEP 1 — OPERATION</span><h2 class="wiz-t">Where are you counting?</h2></div>
+    <div class="wiz-head st1"><span class="wiz-step">LOGGED IN</span><h2 class="wiz-t"><span id="homeUser"></span></h2>
+      <div class="chiprow" style="margin-top:6px"><span class="chip" id="homePad" style="pointer-events:none"></span>
+      <button class="chip" id="switchUser">↺ switch</button></div></div>
+    <div class="wiz-head st1" style="margin-top:16px"><span class="wiz-step">OPERATION</span><h2 class="wiz-t">Where are you working?</h2></div>
     <div class="bigcol st2" id="opBtns"></div>
     <div id="extraWrap" class="st3"></div>
+    <div id="draftsWrap"></div>
+    <div class="tiny muted st3" style="margin-top:10px">Running list right now: <b id="homeRunning">0</b> pieces across every operation.</div>
+    <div class="home-ground" aria-hidden="true"><span class="hg-mark">EVOLUTION WELL SERVICES</span><span class="hg-sub">Treating Iron · 15K · Fleet 6</span><span class="hg-build">build 7.24-A</span></div>
+  </div>
+
+  <!-- OPERATION HUB · current list or true-up -->
+  <div class="cstep" id="cs-hub">
+    <button class="wiz-back st1" type="button"><span class="bk">‹</span>BACK</button>
+    <div class="wiz-head st1"><span class="wiz-step">OPERATION</span><h2 class="wiz-t" id="hubTitle"></h2></div>
+    <div class="bigcol st2" id="hubBtns"></div>
+    <div class="tiny muted st3" id="hubHint" style="margin-top:10px"></div>
+  </div>
+
+  <!-- CURRENT LIST · live view of one operation -->
+  <div class="cstep" id="cs-oplist">
+    <button class="wiz-back st1" type="button"><span class="bk">‹</span>BACK</button>
+    <div class="wiz-head st1"><span class="wiz-step">CURRENT LIST</span><h2 class="wiz-t" id="olTitle"></h2>
+      <div class="tiny muted" id="olSub" style="margin-top:4px"></div></div>
+    <div id="olNewStrip" class="st1"></div>
+    <div id="olList" class="st2"></div>
+    <button class="fab" id="olAdd" aria-label="add iron">＋</button>
   </div>
 
   <!-- STEP 2 · section — its own page; each submission stays with one operation -->
@@ -1745,6 +1779,92 @@ function deductFromCurrent(e, qty){       // returns how many were actually on t
   }
   return took;
 }
+/* ---------- CURRENT LIST live commits — no session, straight onto the running list ---------- */
+function dayRecAdd(kind, op, e, qty, why){
+  const dk = fmtISO(new Date());
+  const stamp = new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) + ' ' +
+        new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  let rec = S.archives.find(r => r.live && r.kind === kind && (r.op||'') === (op||'') && r.dayKey === dk && r.user === S.currentUser);
+  if(!rec){
+    rec = {id:uid(), kind, live:true, op:op||'', user:S.currentUser, pad:S.settings.pad||'',
+      name:(kind === 'recv' ? 'Added — ' : 'Removed — ') + (op || 'iron'), date:stamp, dayKey:dk, entries:[], total:0};
+    S.archives.push(rec);
+  }
+  let ln = rec.entries.find(x => sameKey(x, e) && (x.area||'') === (e.area||''));
+  if(ln){
+    ln.qty += qty;
+    if(e.serials && e.serials.length) ln.serials = [...new Set([...(ln.serials||[]), ...e.serials])];
+    if(why) ln.why = ln.why ? (ln.why.includes(why) ? ln.why : ln.why + '; ' + why) : why;
+  } else {
+    ln = {id:uid(), itemId:e.itemId, size:e.size||'', variant:e.variant||'', conn:e.conn||'', color:e.color,
+      year:e.year, area:e.area||'', qty:qty, serials:(e.serials||[]).slice(), note:'', inspDate:e.inspDate||''};
+    if(e.chrome) ln.chrome = true;
+    if(why) ln.why = why;
+    rec.entries.push(ln);
+  }
+  if(why) rec.reason = rec.reason ? (rec.reason.includes(why) ? rec.reason : rec.reason + '; ' + why) : why;
+  rec.total = rec.entries.reduce((a,x) => a + x.qty, 0);
+  rec.date = stamp;
+  return rec;
+}
+function liveCommit(itemId, size, variant, conn, color, area, opts){
+  opts = opts || {};
+  const chrome = !!opts.chrome;
+  const year = opts.year != null ? opts.year : (color >= 0 ? assumedYear(color) : 0);
+  const line = {id:uid(), itemId, size:size||'', variant:variant||'', conn:conn||'', color, year,
+    area:area||'', qty:1, serials:opts.serials ? opts.serials.slice() : [], note:'', inspDate:'',
+    created:Date.now(), updated:Date.now()};
+  if(chrome) line.chrome = true;
+  restoreToCurrent(line, 1);                                     // merges lines + one-per-head + serial rules
+  const cur = S.entries.find(x => sameKey(x, line) && (x.area||'') === (line.area||'')) || line;
+  newIds.add(cur.id); liveAddCount++;
+  dayRecAdd('recv', liveMode.op, line, 1);
+  S.usage[itemId] = (S.usage[itemId] || 0) + 1;
+  save();
+  return cur;
+}
+function liveRemove(e, qty, picked, why){
+  qty = Math.max(1, Math.min(qty || 1, e.qty));
+  const line = {itemId:e.itemId, size:e.size, variant:e.variant, conn:e.conn, color:e.color, year:e.year,
+    chrome:e.chrome, area:e.area, inspDate:e.inspDate || '',
+    serials: picked && picked.length ? picked.slice() : (qty >= e.qty ? (e.serials||[]).slice() : [])};
+  if(picked && picked.length){ e.serials = (e.serials||[]).filter(s => !picked.includes(s)); qty = Math.max(qty, picked.length); }
+  const took = deductFromCurrent(e, qty);
+  dayRecAdd('rem', liveMode.op, line, took || qty, why);
+  save(); buzz([18,25,45]);
+  toast((took || qty) + ' pc' + ((took||qty) === 1 ? '' : 's') + ' off the list' + (why ? ' — ' + why : ''));
+}
+function confirmRemoveSheet(e, after){
+  const b = bandOf(e);
+  let q = 1;
+  const serials = (e.serials || []).slice();
+  const picked = new Set();
+  const chip = b ? `<span class="mini-band" style="background:${b.bg};color:${b.tx}">${e.chrome ? 'MFG' : b.m}</span>` : '';
+  openSheet(`<h3>Take this off ${esc(liveMode.op || 'the list')}?</h3>
+    <div class="small" style="margin:6px 0 12px">${chip} <b>${esc(labelFor(e))}</b>${e.area ? ' <span class="muted">· ' + esc(e.area) + '</span>' : ''}</div>
+    ${e.qty > 1 ? `<div class="optlbl">How many of the ${e.qty}?</div>
+      <div class="chiprow" style="margin-bottom:10px;align-items:center"><button class="chip" id="rmMinus">−</button><b id="rmQty" style="min-width:36px;text-align:center;font-size:19px">1</b><button class="chip" id="rmPlus">＋</button><button class="chip" id="rmAll">ALL ${e.qty}</button></div>` : ''}
+    ${serials.length ? `<div class="optlbl">Which serial${serials.length > 1 ? 's' : ''}?</div><div class="chiprow" id="rmSer" style="margin-bottom:10px">${serials.map(s => `<button class="chip" data-s="${esc(s)}">${esc(s)}</button>`).join('')}</div>` : ''}
+    <div class="optlbl">Why is it coming off? <span style="opacity:.6;letter-spacing:0;text-transform:none">(optional)</span></div>
+    <input type="text" id="rmWhy" placeholder="Inspection · failed · transferred…" autocomplete="off" style="margin-bottom:14px">
+    <div class="actions"><button class="btn ghost" id="rmNo">Keep it</button><button class="btn danger" id="rmYes">REMOVE</button></div>`);
+  const syncQty = () => { const el = $('#rmQty'); if(el) el.textContent = q; };
+  if($('#rmMinus')) $('#rmMinus').onclick = () => { q = Math.max(picked.size || 1, q - 1); syncQty(); };
+  if($('#rmPlus')) $('#rmPlus').onclick = () => { q = Math.min(e.qty, q + 1); syncQty(); };
+  if($('#rmAll')) $('#rmAll').onclick = () => { q = e.qty; syncQty(); };
+  if($('#rmSer')) $('#rmSer').querySelectorAll('.chip').forEach(c => c.onclick = () => {
+    const s = c.dataset.s;
+    if(picked.has(s)) picked.delete(s); else picked.add(s);
+    c.classList.toggle('on');
+    if(picked.size > q){ q = picked.size; syncQty(); }
+  });
+  $('#rmNo').onclick = closeSheet;
+  $('#rmYes').onclick = () => {
+    liveRemove(e, q, [...picked], ($('#rmWhy').value || '').trim());
+    closeSheet();
+    if(after) after();
+  };
+}
 const itemLabelShort = e => {
   const it = item(e.itemId);
   return [(e.size && e.size !== SZ_ML ? e.size + ' ' : '') + (it ? it.name : e.itemId), e.variant].filter(Boolean).join(' ');
@@ -1839,13 +1959,17 @@ let sel = {itemId:null, variant:''};
 let coflexSel = {trailer:'', head:0, pdmono:false};   // hoses log per pump trailer + head, or ride the PD monoline
 let pairSel = {trailer:'', head:0, spare:false};      // cannonball 90s pair to a pump too (or ride as spares)
 let pumpCtx = {on:false, trailer:'', head:1};         // the per-pump guided walk (Pump Trailer button)
+let curOp = '';                                        // operation whose hub we're in
+let liveMode = {on:false, op:''};                      // CURRENT LIST mode — changes land on the running list instantly
+let newIds = new Set();                                // lines touched this visit (NEW tags)
+let liveAddCount = 0;
 let countStep = 'op';
 let reviewReturn = '';
 let lastAdd = null;
 let lastbarT = null;
 let listFilter = 'all', listGroup = 'cat', listView = 'cur';
 let openCats = {};
-const STEP_ORDER = ['op','sec','setup','pieces','band'];
+const STEP_ORDER = ['op','hub','oplist','sec','setup','pieces','band'];
 const CS = () => S.settings.count;
 
 function curArea(){
@@ -1866,9 +1990,10 @@ function startStep(){
   if(!c.size) return 'setup';
   return 'pieces';
 }
-function ensureHome(){          // no open session → the count tab shows the home screen
-  if(!S.session && countStep !== 'home') countStep = 'home';
-  if(S.session && countStep === 'home') countStep = startStep();
+function ensureHome(){          // login page only when logged out — the OPERATION page is home
+  const authed = !!S.currentUser && !!S.settings.pad;
+  if(!authed){ countStep = 'home'; return; }
+  if(countStep === 'home') countStep = S.session ? startStep() : 'op';
 }
 
 /* ---------- tabs ---------- */
@@ -1893,23 +2018,29 @@ function goStep(step, dir){
 }
 function wizBack(){
   buzz(10);
-  if(countStep === 'op'){ $('#sessCancel').click(); return; }   // Step 1's previous page is the action picker — same safe exit as ✕ (asks first if pieces are tapped)
-  if(countStep === 'sec') return goStep('op', 'bck');
-  if(countStep === 'setup') return goStep(CS().extra ? 'op' : 'sec', 'bck');
+  if(countStep === 'op') return;                                  // the operation page IS home
+  if(countStep === 'hub') return goStep('op', 'bck');
+  if(countStep === 'oplist') return goStep('hub', 'bck');
+  if(countStep === 'sec') return goStep(S.session ? 'hub' : (liveMode.on ? 'oplist' : 'hub'), 'bck');
+  if(countStep === 'setup') return goStep(CS().extra ? (S.session ? 'hub' : (liveMode.on ? 'oplist' : 'hub')) : 'sec', 'bck');
   if(countStep === 'pieces') return goStep('setup', 'bck');
   if(countStep === 'band') return goStep(pumpCtx.on ? 'pthead' : 'pieces', 'bck');
-  if(countStep === 'review') return goStep(['op','sec','setup','pieces','band','ptlist','pthead'].includes(reviewReturn) ? reviewReturn : 'op', 'bck');
-  if(countStep === 'ptlist') return goStep('op', 'bck');
+  if(countStep === 'review') return goStep(['op','hub','oplist','sec','setup','pieces','band','ptlist','pthead'].includes(reviewReturn) ? reviewReturn : 'op', 'bck');
+  if(countStep === 'ptlist') return goStep('hub', 'bck');
   if(countStep === 'pthead') return goStep('ptlist', 'bck');
 }
 document.addEventListener('click', ev => { const b = ev.target && ev.target.closest ? ev.target.closest('.wiz-back') : null; if(b) wizBack(); });
 function renderCount(dir){
-  const map = {home:'cs-home', op:'cs-op', sec:'cs-sec', setup:'cs-setup', pieces:'cs-pieces', band:'cs-band', ptlist:'cs-ptlist', pthead:'cs-pthead', review:'cs-review'};
-  if(countStep === 'home' || countStep === 'op' || countStep === 'sec' || countStep === 'setup' || countStep === 'pieces') pumpCtx.on = false;
+  const map = {home:'cs-home', op:'cs-op', hub:'cs-hub', oplist:'cs-oplist', sec:'cs-sec', setup:'cs-setup', pieces:'cs-pieces', band:'cs-band', ptlist:'cs-ptlist', pthead:'cs-pthead', review:'cs-review'};
+  if(['home','op','hub','oplist','sec','setup','pieces'].includes(countStep)) pumpCtx.on = false;
+  if(['home','op'].includes(countStep)){ liveMode = {on:false, op:''}; }
   ensureHome();
+  const hb = $('#homeBtn'); if(hb) hb.classList.toggle('hidden', countStep === 'home' || countStep === 'op');
   renderSessbar();
   if(countStep === 'home') renderHome();
   if(countStep === 'op') renderOp();
+  if(countStep === 'hub') renderHub();
+  if(countStep === 'oplist') renderOpList();
   if(countStep === 'sec') renderSec();
   if(countStep === 'setup') renderSetupStep();
   if(countStep === 'pieces'){ renderCrumbs('crumbPieces'); renderPieces(); }
@@ -1962,7 +2093,6 @@ function updateLoginReady(){
 function renderHome(){
   const hasUser = !!S.currentUser && !!S.settings.pad;   // no pad = not logged in, period
   $('#homeLogin').classList.toggle('hidden', hasUser);
-  $('#homeActions').classList.toggle('hidden', !hasUser);
   if(!hasUser){
     if(S.currentUser && !$('#loginName').value) $('#loginName').value = S.currentUser;  // padless carry-over: keep the name
     $('#loginRecent').innerHTML = '';
@@ -1991,11 +2121,6 @@ function renderHome(){
     lp.appendChild(nb);
     $('#loginPad').classList.toggle('hidden', !(padNewMode || !pads.length));
     updateLoginReady();
-  } else {
-    $('#homeUser').textContent = S.currentUser.toUpperCase();
-    $('#homePad').textContent = '⛰ ' + (S.settings.pad || 'no pad');
-    $('#homeRunning').textContent = S.entries.reduce((s,e) => s + e.qty, 0);
-    renderDrafts();
   }
 }
 function offerRecovered(){
@@ -2058,26 +2183,122 @@ $('#loginPad').addEventListener('keydown', ev => { if(ev.key === 'Enter') setUse
 $('#loginName').addEventListener('input', updateLoginReady);
 $('#loginPad').addEventListener('input', updateLoginReady);
 $('#switchUser').onclick = () => { S.currentUser = ''; padSel = ''; save(); renderCount(); };
-$('#actionBtns').querySelectorAll('button').forEach(b => b.onclick = () => {
-  if(!S.currentUser || !S.settings.pad){ countStep = 'home'; renderCount('bck'); toast('Log in with your name and pad first'); return; }
-  startSession(b.dataset.k);
+/* ---------- OPERATION HUB — current list or true-up ---------- */
+function enterOp(tok){
+  curOp = tok;
+  if(S.session){                                  // an open true-up continues its own count
+    if(tok === 'Pump Trailers'){ pumpCtx = {on:true, trailer:'', head:1}; goStep('ptlist', 'fwd'); return; }
+    goStep(tok === 'Frac' || tok === 'Pump Down' ? 'sec' : (CS().size ? 'pieces' : 'setup'), 'fwd');
+    return;
+  }
+  goStep('hub', 'fwd');
+}
+function renderHub(){
+  if(!curOp){ goStep('op', 'bck'); return; }
+  const n = S.entries.filter(e => entryOp(e) === curOp).reduce((s,e) => s + e.qty, 0);
+  $('#hubTitle').textContent = curOp;
+  $('#hubBtns').innerHTML = `
+    <button class="bigbtn act-recv" id="hubCur">CURRENT LIST<span class="sub">${n ? n + ' PCS ON ' + esc(curOp.toUpperCase()) : 'NOTHING LOGGED YET'} — SEE IT · ADD · REMOVE</span></button>
+    <button class="bigbtn act-true" id="hubTrue">TRUE-UP<span class="sub">RECOUNT ${esc(curOp.toUpperCase())} FROM SCRATCH — COMPARES &amp; RESETS IT</span></button>`;
+  $('#hubCur').onclick = () => { buzz(15); enterCurrentList(); };
+  $('#hubTrue').onclick = () => { buzz(15); startTrueup(); };
+  $('#hubHint').innerHTML = curOp === 'Pump Trailers'
+    ? 'The current list shows each trailer\u2019s fluid ends — tap a piece to fix or re-assign it. Every head holds one cannonball, one tee, one hose.'
+    : 'Adding lands pieces on the list the moment you band them. Removing asks how many and why — everything stays in History.';
+}
+function enterCurrentList(){
+  if(liveMode.op !== curOp){ newIds = new Set(); liveAddCount = 0; }
+  liveMode = {on:true, op:curOp};
+  if(curOp === 'Pump Trailers'){
+    pumpCtx = {on:true, trailer:'', head:1};
+    pairSel = {trailer:'', head:0, spare:false};
+    coflexSel = {trailer:'', head:0, pdmono:false};
+    goStep('ptlist', 'fwd'); return;
+  }
+  goStep('oplist', 'fwd');
+}
+function startTrueup(){
+  liveMode = {on:false, op:''};
+  startSession('trueup');
+  S.session.op = curOp; save();
   buzz(20);
-  toast(b.dataset.k === 'trueup' ? 'True-up — pick an operation and count EVERYTHING in it, then submit'
-      : b.dataset.k === 'recv' ? 'Adding — tap everything going on the list, then submit'
-      : 'Removing — tap everything coming off the list, then submit');
-  countStep = 'op';                       // every new list starts by picking its operation
-  renderCount('fwd');
-});
+  toast('True-up — count EVERYTHING in ' + curOp + ', then submit');
+  if(curOp === 'Pump Trailers'){
+    pumpCtx = {on:true, trailer:'', head:1};
+    pairSel = {trailer:'', head:0, spare:false};
+    coflexSel = {trailer:'', head:0, pdmono:false};
+    goStep('ptlist', 'fwd'); return;
+  }
+  goStep(curOp === 'Frac' || curOp === 'Pump Down' ? 'sec' : (CS().size ? 'pieces' : 'setup'), 'fwd');
+}
+/* ---------- CURRENT LIST page ---------- */
+function attachSwipe(el, onRemove){
+  let x0 = null, dx = 0, swiping = false;
+  el.addEventListener('touchstart', ev => { x0 = ev.touches[0].clientX; dx = 0; swiping = false; }, {passive:true});
+  el.addEventListener('touchmove', ev => {
+    if(x0 == null) return;
+    dx = ev.touches[0].clientX - x0;
+    if(dx < -12) swiping = true;
+    if(swiping) el.style.transform = 'translateX(' + Math.max(-96, Math.min(0, dx)) + 'px)';
+  }, {passive:true});
+  el.addEventListener('touchend', () => {
+    if(swiping && dx < -64){ el.style.transform = 'translateX(-96px)'; setTimeout(() => { el.style.transform = ''; onRemove(); }, 120); buzz(15); }
+    else el.style.transform = '';
+    x0 = null; swiping = false;
+  });
+}
+function renderOpList(){
+  if(!liveMode.on || !liveMode.op || liveMode.op === 'Pump Trailers'){ goStep('hub', 'bck'); return; }
+  $('#olTitle').textContent = liveMode.op;
+  const rows = S.entries.filter(e => entryOp(e) === liveMode.op);
+  const n = rows.reduce((s,e) => s + e.qty, 0);
+  $('#olSub').textContent = n ? n + ' piece' + (n === 1 ? '' : 's') + ' on the list — tap a line to fix it, swipe left to remove'
+                              : 'Nothing here yet — hit ＋ to start adding';
+  $('#olNewStrip').innerHTML = liveAddCount ? `<div class="ol-strip">＋${liveAddCount} added this visit — marked NEW below</div>` : '';
+  const gm = {}, groups = [];
+  rows.forEach(e => { const k = e.area || 'No section'; if(!gm[k]){ gm[k] = []; groups.push(k); } gm[k].push(e); });
+  const box = $('#olList');
+  box.innerHTML = groups.map(k => {
+    const gq = gm[k].reduce((s,e) => s + e.qty, 0);
+    return `<div class="ol-gh"><span>${esc(k)}</span><span>${gq} pc${gq === 1 ? '' : 's'}</span></div>` +
+      gm[k].map(e => {
+        const b = bandOf(e);
+        const chip = b ? `<span class="ol-band" style="background:${b.bg};color:${b.tx}">${e.chrome ? 'MFG' : b.m}</span>` : `<span class="ol-band" style="background:#22272d;color:#9aa3ad">—</span>`;
+        const sub = [bandLabel(e), e.serials.length ? 'S/N ' + e.serials.join(', ') : ''].filter(Boolean).join(' · ');
+        return `<div class="olrow-wrap"><div class="ol-under">REMOVE ›</div>
+          <button class="olrow" data-id="${e.id}" type="button">${chip}
+            <span class="ol-txt"><b>${esc(labelFor(e))}</b><span>${esc(sub || '—')}</span></span>
+            ${newIds.has(e.id) ? '<span class="ol-new">NEW</span>' : ''}
+            <span class="ol-qty">×${e.qty}</span>
+            <span class="ol-x" data-x="${e.id}">✕</span></button></div>`;
+      }).join('');
+  }).join('');
+  box.querySelectorAll('.olrow').forEach(r => {
+    const id = r.dataset.id;
+    const x = r.querySelector('.ol-x');
+    if(x) x.addEventListener('click', ev => { ev.stopPropagation(); const e = S.entries.find(en => en.id === id); if(e) confirmRemoveSheet(e, renderOpList); });
+    r.addEventListener('click', () => { buzz(10); openDetail(id, 'cur'); });
+    attachSwipe(r, () => { const e = S.entries.find(en => en.id === id); if(e) confirmRemoveSheet(e, renderOpList); });
+  });
+  $('#olAdd').onclick = () => { buzz(15);
+    goStep(liveMode.op === 'Frac' || liveMode.op === 'Pump Down' ? 'sec' : (CS().size ? 'pieces' : 'setup'), 'fwd'); };
+}
+/* ---------- HOME button — back to the operation page from anywhere ---------- */
+$('#homeBtn').onclick = () => {
+  buzz(10);
+  if(S.session && sessionTotal() > 0){ $('#sessCancel').click(); return; }   // open true-up → save / scrap / stay
+  if(S.session) cancelSession();
+  liveMode = {on:false, op:''}; pumpCtx.on = false;
+  goStep('op', 'bck');
+};
 
 /* ---------- PUMP TRAILER guided walk ---------- */
 function startPumpWalk(){
   if(!S.currentUser || !S.settings.pad){ countStep = 'home'; renderCount('bck'); toast('Log in with your name and pad first'); return; }
-  if(!S.session) startSession('recv');
   pumpCtx = {on:true, trailer:'', head:1};
   pairSel = {trailer:'', head:0, spare:false};
   coflexSel = {trailer:'', head:0, pdmono:false};
   buzz(20);
-  toast(S.session && S.session.kind === 'rem' ? 'Pump Trailers — mark what\u2019s coming off each fluid end' : 'Pump Trailers — tap a trailer, then band its iron');
   goStep('ptlist', 'fwd');
 }
 function sessPumpEntries(){ return (S.session && S.session.entries) ? S.session.entries.filter(e => pumpOf(e)) : []; }
@@ -2090,16 +2311,21 @@ function curPumpCount(trailer){ return S.entries.filter(e => { const p = pumpOf(
 function curHeadCount(trailer, head){ return S.entries.filter(e => { const p = pumpOf(e); return p && p.trailer === trailer && p.head === head; }).reduce((s,e) => s + e.qty, 0); }
 function renderPtList(){
   const il = $('#ptIllus'); if(il) il.innerHTML = PUMP_TRAILER_SVG;
+  const live = !S.session && liveMode.on;
   const remMode = S.session && S.session.kind === 'rem';
   const intro = $('#ptIntro');
-  if(intro) intro.textContent = remMode
+  if(intro) intro.textContent = live
+    ? 'Tap a trailer to see what\u2019s on each fluid end — fix a piece by tapping it, add what\u2019s missing.'
+    : remMode
     ? 'Tap a trailer, then mark what\u2019s coming off each fluid end — bands and serial numbers ride along automatically.'
     : 'Tap a trailer, then band the iron on each fluid end — the cannonball 90, the 2" tee and the co-flex are already listed for Head 1 and Head 2.';
   const g = $('#ptGrid'); if(!g) return;
   g.innerHTML = TRAILERS.map(t => {
     const marked = pumpCount(t);
-    const rigged = remMode ? curPumpCount(t) : 0;
-    const sub = remMode
+    const rigged = (live || remMode) ? curPumpCount(t) : 0;
+    const sub = live
+      ? (rigged ? rigged + ' RIGGED IN' : 'NOTHING RIGGED IN — TAP TO ADD')
+      : remMode
       ? (rigged ? rigged + ' RIGGED IN' + (marked ? ' · ' + marked + ' MARKED' : '') : 'NOTHING LOGGED HERE')
       : (marked ? '● ' + marked + ' ON THIS LIST' : 'HEAD 1 · HEAD 2');
     return `<button class="bigbtn ptbtn" data-t="${esc(t)}">${esc(trailerLabel(t))}<span class="sub">${sub}</span></button>`;
@@ -2111,16 +2337,40 @@ function renderPtHead(){
   pumpCtx.on = true;
   $('#ptTitle').textContent = trailerLabel(pumpCtx.trailer);
   const seg = $('#ptHeadSeg');
+  const live = !S.session && liveMode.on;
   const remMode = S.session && S.session.kind === 'rem';
   seg.innerHTML = [2, 1].map(h => {                 // Head 2 on the left, Head 1 on the right — matches the pump
     const on = pumpCtx.head === h;
-    const n = remMode ? curHeadCount(pumpCtx.trailer, h) : headCount(pumpCtx.trailer, h);
+    const n = (live || remMode) ? curHeadCount(pumpCtx.trailer, h) : headCount(pumpCtx.trailer, h);
     return `<button class="headsel-btn ${on ? 'on' : ''}" data-h="${h}">
       <div class="hs-img${h === 2 ? ' flip' : ''}">${FLUID_END_SVG}</div>
-      <div class="hs-lab">HEAD ${h}<span>${n} pcs ${remMode ? 'rigged in' : 'logged'}</span></div></button>`;
+      <div class="hs-lab">HEAD ${h}<span>${n} pcs ${(live || remMode) ? 'rigged in' : 'logged'}</span></div></button>`;
   }).join('');
   seg.querySelectorAll('button').forEach(b => b.onclick = () => { pumpCtx.head = Number(b.dataset.h); buzz(10); renderPtHead(); });
   const box = $('#ptPieces');
+  if(live){
+    box.innerHTML = HEAD_TEMPLATE.map(tp => {
+      const cur = pumpEntry(pumpCtx.trailer, pumpCtx.head, tp.itemId);
+      const it = item(tp.itemId); const im = pieceImg(it);
+      const sub = cur
+        ? ((tp.coflex ? (cur.serials.length ? 'S/N ' + esc(cur.serials.join(', ')) : 'on this head — no serial') : esc(bandLabel(cur))) + ' · tap → fix / re-assign')
+        : (tp.coflex ? 'empty — tap → add hose + serial' : 'empty — tap → add & band it');
+      return `<button class="ptpiece ${cur ? 'done' : ''}" data-i="${tp.itemId}" ${cur ? `data-cid="${cur.id}"` : ''}>
+        <span class="ptp-img">${im.html}</span>
+        <span class="ptp-txt"><b>${esc(tp.label)}</b><span>${cur && newIds.has(cur.id) ? '● NEW · ' : ''}${sub}</span></span>
+        ${cur ? `<span class="ptp-x" data-rm="${cur.id}">✕</span>` : ''}
+        <span class="ptp-go">${cur ? '✎' : '＋'}</span></button>`;
+    }).join('') +
+    `<div class="tiny muted" style="margin-top:12px;text-align:center">One cannonball · one tee · one hose per fluid end — changes land on <b>${esc(fluidEnd(pumpCtx.trailer, pumpCtx.head))}</b> instantly.</div>`;
+    box.querySelectorAll('.ptpiece').forEach(b => b.onclick = () => {
+      const cid = b.dataset.cid;
+      if(cid){ buzz(10); openDetail(cid, 'cur'); }
+      else launchPumpPiece(b.dataset.i);
+    });
+    box.querySelectorAll('.ptp-x').forEach(x => x.addEventListener('click', ev => { ev.stopPropagation();
+      const e = S.entries.find(en => en.id === x.dataset.rm); if(e) confirmRemoveSheet(e, renderPtHead); }));
+    return;
+  }
   if(remMode){
     box.innerHTML = HEAD_TEMPLATE.map(tp => {
       const cur = pumpEntry(pumpCtx.trailer, pumpCtx.head, tp.itemId);
@@ -2186,14 +2436,28 @@ function launchPumpPiece(itemId){
 function renderSessbar(){
   const bar = $('#sessbar');
   const s = S.session;
-  bar.classList.toggle('hidden', !s || countStep === 'home');
+  const wiz = ['sec','setup','pieces','band','ptlist','pthead'].includes(countStep);
+  if(!s && liveMode.on && wiz){
+    bar.className = 'sessbar k-recv';
+    $('#sessKind').textContent = liveMode.op === 'Pump Trailers' ? 'PUMP TRAILERS — LIVE' : 'ADDING — ' + (liveMode.op || '').toUpperCase();
+    $('#sessWho').textContent = S.currentUser || '';
+    $('#sessCt').textContent = liveAddCount;
+    $('#sessSubmit').textContent = 'VIEW LIST ›';
+    $('#sessCancel').style.display = 'none';
+    return;
+  }
+  $('#sessSubmit').textContent = 'SUBMIT';
+  $('#sessCancel').style.display = '';
+  const off = ['home','op','hub','oplist'].includes(countStep);
+  bar.classList.toggle('hidden', !s || off);
   if(!s) return;
-  bar.className = 'sessbar k-' + s.kind + (countStep === 'home' ? ' hidden' : '');
+  bar.className = 'sessbar k-' + s.kind + (off ? ' hidden' : '');
   $('#sessKind').textContent = KIND_VERB[s.kind] || s.kind;
   $('#sessWho').textContent = s.user || '';
   $('#sessCt').textContent = sessionTotal();
 }
 $('#sessCancel').onclick = () => {
+  if(!S.session){ liveMode = {on:false, op:''}; countStep = 'op'; renderCount('bck'); return; }
   const n = sessionTotal();
   if(!n){ cancelSession(); countStep = 'home'; renderCount('bck'); return; }
   openSheet(`<h3>Leave this list?</h3>
@@ -2208,6 +2472,7 @@ $('#sessCancel').onclick = () => {
   $('#svBack').onclick = closeSheet;
 };
 $('#sessSubmit').onclick = () => {
+  if(!S.session && liveMode.on){ goStep(liveMode.op === 'Pump Trailers' ? 'ptlist' : 'oplist', 'bck'); return; }
   const s = S.session; if(!s) return;
   if(!sessionTotal()){ toast('Nothing tapped yet'); return; }
   openReview();
@@ -2282,28 +2547,32 @@ function showTrueupResult(rec){
 /* ---------- STEP 1 · operation + section ---------- */
 function renderOp(){
   const c = CS();
+  $('#homeUser').textContent = (S.currentUser || '').toUpperCase();
+  $('#homePad').textContent = '⛰ ' + (S.settings.pad || 'no pad');
+  $('#homeRunning').textContent = S.entries.reduce((s,e) => s + e.qty, 0);
+  renderDrafts();
   const lock = (S.session && S.session.op && sessionTotal() > 0) ? S.session.op : null;
   const guard = (token, apply) => { if(lock && token !== lock){ lockSwitchSheet(token, apply); return; } apply(); };
+  const opPieces = o => S.entries.filter(e => entryOp(e) === o).reduce((s,e) => s + e.qty, 0);
   const op = $('#opBtns');
   op.innerHTML = '';
   SYSTEMS.forEach(sy => {
     const b = document.createElement('button');
-    b.className = 'bigbtn' + (c.sys === sy && !c.extra ? ' on' : '') + (lock && lock !== sy ? ' oplock' : '');
-    b.innerHTML = `${esc(sy.toUpperCase())}<span class="sub">${sy === 'Frac' ? 'TREATING LINE' : 'PD LINE'}</span>`;
-    b.onclick = () => guard(sy, () => { c.extra = ''; c.sys = sy; save(); buzz(15); goStep('sec', 'fwd'); });
+    b.className = 'bigbtn' + (lock && lock !== sy ? ' oplock' : '');
+    b.innerHTML = `${esc(sy.toUpperCase())}<span class="sub">${sy === 'Frac' ? 'TREATING LINE' : 'PD LINE'} — ${opPieces(sy)} PCS ON THE LIST</span>`;
+    b.onclick = () => guard(sy, () => { c.extra = ''; c.sys = sy; save(); buzz(15); enterOp(sy); });
     op.appendChild(b);
   });
-  const sb = document.createElement('button');
-  sb.className = 'bigbtn' + (c.extra === 'On Standby' ? ' on' : '') + (lock && lock !== 'On Standby' ? ' oplock' : '');
-  sb.innerHTML = `ON STANDBY<span class="sub">SPARE IRON — NOT RIGGED IN</span>`;
-  sb.onclick = () => guard('On Standby', () => { c.extra = 'On Standby'; c.sys = ''; c.sec = ''; save(); buzz(15);
-    goStep(c.size ? 'pieces' : 'setup', 'fwd'); });
-  op.appendChild(sb);
   const pt = document.createElement('button');
   pt.className = 'bigbtn act-pump' + (lock && lock !== 'Pump Trailers' ? ' oplock' : '');
-  pt.innerHTML = `⛓ PUMP TRAILERS<span class="sub">CANNONBALL · 2" TEE · CO-FLEX — EVERY HEAD</span>`;
-  pt.onclick = () => guard('Pump Trailers', () => startPumpWalk());
+  pt.innerHTML = `⛓ PUMP TRAILERS<span class="sub">EVERY FLUID END — ${opPieces('Pump Trailers')} PCS RIGGED IN</span>`;
+  pt.onclick = () => guard('Pump Trailers', () => enterOp('Pump Trailers'));
   op.appendChild(pt);
+  const sb = document.createElement('button');
+  sb.className = 'bigbtn' + (lock && lock !== 'On Standby' ? ' oplock' : '');
+  sb.innerHTML = `ON STANDBY<span class="sub">SPARE IRON — ${opPieces('On Standby')} PCS</span>`;
+  sb.onclick = () => guard('On Standby', () => { c.extra = 'On Standby'; c.sys = ''; c.sec = ''; save(); buzz(15); enterOp('On Standby'); });
+  op.appendChild(sb);
   const ex = $('#extraWrap');
   ex.innerHTML = '';
   if(S.settings.areas.length){
@@ -2311,10 +2580,9 @@ function renderOp(){
     const row = document.createElement('div'); row.className = 'chiprow';
     S.settings.areas.forEach(a => {
       const b = document.createElement('button');
-      b.className = 'chip' + (c.extra === a ? ' on-red' : '') + (lock && lock !== a ? ' oplock' : '');
+      b.className = 'chip' + (lock && lock !== a ? ' oplock' : '');
       b.textContent = a;
-      b.onclick = () => guard(a, () => { c.extra = a; c.sys = ''; c.sec = ''; save(); buzz(15);
-        goStep(c.size ? 'pieces' : 'setup', 'fwd'); });
+      b.onclick = () => guard(a, () => { c.extra = a; c.sys = ''; c.sec = ''; save(); buzz(15); enterOp(a); });
       row.appendChild(b);
     });
     ex.appendChild(row);
@@ -2323,7 +2591,7 @@ function renderOp(){
     const note = document.createElement('div');
     note.className = 'tiny muted st3';
     note.style.marginTop = '10px';
-    note.innerHTML = `🔒 This ${esc((KIND_NAME[S.session.kind] || 'list').toLowerCase())} list is locked to <b>${esc(lock)}</b> — one operation per submission. Save or submit it to count somewhere else.`;
+    note.innerHTML = `🔒 This ${esc((KIND_NAME[S.session.kind] || 'list').toLowerCase())} is locked to <b>${esc(lock)}</b> — one operation per submission. Submit it (or ⌂ HOME → save) to work somewhere else.`;
     op.appendChild(note);
   }
 }
@@ -2480,7 +2748,9 @@ function renderBand(){
     }
     const _feNow = pumpCtx.on ? fluidEnd(pumpCtx.trailer, pumpCtx.head)
       : (!standby && !coflexSel.pdmono && coflexSel.trailer && coflexSel.head) ? fluidEnd(coflexSel.trailer, coflexSel.head) : null;
-    const _exHose = _feNow && S.session ? S.session.entries.find(en => en.itemId === 'coflex' && (en.variant === _feNow || en.area === _feNow)) : null;
+    const _exHose = _feNow ? ((!S.session && liveMode.on)
+        ? S.entries.find(en => en.itemId === 'coflex' && (en.variant === _feNow || en.area === _feNow))
+        : (S.session ? S.session.entries.find(en => en.itemId === 'coflex' && (en.variant === _feNow || en.area === _feNow)) : null)) : null;
     html += `<div class="optlbl st1">Serial number <span style="opacity:.6;letter-spacing:0;text-transform:none">(optional)</span></div>
       <input type="text" id="cfSerial" placeholder="Hose serial…" value="${_exHose && _exHose.serials.length ? esc(_exHose.serials[0]) : ''}" autocomplete="off" autocapitalize="characters" class="st1" style="margin-bottom:12px">
       <button class="bigbtn st2" id="cfAdd">${_exHose ? 'UPDATE HOSE<span class="sub">FIXES THE SERIAL — 1 HOSE PER FLUID END</span>' : 'ADD HOSE<span class="sub">NO INSPECTION BAND</span>'}</button>`;
@@ -2496,24 +2766,37 @@ function renderBand(){
     $('#cfAdd').onclick = () => {
       const pd = !pumpCtx.on && !standby && coflexSel.pdmono;
       if(!pumpCtx.on && !standby && !pd && (!coflexSel.trailer || !coflexSel.head)){ toast('Pick pump trailer & head — or PD Monoline'); buzz(30); return; }
-      if(!S.session){ toast('Pick an action first'); countStep = 'home'; renderCount('bck'); return; }
+      if(!S.session && !liveMode.on){ toast('Start from an operation'); countStep = 'op'; renderCount('bck'); return; }
+      const live = !S.session && liveMode.on;
       const variant = pumpCtx.on ? fluidEnd(pumpCtx.trailer, pumpCtx.head) : standby ? '' : pd ? 'PD Monoline' : fluidEnd(coflexSel.trailer, coflexSel.head);
       const area = pd ? 'Pump Down Monoline' : curArea();
       const serial = ($('#cfSerial').value || '').trim().toUpperCase();
       const feTarget = (pumpCtx.on || (!standby && !pd)) ? variant : null;   // a specific fluid end holds exactly ONE hose
-      const exH = feTarget ? S.session.entries.find(en => en.itemId === 'coflex' && (en.variant === feTarget || en.area === feTarget)) : null;
+      const exH = feTarget ? (live
+          ? S.entries.find(en => en.itemId === 'coflex' && (en.variant === feTarget || en.area === feTarget))
+          : S.session.entries.find(en => en.itemId === 'coflex' && (en.variant === feTarget || en.area === feTarget))) : null;
       if(exH){
         if(serial && !(exH.serials.length === 1 && exH.serials[0] === serial)){
           exH.serials = serial ? [serial] : exH.serials;   // correcting the number, not adding a hose
-          exH.qty = 1; exH.updated = Date.now(); save();
+          exH.qty = 1; exH.updated = Date.now();
+          if(live) newIds.add(exH.id);
+          save();
           toast('Hose serial updated — ' + serial);
         } else {
           exH.qty = 1; save();
           toast('That hose is already logged — 1 per fluid end');
         }
-        lastAdd = {list:'sess', id:exH.id};
+        lastAdd = {list:live ? 'cur' : 'sess', id:exH.id};
         buzz([18,25,45]);
         goStep(pumpCtx.on ? 'pthead' : 'pieces', 'bck'); showLastbar(); renderSessbar();
+        return;
+      }
+      if(live){
+        const entry = liveCommit('coflex', resolveSize(it), variant, resolveConn(it), -1, area, {serials: serial ? [serial] : []});
+        lastAdd = {list:'cur', id:entry.id};
+        buzz([18,25,45]);
+        playSubmitFX(it, entry, -1, null);
+        renderSessbar();
         return;
       }
       const entry = addToSession('coflex', resolveSize(it), variant, resolveConn(it), -1, area);
@@ -2619,19 +2902,31 @@ function tapMfg(month, year){
     const row = document.getElementById(miss.row); if(row){ row.scrollIntoView({behavior:'smooth', block:'center'}); row.classList.remove('needflash'); void row.offsetWidth; row.classList.add('needflash'); } return; }
   const variant = it.pair ? (pairSel.spare ? 'Spare' : fluidEnd(pairSel.trailer, pairSel.head))
                           : [sel.fig, sel.variant].filter(Boolean).join(' · ');
-  if(!S.session){ toast('Pick an action first'); countStep = 'home'; renderCount('bck'); return; }
+  if(!S.session && !liveMode.on){ toast('Start from an operation'); countStep = 'op'; renderCount('bck'); return; }
   if(pumpCtx.on){
-    const ex = pumpPieceEntry(pumpCtx.trailer, pumpCtx.head, sel.itemId);
-    if(ex){   // correcting the walk piece to a chrome MFG band
+    const ex = (!S.session && liveMode.on) ? pumpEntry(pumpCtx.trailer, pumpCtx.head, sel.itemId)
+                                           : pumpPieceEntry(pumpCtx.trailer, pumpCtx.head, sel.itemId);
+    if(ex){   // one of each per head — re-banding CORRECTS it in place
       ex.color = month; ex.year = year; ex.chrome = true;
-      ex.variant = variant || ex.variant; ex.qty = 1; ex.updated = Date.now(); save();
-      lastAdd = {list:'sess', id:ex.id};
+      ex.variant = variant || ex.variant; ex.qty = 1; ex.updated = Date.now();
+      if(!S.session && liveMode.on) newIds.add(ex.id);
+      save();
+      lastAdd = {list:S.session ? 'sess' : 'cur', id:ex.id};
       sel = {itemId:null, variant:'', fig:''};
       mfgOpen = false; mfgMonth = null;
       buzz([18,25,45]); toast('Corrected — ' + bandLabel(ex));
       goStep('pthead', 'bck'); showLastbar(); renderSessbar();
       return;
     }
+  }
+  if(!S.session && liveMode.on){
+    const entry = liveCommit(sel.itemId, resolveSize(it), variant, resolveConn(it), month, curArea(), {chrome:true, year:year});
+    lastAdd = {list:'cur', id:entry.id};
+    mfgOpen = false; mfgMonth = null;
+    buzz([18,25,45]);
+    playSubmitFX(it, entry, month, null);
+    renderSessbar();
+    return;
   }
   const entry = addToSession(sel.itemId, resolveSize(it), variant, resolveConn(it), month, curArea(), {chrome:true, year:year});
   lastAdd = {list:'sess', id:entry.id};
@@ -2675,18 +2970,29 @@ function tapBand(color){
   }
   const variant = it.pair ? (pairSel.spare ? 'Spare' : fluidEnd(pairSel.trailer, pairSel.head))
                           : [sel.fig, sel.variant].filter(Boolean).join(' · ');
-  if(!S.session){ toast('Pick an action first'); countStep = 'home'; renderCount('bck'); return; }
+  if(!S.session && !liveMode.on){ toast('Start from an operation'); countStep = 'op'; renderCount('bck'); return; }
   if(pumpCtx.on){
-    const ex = pumpPieceEntry(pumpCtx.trailer, pumpCtx.head, sel.itemId);
-    if(ex){   // each head carries exactly one of each walk piece — re-banding CORRECTS it
+    const ex = (!S.session && liveMode.on) ? pumpEntry(pumpCtx.trailer, pumpCtx.head, sel.itemId)
+                                           : pumpPieceEntry(pumpCtx.trailer, pumpCtx.head, sel.itemId);
+    if(ex){   // each head carries exactly one of each piece — re-banding CORRECTS it
       ex.color = color; ex.year = color >= 0 ? assumedYear(color) : 0; ex.chrome = false;
-      ex.variant = variant || ex.variant; ex.qty = 1; ex.updated = Date.now(); save();
-      lastAdd = {list:'sess', id:ex.id};
+      ex.variant = variant || ex.variant; ex.qty = 1; ex.updated = Date.now();
+      if(!S.session && liveMode.on) newIds.add(ex.id);
+      save();
+      lastAdd = {list:S.session ? 'sess' : 'cur', id:ex.id};
       sel = {itemId:null, variant:'', fig:''};
       buzz([18,25,45]); toast('Corrected — ' + bandLabel(ex));
       goStep('pthead', 'bck'); showLastbar(); renderSessbar();
       return;
     }
+  }
+  if(!S.session && liveMode.on){
+    const entry = liveCommit(sel.itemId, resolveSize(it), variant, resolveConn(it), color, curArea());
+    lastAdd = {list:'cur', id:entry.id};
+    buzz([18,25,45]);
+    playSubmitFX(it, entry, color, null);
+    renderSessbar();
+    return;
   }
   const entry = addToSession(sel.itemId, resolveSize(it), variant, resolveConn(it), color, curArea());
   lastAdd = {list:'sess', id:entry.id};
@@ -2982,7 +3288,7 @@ function renderHistList(){
         }
         const reasonHtml = a.reason ? `<div class="tiny" style="color:#f2b63c;font-weight:700;padding:6px 0 2px">WHY: ${esc(a.reason)}</div>` : '';
         body.innerHTML = reasonHtml + dhtml + (a.entries.map(e =>
-          `<div class="hrow"><span class="hq">${e.qty}</span><span class="grow">${esc(labelFor(e))}${e.area ? ` <span class="muted">· ${esc(e.area)}</span>` : ''}${e.serials.length ? ` <span class="muted">· ${esc(e.serials.join(', '))}</span>` : ''}${e.note ? ` <span style="color:#f2b63c">· ${esc(e.note)}</span>` : ''}</span>${miniBand(e)}</div>`).join('')
+          `<div class="hrow"><span class="hq">${e.qty}</span><span class="grow">${esc(labelFor(e))}${e.area ? ` <span class="muted">· ${esc(e.area)}</span>` : ''}${e.serials.length ? ` <span class="muted">· ${esc(e.serials.join(', '))}</span>` : ''}${e.note ? ` <span style="color:#f2b63c">· ${esc(e.note)}</span>` : ''}${e.why ? ` <span style="color:#f2b63c">· WHY: ${esc(e.why)}</span>` : ''}</span>${miniBand(e)}</div>`).join('')
           || '<div class="tiny muted" style="padding:6px 0">Empty list.</div>') +
           (() => {
             const tuUndo = kind === 'trueup' && a.replaced && a.replaced.length;
@@ -3041,7 +3347,8 @@ armConfirm($('#btnVoidCur'), 'TAP AGAIN — WIPES THE COUNT', () => {
 function openDetail(id, listKind){
   const inSess = listKind === 'sess';
   const ARR = inSess ? (S.session ? S.session.entries : []) : S.entries;
-  const rerender = () => { if(inSess){ if(countStep === 'review') renderReview(); renderSessbar(); } else renderList(); };
+  const rerender = () => { if(inSess){ if(countStep === 'review') renderReview(); renderSessbar(); }
+    else { renderList(); if(countStep === 'oplist') renderOpList(); if(countStep === 'pthead') renderPtHead(); if(countStep === 'ptlist') renderPtList(); } };
   const e = ARR.find(x => x.id === id); if(!e) return;
   const it = item(e.itemId);
   const bandOpts = `<option value="-1">No band</option>` + BANDS.map((b,i) =>
@@ -4036,8 +4343,36 @@ function sizeConnRows(){
   });
   return [...m.entries()].sort((a, b) => b[1].total - a[1].total);
 }
+function pupFeet(v){
+  const m = /(\d+(?:\.\d+)?)\s*'/.exec(v || ''); if(m) return parseFloat(m[1]);
+  const i2 = /(\d+)\s*"/.exec(v || ''); if(i2) return parseFloat(i2[1]) / 12;
+  return 0;
+}
+const fmtFt = n => { const r = Math.round(n * 10) / 10; return (r % 1 === 0 ? String(r) : r.toFixed(1)); };
+function pupFootage(){
+  const per = new Map();
+  const out = {joints:0, ok:0, due:0, bad:0, total:0, rows:[]};
+  S.entries.filter(e => e.itemId === 'pup').forEach(e => {
+    const ftEach = pupFeet(e.variant);
+    const ft = ftEach * e.qty;
+    if(!per.has(e.size)) per.set(e.size, {size:e.size, joints:0, ok:0, due:0, bad:0, total:0, lens:new Map()});
+    const r = per.get(e.size);
+    const st = statusOf(e);
+    r.joints += e.qty; r.total += ft;
+    out.joints += e.qty; out.total += ft;
+    if(st === 'ok'){ r.ok += ft; out.ok += ft; }
+    else if(st === 'due'){ r.due += ft; out.due += ft; }
+    else { r.bad += ft; out.bad += ft; }
+    const lk = (e.variant || '').split(' · ')[0] || '?';
+    r.lens.set(lk, (r.lens.get(lk) || 0) + e.qty);
+  });
+  out.rows = [...per.values()].sort((a,b) => a.size.localeCompare(b.size))
+    .map(r => ({...r, lens:[...r.lens.entries()].map(([l,n]) => n + '× ' + l).join(' · ')}));
+  return out;
+}
 function buildPdfSheet(){
   const t = tallies();
+  const pf = pupFootage();
   const now = new Date();
   const dk = fmtISO(now);
   const gatherToday = kind => {
@@ -4072,7 +4407,7 @@ function buildPdfSheet(){
       <div class="ptile due"><div class="v">${t.due}</div><div class="k">Due ≤${S.settings.dueSoonDays}d</div></div>
       <div class="ptile exp"><div class="v">${t.exp}</div><div class="k">Expired</div></div>
       <div class="ptile"><div class="v">${t.none}</div><div class="k">No band</div></div>
-      <div class="ptile"><div class="v">${recvToday ? '+' + recvToday.total : '—'}${outToday ? ' / −' + outToday : ''}</div><div class="k">Added / removed today</div></div>
+      <div class="ptile ${pf.total && pf.ok < pf.total * .4 ? 'due' : ''}"><div class="v">${pf.total ? fmtFt(pf.ok) + '′' : '—'}</div><div class="k">${pf.total ? 'Pup footage in date · ' + fmtFt(pf.total) + '′ on site' : 'Pup footage — none logged'}</div></div>
     </div></div>`;
 
   // 02 · RUNWAY — will the iron outlast the job?
@@ -4184,36 +4519,23 @@ function buildPdfSheet(){
     html += `</table></div>`;
   }
 
-  // 10 · MOVEMENT — flow by month
-  const FL2 = flowByMonth();
-  if(FL2.length){
-    html += `<div class="psec">${secH('Iron flow by month')}<table>
-      <tr><th>Month</th><th style="text-align:right">Added</th><th style="text-align:right">Removed</th><th style="text-align:right">Failed</th><th style="text-align:right">Count adj</th><th style="text-align:right">Net</th></tr>`;
-    FL2.forEach(f => {
-      html += `<tr><td>${f.lbl}</td><td style="text-align:right">${f.recv ? '+' + f.recv : '—'}</td>
-        <td style="text-align:right">${f.insp ? '−' + f.insp : '—'}</td>
-        <td style="text-align:right" class="${f.fail ? 'exp-t' : ''}">${f.fail ? '−' + f.fail : '—'}</td>
-        <td style="text-align:right">${f.tu ? (f.adj > 0 ? '+' : '') + f.adj : '—'}</td>
-        <td style="text-align:right"><b>${f.net > 0 ? '+' : ''}${f.net}</b></td></tr>`;
+  // pup joints — footage on site, by size
+  if(pf.rows.length){
+    html += `<div class="psec">${secH('Pup joints — footage on site')}<table>
+      <tr><th>Size</th><th>Lengths on site</th><th style="text-align:right">Joints</th><th style="text-align:right">In-date ft</th><th style="text-align:right">Due ≤30d ft</th><th style="text-align:right">Expired / no band ft</th><th style="text-align:right">Total ft</th></tr>`;
+    pf.rows.forEach(r => {
+      html += `<tr><td><b>${esc(r.size)}</b></td><td>${esc(r.lens)}</td><td style="text-align:right">${r.joints}</td>
+        <td style="text-align:right"><b>${fmtFt(r.ok)}′</b></td>
+        <td style="text-align:right" class="${r.due ? 'due-t' : ''}">${r.due ? fmtFt(r.due) + '′' : '—'}</td>
+        <td style="text-align:right" class="${r.bad ? 'exp-t' : ''}">${r.bad ? fmtFt(r.bad) + '′' : '—'}</td>
+        <td style="text-align:right">${fmtFt(r.total)}′</td></tr>`;
     });
-    html += `</table></div>`;
-  }
-
-  // today's true-up differences, if any
-  const tuToday = S.archives.slice().reverse().find(a => a.kind === 'trueup' && a.dayKey === dk);
-  if(tuToday && tuToday.disc){
-    html += `<div class="psec">${secH(`True-up${tuToday.op ? ' · ' + esc(tuToday.op) : ''} — ${esc(tuToday.user || '')} today (${tuToday.wasTotal} → ${tuToday.total}${tuToday.op ? ', other operations untouched' : ''})`)}`;
-    if(tuToday.disc.length){
-      html += `<table><tr><th>Item</th><th style="text-align:right">Was</th><th style="text-align:right">Counted</th><th style="text-align:right">Diff</th></tr>`;
-      tuToday.disc.forEach(d => {
-        html += `<tr><td>${esc(d.label)}</td><td style="text-align:right">${d.was}</td><td style="text-align:right">${d.now}</td>
-          <td style="text-align:right" class="${d.diff > 0 ? '' : 'exp-t'}"><b>${d.diff > 0 ? '+' : ''}${d.diff}</b></td></tr>`;
-      });
-      html += `</table>`;
-    } else {
-      html += `<div style="font-size:11px;color:#178a58;font-weight:700;padding:2px 0 6px">Perfect match — running list confirmed.</div>`;
-    }
-    html += `</div>`;
+    html += `<tr><td><b>ALL</b></td><td></td><td style="text-align:right"><b>${pf.joints}</b></td>
+      <td style="text-align:right"><b>${fmtFt(pf.ok)}′</b></td>
+      <td style="text-align:right">${pf.due ? fmtFt(pf.due) + '′' : '—'}</td>
+      <td style="text-align:right">${pf.bad ? fmtFt(pf.bad) + '′' : '—'}</td>
+      <td style="text-align:right"><b>${fmtFt(pf.total)}′</b></td></tr></table>
+    <div style="font-size:10px;color:#67707b;padding:4px 2px 0">Footage = joint length × joint count. The in-date column is what can be run today.</div></div>`;
   }
 
   // full inventory grouped by category
@@ -4234,28 +4556,6 @@ function buildPdfSheet(){
   });
   html += `</table></div>`;
 
-  // today's removals, with lines + the crew's reason
-  [[remToday, 'Removed — today'], [inspToday, 'Sent for inspection — today'], [failToday, 'Failed iron — today']].forEach(([log, titleBase]) => {
-    const title = log && log.users && log.users.length ? titleBase + ' (' + log.users.join(', ') + ')' : titleBase;
-    if(!log || !log.entries.length) return;
-    html += `<div class="psec">${secH(`${title} (${log.total} pcs)`)}<table>
-      <tr><th>Qty</th><th>Item</th><th>Band</th><th>From section</th><th>Notes</th></tr>`;
-    log.entries.forEach(e => {
-      html += `<tr><td>${e.qty}</td><td>${esc(labelFor(e))}</td><td>${pdfBandChip(e)}</td>
-        <td>${esc(e.area || '')}</td><td>${esc([e.serials.join(', '), e.note].filter(Boolean).join(' — '))}</td></tr>`;
-    });
-    html += `</table>${log.reasons && log.reasons.length ? `<div style="font-size:10.5px;padding:4px 2px 0"><b>Why:</b> ${esc(log.reasons.join(' · '))}</div>` : ''}</div>`;
-  });
-  // history roll-up
-  const hist = S.archives.slice(-8).reverse();
-  if(hist.length){
-    const KL = {rem:'Removed', insp:'Inspection', fail:'Failed iron', iron:'Pad count', recv:'Added', trueup:'True-up'};
-    html += `<div class="psec">${secH('Submission history')}<table><tr><th>List</th><th>Type</th><th>Operation</th><th>Pad</th><th>Date</th><th>Pieces</th><th>Reason</th></tr>`;
-    hist.forEach(a => {
-      html += `<tr><td>${esc(a.name)}</td><td>${KL[a.kind] || a.kind || 'Pad count'}</td><td>${esc(a.op || '—')}</td><td>${esc(a.pad || '—')}</td><td>${esc(String(a.date || ''))}</td><td>${a.total}</td><td>${esc(a.reason || '')}</td></tr>`;
-    });
-    html += `</table></div>`;
-  }
   html += `<div class="pdf-foot"><span>Band = inspection month per EWS Treating Line Standard POL · 6-mo recert · IES</span>
     <span>Iron Inventory — ${esc(S.settings.fleet || '')}</span></div>`;
   $('#pdfsheet').innerHTML = html;
@@ -4595,7 +4895,7 @@ $('#btnWipe').onclick = () => confirmSheet('Erase everything?',
    ============================================================ */
 function renderAll(){
   $('#hdrFleet').textContent = (S.settings.fleet || 'FLEET').toUpperCase();
-  if(!S.session) countStep = startStep();   // mid-count, a sync adopt must not move the crew off their page
+  if(!S.currentUser || !S.settings.pad) countStep = 'home';   // a sync adopt must never move the crew off their page
   renderCount('fwd'); renderCatalog(); renderList(); renderReport(); renderSetup();
 }
 /* ============================================================
