@@ -275,7 +275,7 @@ tr.needflash{animation:trflash 1.6s ease 1}
 .sumcell.exp .v{color:var(--danger-l)}.sumcell.due .v{color:var(--amber)}
 .grp{margin-bottom:14px}
 .grp-h{display:flex;align-items:baseline;gap:8px;margin:0 2px 6px;font-family:var(--disp);font-weight:800;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink2)}
-.grp-h.pump{color:#a78bfa}
+.grp-h.pump{color:#58a6ff}
 .grp.pumpgrp{padding-left:9px;border-left:3px solid rgba(167,139,250,.55);border-radius:2px}
 .pump-hh{font-family:var(--disp);font-weight:800;font-size:11.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink3);margin:10px 2px 5px}
 .pump-hh b{color:var(--ink2)}
@@ -364,6 +364,7 @@ table.rpt td:last-child,table.rpt th:last-child{text-align:right}
   max-width:88vw;text-align:center;
 }
 .toast.show{transform:translateX(-50%) translateY(0)}
+.toast:not(.show){box-shadow:none;visibility:hidden;transition:transform .25s, visibility 0s .25s}
 @keyframes flyup{0%{opacity:0;transform:translateY(6px) scale(.8)}25%{opacity:1;transform:translateY(-4px) scale(1.05)}100%{opacity:0;transform:translateY(-40px) scale(1)}}
 .fly{position:fixed;z-index:110;font-family:var(--disp);font-weight:800;font-size:26px;color:var(--acc-l);pointer-events:none;animation:flyup .7s ease-out forwards;text-shadow:0 2px 6px rgba(0,0,0,.6)}
 .storwarn{background:rgba(242,182,60,.12);border:1px solid rgba(242,182,60,.4);color:var(--amber);border-radius:10px;padding:9px 12px;font-size:12.5px;font-weight:600;margin-bottom:10px}
@@ -768,13 +769,52 @@ input:focus,select:focus,textarea:focus{background:#12151a;box-shadow:inset 0 1p
 .hg-mark{display:block;font-family:var(--disp);font-weight:800;font-size:13px;letter-spacing:.3em;text-transform:uppercase;color:rgba(153,162,173,.16)}
 .hg-sub{display:block;margin-top:6px;font-size:9px;font-weight:600;letter-spacing:.34em;text-transform:uppercase;color:rgba(103,112,123,.22)}
 .hg-build{display:inline-block;margin-top:9px;font-family:var(--disp);font-weight:800;font-size:12.5px;letter-spacing:.24em;text-transform:uppercase;color:rgba(154,163,173,.55);border:1px solid rgba(154,163,173,.28);border-radius:7px;padding:3px 11px 2px}
-/* ---- HOME button + CURRENT LIST page ---- */
-#homeBtn{position:fixed;top:12px;right:12px;z-index:60;font-family:var(--disp);font-weight:800;font-size:11px;letter-spacing:.12em;
-  color:var(--ink2);background:rgba(22,26,31,.94);border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:9px 15px;box-shadow:0 6px 18px rgba(0,0,0,.4);cursor:pointer}
+/* ---- operation color identity — RGBY: Frac RED · Pump Down GREEN · Pump Trailers BLUE · Standby YELLOW ---- */
+.op-frac.bigbtn{box-shadow:inset 5px 0 0 #f26060, inset 24px 0 38px -24px rgba(242,96,96,.70), var(--e-1)}
+.op-pd.bigbtn{box-shadow:inset 5px 0 0 #3dd68c, inset 24px 0 38px -24px rgba(61,214,140,.75), var(--e-1)}
+.op-pt.bigbtn{box-shadow:inset 5px 0 0 #58a6ff, inset 24px 0 38px -24px rgba(88,166,255,.70), var(--e-1)}
+.op-sb.bigbtn{box-shadow:inset 5px 0 0 #f2c94c, inset 24px 0 38px -24px rgba(242,201,76,.65), var(--e-1)}
+.op-frac .opct{color:#f26060}.op-pd .opct{color:#3dd68c}.op-pt .opct{color:#58a6ff}.op-sb .opct{color:#f2c94c}
+.bigbtn .opct{font-family:var(--disp);font-weight:800;font-size:13px}
+#opStripe{display:none;position:fixed;top:0;left:0;right:0;z-index:70;height:23px;align-items:center;justify-content:center;
+  background:linear-gradient(90deg,var(--opc,#3dd68c),var(--opc-deep,var(--opc,#3dd68c)));color:#0b0f13;
+  font-family:var(--disp);font-weight:800;font-size:10.5px;letter-spacing:.3em;text-indent:.3em;
+  box-shadow:0 2px 12px rgba(0,0,0,.35)}
+#opStripe.show{display:flex;animation:stripeIn .26s ease}
+@keyframes stripeIn{from{transform:translateY(-100%)}to{transform:translateY(0)}}
+body.optheme #hubTitle::after{content:'';display:block;width:64px;height:5px;border-radius:3px;background:linear-gradient(90deg,var(--opc),var(--opc-deep));margin-top:8px}
+/* keep the sync chip readable when HOME floats over the header corner */
+body:has(#homeBtn:not(.hidden)) .sync-chip{margin-right:98px}
+body.optheme .wiz-step{color:var(--opc)}
+body.optheme #hubTitle,body.optheme #olTitle,body.optheme #ptTitle{color:var(--opc)}
+body.optheme .fab{background:var(--opc);box-shadow:0 10px 26px var(--opc-dim),0 10px 22px rgba(0,0,0,.45)}
+body.optheme .sessbar{border-color:var(--opc)}
+body.optheme .hubbtn-op.bigbtn{box-shadow:inset 4px 0 0 var(--opc), inset 22px 0 34px -24px var(--opc-dim), var(--e-1)}
+body.optheme .ol-gh span:first-child{color:var(--opc)}
+body.optheme .crumb .k{color:var(--opc)}
+/* ---- HOME button — loud on purpose ---- */
+#homeBtn{position:fixed;top:12px;right:12px;z-index:80;font-family:var(--disp);font-weight:800;font-size:12px;letter-spacing:.12em;
+  color:#06130c;background:var(--acc,#1eb474);border:1.5px solid rgba(255,255,255,.25);border-radius:999px;padding:10px 16px;
+  box-shadow:0 0 0 3px rgba(30,180,116,.22), 0 8px 22px rgba(0,0,0,.5);cursor:pointer}
+#homeBtn:active{transform:scale(.95)}
 #homeBtn.hidden{display:none}
+body.optheme #homeBtn{top:30px}
 .fab{position:fixed;right:18px;bottom:96px;z-index:55;width:58px;height:58px;border-radius:50%;background:var(--acc,#1eb474);color:#06130c;
   font-size:30px;font-weight:800;border:none;box-shadow:0 10px 26px rgba(30,180,116,.45);display:flex;align-items:center;justify-content:center;cursor:pointer}
 .fab:active{transform:scale(.94)}
+.fab{animation:fabIn .3s cubic-bezier(.34,1.56,.64,1)}
+@keyframes fabIn{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
+.olrow-wrap.olin{animation:olIn .3s ease backwards}
+@keyframes olIn{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){ .fab,.olrow-wrap.olin,#opStripe.show{animation:none} }
+@media (min-width:900px){
+  #opStripe{left:216px}
+  #homeBtn{top:18px;right:26px}
+  body.optheme #homeBtn{top:42px}
+  .fab{right:38px;bottom:34px}
+  #hubBtns.bigcol{grid-template-columns:1fr 1fr}
+  #hubBtns .bigbtn{min-height:96px}
+}
 .olrow-wrap{position:relative;overflow:hidden;border-radius:12px;margin-bottom:8px}
 .ol-under{position:absolute;inset:0;display:flex;align-items:center;justify-content:flex-end;padding-right:18px;
   background:linear-gradient(90deg,rgba(217,95,95,.05),rgba(217,95,95,.8));color:#fff;font-family:var(--disp);font-weight:800;font-size:12px;letter-spacing:.12em;border-radius:12px}
@@ -836,7 +876,7 @@ body::after{content:"";position:fixed;inset:-8%;z-index:-1;pointer-events:none;
 /* ============================================================
    FEATURE PASS · pump-trailer walk + manufacture (chrome) band
    ============================================================ */
-.act-pump.bigbtn{box-shadow:inset 4px 0 0 #a78bfa, inset 22px 0 34px -24px rgba(167,139,250,.72), var(--e-1)}
+.act-pump.bigbtn{box-shadow:inset 4px 0 0 #58a6ff, inset 22px 0 34px -24px rgba(88,166,255,.70), var(--e-1)}
 .ptbtn.bigbtn{min-height:56px;font-size:20px}
 .ptpiece{width:100%;display:flex;align-items:center;gap:12px;text-align:left;padding:11px 13px;margin-bottom:9px;
   background:var(--panel);border:1.5px solid var(--line2);border-radius:14px;box-shadow:var(--e-1);transition:transform .07s ease,border-color .14s ease,background .14s ease}
@@ -947,6 +987,7 @@ table.pumpmx{width:100%;border-collapse:separate;border-spacing:0;table-layout:f
 <!-- ============ COUNT (stepped wizard) ============ -->
 <section id="scr-count" class="screen on">
   <button id="homeBtn" class="hidden" type="button">⌂ HOME</button>
+  <div id="opStripe" aria-hidden="true"></div>
 
   <!-- HOME · login + action picker (shows when no session is open) -->
   <div class="cstep" id="cs-home">
@@ -979,7 +1020,7 @@ table.pumpmx{width:100%;border-collapse:separate;border-spacing:0;table-layout:f
     <div id="extraWrap" class="st3"></div>
     <div id="draftsWrap"></div>
     <div class="tiny muted st3" style="margin-top:10px">Running list right now: <b id="homeRunning">0</b> pieces across every operation.</div>
-    <div class="home-ground" aria-hidden="true"><span class="hg-mark">EVOLUTION WELL SERVICES</span><span class="hg-sub">Treating Iron · 15K · Fleet 6</span><span class="hg-build">build 7.24-A</span></div>
+    <div class="home-ground" aria-hidden="true"><span class="hg-mark">EVOLUTION WELL SERVICES</span><span class="hg-sub">Treating Iron · 15K · Fleet 6</span><span class="hg-build">build 7.24-C</span></div>
   </div>
 
   <!-- OPERATION HUB · current list or true-up -->
@@ -1960,6 +2001,29 @@ let coflexSel = {trailer:'', head:0, pdmono:false};   // hoses log per pump trai
 let pairSel = {trailer:'', head:0, spare:false};      // cannonball 90s pair to a pump too (or ride as spares)
 let pumpCtx = {on:false, trailer:'', head:1};         // the per-pump guided walk (Pump Trailer button)
 let curOp = '';                                        // operation whose hub we're in
+/* every operation carries ONE color from its home button through every page inside it */
+const OP_COLORS = {
+  'Frac':          {c:'#f26060', deep:'#c23c3c', glow:'rgba(242,96,96,.70)',  dim:'rgba(242,96,96,.13)'},
+  'Pump Down':     {c:'#3dd68c', deep:'#169a63', glow:'rgba(61,214,140,.75)', dim:'rgba(61,214,140,.13)'},
+  'Pump Trailers': {c:'#58a6ff', deep:'#2f7fdb', glow:'rgba(88,166,255,.70)', dim:'rgba(88,166,255,.13)'},
+  'On Standby':    {c:'#f2c94c', deep:'#caa32a', glow:'rgba(242,201,76,.65)', dim:'rgba(242,201,76,.13)'}
+};
+const OP_DEFAULT = {c:'#9aa3ad', deep:'#767f89', glow:'rgba(154,163,173,.55)', dim:'rgba(154,163,173,.12)'};
+const opColor = op => OP_COLORS[op] || OP_DEFAULT;
+function applyOpTheme(){
+  const themed = ['hub','oplist','sec','setup','pieces','band','ptlist','pthead','review'].includes(countStep);
+  const opNow = (S.session && S.session.op) || (liveMode.on && liveMode.op) || (countStep === 'hub' ? curOp : '') || curOp;
+  const on = themed && !!opNow;
+  document.body.classList.toggle('optheme', on);
+  const stripe = document.getElementById('opStripe');
+  if(on){
+    const t = opColor(opNow);
+    document.documentElement.style.setProperty('--opc', t.c);
+    document.documentElement.style.setProperty('--opc-dim', t.dim);
+    document.documentElement.style.setProperty('--opc-deep', t.deep || t.c);
+    if(stripe){ stripe.textContent = opNow.toUpperCase(); stripe.classList.add('show'); }
+  } else if(stripe) stripe.classList.remove('show');
+}
 let liveMode = {on:false, op:''};                      // CURRENT LIST mode — changes land on the running list instantly
 let newIds = new Set();                                // lines touched this visit (NEW tags)
 let liveAddCount = 0;
@@ -2036,6 +2100,7 @@ function renderCount(dir){
   if(['home','op'].includes(countStep)){ liveMode = {on:false, op:''}; }
   ensureHome();
   const hb = $('#homeBtn'); if(hb) hb.classList.toggle('hidden', countStep === 'home' || countStep === 'op');
+  applyOpTheme();
   renderSessbar();
   if(countStep === 'home') renderHome();
   if(countStep === 'op') renderOp();
@@ -2198,7 +2263,7 @@ function renderHub(){
   const n = S.entries.filter(e => entryOp(e) === curOp).reduce((s,e) => s + e.qty, 0);
   $('#hubTitle').textContent = curOp;
   $('#hubBtns').innerHTML = `
-    <button class="bigbtn act-recv" id="hubCur">CURRENT LIST<span class="sub">${n ? n + ' PCS ON ' + esc(curOp.toUpperCase()) : 'NOTHING LOGGED YET'} — SEE IT · ADD · REMOVE</span></button>
+    <button class="bigbtn hubbtn-op" id="hubCur">CURRENT LIST<span class="sub">${n ? n + ' PCS ON ' + esc(curOp.toUpperCase()) : 'NOTHING LOGGED YET'} — SEE IT · ADD · REMOVE</span></button>
     <button class="bigbtn act-true" id="hubTrue">TRUE-UP<span class="sub">RECOUNT ${esc(curOp.toUpperCase())} FROM SCRATCH — COMPARES &amp; RESETS IT</span></button>`;
   $('#hubCur').onclick = () => { buzz(15); enterCurrentList(); };
   $('#hubTrue').onclick = () => { buzz(15); startTrueup(); };
@@ -2261,11 +2326,11 @@ function renderOpList(){
   box.innerHTML = groups.map(k => {
     const gq = gm[k].reduce((s,e) => s + e.qty, 0);
     return `<div class="ol-gh"><span>${esc(k)}</span><span>${gq} pc${gq === 1 ? '' : 's'}</span></div>` +
-      gm[k].map(e => {
+      gm[k].map((e, ri) => {
         const b = bandOf(e);
         const chip = b ? `<span class="ol-band" style="background:${b.bg};color:${b.tx}">${e.chrome ? 'MFG' : b.m}</span>` : `<span class="ol-band" style="background:#22272d;color:#9aa3ad">—</span>`;
         const sub = [bandLabel(e), e.serials.length ? 'S/N ' + e.serials.join(', ') : ''].filter(Boolean).join(' · ');
-        return `<div class="olrow-wrap"><div class="ol-under">REMOVE ›</div>
+        return `<div class="olrow-wrap${ri < 12 ? ' olin' : ''}"${ri < 12 ? ` style="animation-delay:${(ri * 30)}ms"` : ''}><div class="ol-under">REMOVE ›</div>
           <button class="olrow" data-id="${e.id}" type="button">${chip}
             <span class="ol-txt"><b>${esc(labelFor(e))}</b><span>${esc(sub || '—')}</span></span>
             ${newIds.has(e.id) ? '<span class="ol-new">NEW</span>' : ''}
@@ -2558,19 +2623,19 @@ function renderOp(){
   op.innerHTML = '';
   SYSTEMS.forEach(sy => {
     const b = document.createElement('button');
-    b.className = 'bigbtn' + (lock && lock !== sy ? ' oplock' : '');
-    b.innerHTML = `${esc(sy.toUpperCase())}<span class="sub">${sy === 'Frac' ? 'TREATING LINE' : 'PD LINE'} — ${opPieces(sy)} PCS ON THE LIST</span>`;
+    b.className = 'bigbtn ' + (sy === 'Frac' ? 'op-frac' : 'op-pd') + (lock && lock !== sy ? ' oplock' : '');
+    b.innerHTML = `${esc(sy.toUpperCase())}<span class="sub">${sy === 'Frac' ? 'TREATING LINE' : 'PD LINE'} — <b class="opct">${opPieces(sy)}</b> PCS ON THE LIST</span>`;
     b.onclick = () => guard(sy, () => { c.extra = ''; c.sys = sy; save(); buzz(15); enterOp(sy); });
     op.appendChild(b);
   });
   const pt = document.createElement('button');
-  pt.className = 'bigbtn act-pump' + (lock && lock !== 'Pump Trailers' ? ' oplock' : '');
-  pt.innerHTML = `⛓ PUMP TRAILERS<span class="sub">EVERY FLUID END — ${opPieces('Pump Trailers')} PCS RIGGED IN</span>`;
+  pt.className = 'bigbtn op-pt' + (lock && lock !== 'Pump Trailers' ? ' oplock' : '');
+  pt.innerHTML = `PUMP TRAILERS<span class="sub">EVERY FLUID END — <b class="opct">${opPieces('Pump Trailers')}</b> PCS RIGGED IN</span>`;
   pt.onclick = () => guard('Pump Trailers', () => enterOp('Pump Trailers'));
   op.appendChild(pt);
   const sb = document.createElement('button');
-  sb.className = 'bigbtn' + (lock && lock !== 'On Standby' ? ' oplock' : '');
-  sb.innerHTML = `ON STANDBY<span class="sub">SPARE IRON — ${opPieces('On Standby')} PCS</span>`;
+  sb.className = 'bigbtn op-sb' + (lock && lock !== 'On Standby' ? ' oplock' : '');
+  sb.innerHTML = `ON STANDBY<span class="sub">SPARE IRON — <b class="opct">${opPieces('On Standby')}</b> PCS</span>`;
   sb.onclick = () => guard('On Standby', () => { c.extra = 'On Standby'; c.sys = ''; c.sec = ''; save(); buzz(15); enterOp('On Standby'); });
   op.appendChild(sb);
   const ex = $('#extraWrap');
