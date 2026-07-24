@@ -935,6 +935,35 @@ body::after{content:"";position:fixed;inset:-8%;z-index:-1;pointer-events:none;
 .band.chrome-band{background:linear-gradient(135deg,#eef1f4 0%,#c2c9d0 42%,#e9edf0 58%,#a7afb8 100%);color:#20242a;border:1px solid rgba(0,0,0,.4)}
 .band.chrome-band .cn{opacity:.7}
 .band.chrome-band.on{box-shadow:0 0 0 2px var(--acc), inset 0 3px 6px rgba(255,255,255,.55), inset 0 -4px 7px rgba(0,0,0,.2)}
+.snmod{display:flex;align-items:center;gap:12px;width:100%;margin:2px 0 12px;padding:12px 14px;border-radius:12px;
+  border:1.5px dashed rgba(154,163,173,.5);background:rgba(255,255,255,.03);color:var(--ink2);
+  font-family:var(--disp);font-weight:800;font-size:12.5px;letter-spacing:.1em;cursor:pointer;text-align:left}
+.snmod .sub2{display:block;font-family:var(--body);font-size:10px;letter-spacing:.02em;color:var(--ink3);font-weight:600;text-transform:none;margin-top:2px}
+.snmod .knob{flex:none;width:38px;height:22px;border-radius:999px;background:rgba(154,163,173,.25);position:relative;transition:background .18s}
+.snmod .knob::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#9aa3ad;transition:transform .18s,background .18s}
+.snmod.on{border-style:solid;border-color:var(--acc);background:rgba(61,214,140,.1);color:var(--acc-l)}
+.snmod.on .knob{background:rgba(61,214,140,.4)}
+.snmod.on .knob::after{transform:translateX(16px);background:#3dd68c}
+body.optheme .snmod.on{border-color:var(--opc);color:var(--opc);background:var(--opc-dim)}
+body.optheme .snmod.on .knob{background:var(--opc-dim)}
+body.optheme .snmod.on .knob::after{background:var(--opc)}
+.snmod .snhold{display:none;flex:none;font-family:var(--disp);font-weight:800;font-size:10px;letter-spacing:.14em;
+  border:1.5px solid rgba(154,163,173,.5);border-radius:7px;padding:6px 10px;color:var(--ink3)}
+.snmod.on .snhold{display:inline-flex}
+.snmod .snhold.on{background:#f2b63c;border-color:#f2b63c;color:#1c1405}
+#snBanner{display:none;position:fixed;top:0;left:0;right:0;z-index:75;height:24px;overflow:hidden;
+  background:repeating-linear-gradient(135deg,#f2b63c 0 14px,#e5a52a 14px 28px);align-items:center;
+  box-shadow:0 2px 12px rgba(0,0,0,.45)}
+#snBanner.show{display:flex}
+.snb-track{display:flex;white-space:nowrap;animation:snbScroll 11s linear infinite;
+  font-family:var(--disp);font-weight:800;font-size:10.5px;letter-spacing:.18em;color:#1c1405}
+@keyframes snbScroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+body.snbatch header.placard{top:24px}
+@media (min-width:900px){ #snBanner{left:216px} }
+@media (prefers-reduced-motion:reduce){ .snb-track{animation:none} }
+.mini-band.sn{position:relative;overflow:visible}
+.mini-band.sn::after{content:'';position:absolute;top:-2.5px;right:-2.5px;width:8px;height:8px;border-radius:50%;
+  background:#fff;border:1.5px solid rgba(0,0,0,.55);box-shadow:0 1px 2px rgba(0,0,0,.4)}
 .mini-band.chrome{background:linear-gradient(135deg,#eef1f4,#c2c9d0 45%,#e9edf0 62%,#a7afb8);color:#20242a}
 #mfgPanel{margin-top:14px}
 #mfgPanel.open{background:var(--panel);border:1.5px solid var(--line2);border-radius:14px;padding:13px;box-shadow:var(--e-1)}
@@ -1029,6 +1058,7 @@ table.pumpmx{width:100%;border-collapse:separate;border-spacing:0;table-layout:f
 
 <!-- ============ COUNT (stepped wizard) ============ -->
 <section id="scr-count" class="screen on">
+  <div id="snBanner" aria-hidden="true"><div class="snb-track"><span>🏷 SOLD AS NEW — BATCH HOLD ON · EVERY BAND YOU TAP GETS A 12-MONTH CERT&nbsp;&nbsp;·&nbsp;&nbsp;</span><span>🏷 SOLD AS NEW — BATCH HOLD ON · EVERY BAND YOU TAP GETS A 12-MONTH CERT&nbsp;&nbsp;·&nbsp;&nbsp;</span></div></div>
 
   <!-- HOME · login + action picker (shows when no session is open) -->
   <div class="cstep" id="cs-home">
@@ -1061,7 +1091,7 @@ table.pumpmx{width:100%;border-collapse:separate;border-spacing:0;table-layout:f
     <div id="extraWrap" class="st3"></div>
     <div id="draftsWrap"></div>
     <div class="tiny muted st3" style="margin-top:10px">Running list right now: <b id="homeRunning">0</b> pieces across every operation.</div>
-    <div class="home-ground" aria-hidden="true"><span class="hg-mark">EVOLUTION WELL SERVICES</span><span class="hg-sub">Treating Iron · 15K · Fleet 6</span><span class="hg-build">build 7.24-J</span></div>
+    <div class="home-ground" aria-hidden="true"><span class="hg-mark">EVOLUTION WELL SERVICES</span><span class="hg-sub">Treating Iron · 15K · Fleet 6</span><span class="hg-build">build 7.24-M</span></div>
   </div>
 
   <!-- OPERATION HUB · current list or true-up -->
@@ -1119,6 +1149,7 @@ table.pumpmx{width:100%;border-collapse:separate;border-spacing:0;table-layout:f
       <span class="t">Tap the band color</span>
       <span class="tiny muted" id="bandhint"></span>
     </div>
+    <button id="snModeBtn" class="snmod" type="button"><span class="knob"></span><span class="grow">🏷 SOLD AS NEW<span class="sub2">band = sell month · expires 12 months instead of the recert window</span></span><span class="snhold" id="snHoldBtn" title="Keep the switch on for a whole batch">HOLD</span></button>
     <div class="bandgrid" id="bandgrid"></div>
     <div id="mfgPanel"></div>
   </div>
@@ -1743,6 +1774,13 @@ function assumedYear(mIdx){
 }
 function expiryOf(e){
   if(e.color == null || e.color < 0) return null;
+  if(e.soldNew || e.chrome){                       // sold-as-new AND chrome MFG — 12 months from the band, always
+    if(e.inspDate){
+      const d = new Date(e.inspDate + 'T00:00:00');
+      if(!isNaN(d)){ const x = new Date(d); x.setMonth(x.getMonth() + 12); return x; }
+    }
+    return lastDayOfMonth(e.year, e.color + 12);
+  }
   if(S.settings.colorMode === 'exp') return lastDayOfMonth(e.year, e.color);
   if(e.inspDate){
     const d = new Date(e.inspDate + 'T00:00:00');
@@ -1762,13 +1800,15 @@ function statusOf(e){
 const fmtDate = d => d ? d.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) : '—';
 const fmtISO  = d => d ? `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` : '';
 function bandLabel(e){
-  if(e.chrome) return `Chrome · MFG ${BANDS[e.color].m} ${e.year} (exp +${S.settings.interval||6}mo)`;
+  if(e.soldNew && e.chrome && e.color >= 0) return `Chrome · Sold New ${BANDS[e.color].m} ${e.year} (exp +12mo)`;
+  if(e.soldNew && e.color >= 0) return `Sold New · ${BANDS[e.color].m} ${e.year} (exp +12mo)`;
+  if(e.chrome) return `Chrome · MFG ${BANDS[e.color].m} ${e.year} (exp +12mo)`;
   if(e.color == null || e.color < 0) return 'No band';
   return `${BANDS[e.color].name} · ${BANDS[e.color].m} ${e.year}`;
 }
 
 /* ---------- entry aggregation ---------- */
-const keyOf = e => [e.itemId, e.size||'', e.variant||'', e.conn||'', e.color, e.year, e.area||'', (e.chrome?'C':'')].join('|');
+const keyOf = e => [e.itemId, e.size||'', e.variant||'', e.conn||'', e.color, e.year, e.area||'', (e.chrome?'C':''), (e.soldNew?'N':'')].join('|');
 let uid = () => 'e' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
 
 function addPiece(itemId, size, variant, conn, color, area){
@@ -1790,7 +1830,7 @@ function addPiece(itemId, size, variant, conn, color, area){
 
 /* ---------- draft sessions → submit → running list + history ---------- */
 const sameKey = (a, b) => a.itemId === b.itemId && (a.size||'') === (b.size||'') && (a.variant||'') === (b.variant||'')
-  && (a.conn||'') === (b.conn||'') && a.color === b.color && a.year === b.year && !!a.chrome === !!b.chrome;
+  && (a.conn||'') === (b.conn||'') && a.color === b.color && a.year === b.year && !!a.chrome === !!b.chrome && !!a.soldNew === !!b.soldNew;
 const KIND_NAME = {recv:'Added', rem:'Removed', insp:'Inspection', fail:'Failed iron', trueup:'True-up', iron:'Pad count'};
 const KIND_VERB = {recv:'ADDING', rem:'REMOVING', insp:'SENDING FOR INSPECTION', fail:'FAILING IRON', trueup:'TRUE-UP COUNT'};
 function startSession(kind){
@@ -1801,14 +1841,16 @@ function addToSession(itemId, size, variant, conn, color, area, opts){
   opts = opts || {};
   if(S.session && !S.session.op) S.session.op = curOpToken();   // first piece locks the list to its operation
   const chrome = !!opts.chrome;
+  const soldNew = !!opts.soldNew;
   const year = opts.year != null ? opts.year : (color >= 0 ? assumedYear(color) : 0);
-  const probe = {itemId, size, variant, conn, color, year, chrome};
+  const probe = {itemId, size, variant, conn, color, year, chrome, soldNew};
   let e = S.session.entries.find(x => sameKey(x, probe) && (x.area||'') === (area||''));
   if(e){ e.qty++; e.updated = Date.now(); }
   else {
     e = {id:uid(), itemId, size:size||'', variant:variant||'', conn:conn||'', color, year, area:area||'',
          qty:1, serials:[], note:'', inspDate:'', created:Date.now(), updated:Date.now()};
     if(chrome) e.chrome = true;
+    if(soldNew) e.soldNew = true;
     S.session.entries.push(e);
   }
   S.usage[itemId] = (S.usage[itemId] || 0) + 1;
@@ -1849,7 +1891,7 @@ function restoreToCurrent(e, qty){
     cur.updated = Date.now();
   }
   else S.entries.push({id:uid(), itemId:e.itemId, size:e.size, variant:e.variant, conn:e.conn, color:e.color,
-    year:e.year, area:e.area, qty:qty, serials:e.serials ? e.serials.slice() : [], note:'', inspDate:e.inspDate || '', chrome:e.chrome, created:Date.now(), updated:Date.now()});
+    year:e.year, area:e.area, qty:qty, serials:e.serials ? e.serials.slice() : [], note:'', inspDate:e.inspDate || '', chrome:e.chrome, soldNew:e.soldNew, created:Date.now(), updated:Date.now()});
 }
 function deductFromCurrent(e, qty){       // returns how many were actually on the count
   let took = 0;
@@ -1885,6 +1927,7 @@ function dayRecAdd(kind, op, e, qty, why){
     ln = {id:uid(), itemId:e.itemId, size:e.size||'', variant:e.variant||'', conn:e.conn||'', color:e.color,
       year:e.year, area:e.area||'', qty:qty, serials:(e.serials||[]).slice(), note:'', inspDate:e.inspDate||''};
     if(e.chrome) ln.chrome = true;
+    if(e.soldNew) ln.soldNew = true;
     if(why) ln.why = why;
     rec.entries.push(ln);
   }
@@ -1901,6 +1944,7 @@ function liveCommit(itemId, size, variant, conn, color, area, opts){
     area:area||'', qty:1, serials:opts.serials ? opts.serials.slice() : [], note:'', inspDate:'',
     created:Date.now(), updated:Date.now()};
   if(chrome) line.chrome = true;
+  if(opts.soldNew) line.soldNew = true;
   restoreToCurrent(line, 1);                                     // merges lines + one-per-head + serial rules
   const cur = S.entries.find(x => sameKey(x, line) && (x.area||'') === (line.area||'')) || line;
   newIds.add(cur.id); liveAddCount++;
@@ -1912,7 +1956,7 @@ function liveCommit(itemId, size, variant, conn, color, area, opts){
 function liveRemove(e, qty, picked, why){
   qty = Math.max(1, Math.min(qty || 1, e.qty));
   const line = {itemId:e.itemId, size:e.size, variant:e.variant, conn:e.conn, color:e.color, year:e.year,
-    chrome:e.chrome, area:e.area, inspDate:e.inspDate || '',
+    chrome:e.chrome, soldNew:e.soldNew, area:e.area, inspDate:e.inspDate || '',
     serials: picked && picked.length ? picked.slice() : (qty >= e.qty ? (e.serials||[]).slice() : [])};
   if(picked && picked.length){ e.serials = (e.serials||[]).filter(s => !picked.includes(s)); qty = Math.max(qty, picked.length); }
   const took = deductFromCurrent(e, qty);
@@ -2055,6 +2099,12 @@ const OP_COLORS = {
 };
 const OP_DEFAULT = {c:'#9aa3ad', deep:'#767f89', glow:'rgba(154,163,173,.55)', dim:'rgba(154,163,173,.12)', wash:'rgba(154,163,173,.12)'};
 const opColor = op => OP_COLORS[op] || OP_DEFAULT;
+function syncSnBanner(){
+  const on = snMode && snHold;
+  const b = document.getElementById('snBanner');
+  if(b) b.classList.toggle('show', on);
+  document.body.classList.toggle('snbatch', on);
+}
 function applyOpTheme(){
   const themed = ['hub','oplist','sec','setup','pieces','band','ptlist','pthead','review'].includes(countStep);
   const opNow = (S.session && S.session.op) || (liveMode.on && liveMode.op) || (countStep === 'hub' ? curOp : '') || curOp;
@@ -2119,6 +2169,8 @@ $$('nav.tabs button').forEach(b => b.addEventListener('click', () => {
     document.body.classList.remove('optheme');
     const bo = document.getElementById('brandOp'); if(bo) bo.textContent = '';
     ['homeBtn','hdrBack'].forEach(id => { const el = document.getElementById(id); if(el) el.classList.add('hidden'); });
+    const sb2 = document.getElementById('snBanner'); if(sb2) sb2.classList.remove('show');
+    document.body.classList.remove('snbatch');
   }
   hideLastbar();
   if(scr === 'count') renderCount();
@@ -2318,6 +2370,8 @@ function enterOp(tok){
 /* Iron type + size only stay picked while ACTIVELY tapping pieces — stepping back out to the
    section page / current list / hub wipes them, so every re-entry re-verifies type and size. */
 function resetIronPick(){
+  snMode = false; snHold = false;
+  if(typeof syncSnBanner === 'function') syncSnBanner();
   const c = CS();
   if(c.size || c.conn !== 'T'){ c.size = ''; c.conn = 'T'; save(); }
 }
@@ -2553,7 +2607,7 @@ function remPumpPiece(itemId){
 function launchPumpPiece(itemId){
   const tp = HEAD_TEMPLATE.find(x => x.itemId === itemId); if(!tp) return;
   sel = {itemId:itemId, variant:(itemId === 'tee' ? '2" br' : ''), fig:(itemId === 'tee' ? 'T×W×W' : '')};
-  mfgOpen = false; mfgMonth = null;
+  mfgOpen = false; mfgMonth = null; snMode = false; snHold = false; syncSnBanner();
   CS().size = tp.size;                 // resolveSize lands on the template size (e.g. 2" tee, 3" cannonball)
   pairSel = {trailer:pumpCtx.trailer, head:pumpCtx.head, spare:false};
   coflexSel = {trailer:pumpCtx.trailer, head:pumpCtx.head, pdmono:false};
@@ -2862,6 +2916,7 @@ function renderBand(){
   const isCoflex = !!it.coflex;
   document.querySelector('#cs-band .bandlbl').style.display = isCoflex ? 'none' : '';
   $('#bandgrid').style.display = isCoflex ? 'none' : '';
+  const _sm0 = $('#snModeBtn'); if(_sm0) _sm0.style.display = isCoflex ? 'none' : '';
   if(isCoflex){
     const standby = !pumpCtx.on && CS().extra === 'On Standby';
     if(pumpCtx.on){
@@ -2997,14 +3052,39 @@ function renderBand(){
   g.innerHTML = BANDS.map((b,i) =>
     `<button class="band" data-c="${i}" style="background:${b.bg};color:${b.tx}">
        <span class="mo">${b.m}</span><span class="cn">${esc(b.name)}</span></button>`).join('') +
-    `<button class="band chrome-band ${mfgOpen ? 'on' : ''}" data-mfg="1"><span class="mo">MFG</span><span class="cn">chrome</span></button>` +
+    (snMode ? '' : `<button class="band chrome-band ${mfgOpen ? 'on' : ''}" data-mfg="1"><span class="mo">MFG</span><span class="cn">chrome</span></button>`) +
     `<button class="band nb" data-c="-1"><span class="mo">NO BAND</span><span class="cn">unknown</span></button>`;
   g.querySelectorAll('.band[data-c]').forEach(btn => btn.onclick = () => tapBand(Number(btn.dataset.c)));
-  g.querySelector('.band[data-mfg]').onclick = (ev) => { mfgOpen = !mfgOpen; ev.currentTarget.classList.toggle('on', mfgOpen); renderMfgPanel(); if(mfgOpen) setTimeout(() => { const p = $('#mfgPanel'); if(p) p.scrollIntoView({behavior:'smooth', block:'center'}); }, 40); };
+  const mfgTile = g.querySelector('.band[data-mfg]');
+  if(mfgTile) mfgTile.onclick = (ev) => { mfgOpen = !mfgOpen; ev.currentTarget.classList.toggle('on', mfgOpen); renderMfgPanel(); if(mfgOpen) setTimeout(() => { const p = $('#mfgPanel'); if(p) p.scrollIntoView({behavior:'smooth', block:'center'}); }, 40); };
+  // SOLD AS NEW — an expiration MODIFIER on the normal band tap, not a band of its own
+  const sm = $('#snModeBtn');
+  if(sm){
+    sm.style.display = isCoflex ? 'none' : '';
+    sm.classList.toggle('on', snMode);
+    const hb2 = sm.querySelector('#snHoldBtn');
+    if(hb2) hb2.classList.toggle('on', snHold);
+    sm.onclick = () => {
+      snMode = !snMode;
+      if(!snMode) snHold = false;                                   // switch off drops the hold too
+      if(snMode && mfgOpen){ mfgOpen = false; renderMfgPanel(); }   // chrome MFG is not an option on sold-new iron
+      syncSnBanner(); buzz(12);
+      renderBand();
+    };
+    if(hb2) hb2.onclick = (ev) => {
+      ev.stopPropagation();
+      if(!snMode) return;
+      snHold = !snHold;
+      hb2.classList.toggle('on', snHold);
+      syncSnBanner(); buzz(12);
+      toast(snHold ? 'Batch hold — SOLD AS NEW stays on until you turn it off' : 'Hold off — resets after each piece');
+    };
+  }
+  if(!isCoflex) $('#bandhint').textContent = snMode ? 'SOLD AS NEW — the band you tap expires 12 months from that month' : '';
   renderMfgPanel();
 }
 /* ---- manufacture (chrome) band: pick the month + year it was MADE; expires interval months later ---- */
-let mfgOpen = false, mfgMonth = null;
+let mfgOpen = false, mfgMonth = null, snMode = false, snHold = false;
 function renderMfgPanel(){
   const p = $('#mfgPanel'); if(!p) return;
   if(!mfgOpen){ p.innerHTML = ''; p.classList.remove('open'); return; }
@@ -3012,13 +3092,13 @@ function renderMfgPanel(){
   const yrNow = today().getFullYear();
   const years = []; for(let y = yrNow; y >= yrNow - 15; y--) years.push(y);
   p.innerHTML =
-    `<div class="mfg-h">⛓ <b>Manufacture band</b> — chrome, never recertified. Enter when it was <b>made</b>; it expires ${S.settings.interval || 6} months after.</div>
+    `<div class="mfg-h">⛓ <b>Manufacture band</b> — chrome, never recertified. Enter when it was <b>made</b>; it expires <b>12 months</b> after.</div>
      <div class="optlbl">Month made</div>
      <div class="optrow" style="flex-wrap:wrap" id="mfgMon">` +
        BANDS.map((b, i) => `<button class="opt ${mfgMonth === i ? 'on' : ''}" data-m="${i}" style="min-width:52px">${b.m}</button>`).join('') + `</div>
      <div class="optlbl">Year made</div>
      <select id="mfgYear" style="max-width:150px">` + years.map(y => `<option value="${y}">${y}</option>`).join('') + `</select>
-     <button class="bigbtn" id="mfgSet" style="margin-top:12px">SET MFG BAND<span class="sub">CHROME · EXPIRES +${S.settings.interval || 6} MONTHS</span></button>`;
+     <button class="bigbtn" id="mfgSet" style="margin-top:12px">SET MFG BAND<span class="sub">CHROME · EXPIRES +12 MONTHS</span></button>`;
   p.querySelectorAll('#mfgMon .opt').forEach(o => o.onclick = () => { mfgMonth = mfgMonth === Number(o.dataset.m) ? null : Number(o.dataset.m); renderMfgPanel(); });
   $('#mfgSet').onclick = () => {
     if(mfgMonth == null){ toast('Pick the month it was made'); buzz(30); return; }
@@ -3037,7 +3117,7 @@ function tapMfg(month, year){
     const ex = (!S.session && liveMode.on) ? pumpEntry(pumpCtx.trailer, pumpCtx.head, sel.itemId)
                                            : pumpPieceEntry(pumpCtx.trailer, pumpCtx.head, sel.itemId);
     if(ex){   // one of each per head — re-banding CORRECTS it in place
-      ex.color = month; ex.year = year; ex.chrome = true;
+      ex.color = month; ex.year = year; ex.chrome = true; ex.soldNew = undefined;
       ex.variant = variant || ex.variant; ex.qty = 1; ex.updated = Date.now();
       if(!S.session && liveMode.on) newIds.add(ex.id);
       save();
@@ -3106,6 +3186,8 @@ function tapBand(color){
                                            : pumpPieceEntry(pumpCtx.trailer, pumpCtx.head, sel.itemId);
     if(ex){   // each head carries exactly one of each piece — re-banding CORRECTS it
       ex.color = color; ex.year = color >= 0 ? assumedYear(color) : 0; ex.chrome = false;
+      ex.soldNew = snMode || undefined;
+      if(!snHold){ snMode = false; syncSnBanner(); }   // resets per entry — unless the batch hold is on
       ex.variant = variant || ex.variant; ex.qty = 1; ex.updated = Date.now();
       if(!S.session && liveMode.on) newIds.add(ex.id);
       save();
@@ -3117,14 +3199,16 @@ function tapBand(color){
     }
   }
   if(!S.session && liveMode.on){
-    const entry = liveCommit(sel.itemId, resolveSize(it), variant, resolveConn(it), color, curArea());
+    const entry = liveCommit(sel.itemId, resolveSize(it), variant, resolveConn(it), color, curArea(), {soldNew:snMode});
+    if(!snHold){ snMode = false; syncSnBanner(); }
     lastAdd = {list:'cur', id:entry.id};
     buzz([18,25,45]);
     playSubmitFX(it, entry, color, null);
     renderSessbar();
     return;
   }
-  const entry = addToSession(sel.itemId, resolveSize(it), variant, resolveConn(it), color, curArea());
+  const entry = addToSession(sel.itemId, resolveSize(it), variant, resolveConn(it), color, curArea(), {soldNew:snMode});
+  if(!snHold){ snMode = false; syncSnBanner(); }
   lastAdd = {list:'sess', id:entry.id};
   buzz([18,25,45]);
   playSubmitFX(it, entry, color, S.session.kind !== 'recv' && S.session.kind !== 'trueup' ? S.session.kind : null);
@@ -3264,9 +3348,10 @@ function statusBadge(st, x){
   return `<span class="badge none">no band</span>`;
 }
 function miniBand(e){
-  if(e.chrome) return `<span class="mini-band chrome" title="Chrome / manufacture band">MFG</span>`;
+  if(e.chrome) return `<span class="mini-band chrome${e.soldNew ? ' sn' : ''}" title="${e.soldNew ? 'Chrome · sold as new — 1-year band from sell month' : 'Chrome / manufacture band'}">MFG</span>`;
   if(e.color == null || e.color < 0) return `<span class="mini-band nb">—</span>`;
   const b = BANDS[e.color];
+  if(e.soldNew) return `<span class="mini-band sn" title="Sold as new — 1-year band from sell month" style="background:${b.bg};color:${b.tx}">${b.m}</span>`;
   return `<span class="mini-band" style="background:${b.bg};color:${b.tx}">${b.m}</span>`;
 }
 function renderList(){
@@ -3527,6 +3612,7 @@ function openDetail(id, listKind){
     </div>
     <div class="fld"><label>Band color</label>
       <div class="rowflex"><select id="dBand" class="grow">${bandOpts}</select><select id="dYear" style="width:96px" ${e.color < 0 ? 'disabled' : ''}>${yearOpts}</select></div>
+      <div class="chiprow" style="margin-top:7px"><button class="chip ${e.soldNew ? 'on' : ''}" id="dSoldNew" title="Band = sell month, expires 12 months later">🏷 SOLD AS NEW — 1-YR BAND</button></div>
     </div>
     ${S.settings.colorMode === 'insp' ? `<div class="fld"><label>Exact inspection date <span style="opacity:.6;text-transform:none;letter-spacing:0">(optional — off the steel band)</span></label>
       <input type="date" id="dInsp" value="${esc(e.inspDate)}"></div>` : ''}
@@ -3586,6 +3672,13 @@ function openDetail(id, listKind){
   if($('#dSpare')) $('#dSpare').onclick = () => applyNewVariant('Spare', true);
   $('#dPlus').onclick = () => { e.qty++; e.updated = Date.now(); save(); $('#dQty').textContent = e.qty; if(inSess) renderSessbar(); };
   $('#dMinus').onclick = () => { if(e.qty > 1){ e.qty--; e.updated = Date.now(); save(); $('#dQty').textContent = e.qty; if(inSess) renderSessbar(); } };
+  $('#dSoldNew').onclick = () => {
+    e.soldNew = !e.soldNew;                          // chrome may ride along — a chrome piece can be sold new
+    e.updated = Date.now(); save();
+    $('#dSoldNew').classList.toggle('on', !!e.soldNew);
+    refreshSub(); rerender(); buzz(12);
+    toast(e.soldNew ? 'Sold as new — expires 12 months from the ' + (e.color >= 0 ? BANDS[e.color].m : '') + ' band' : 'Back to the normal recert window');
+  };
   $('#dBand').onchange = ev => { e.color = Number(ev.target.value);
     if(e.color >= 0){ e.year = assumedYear(e.color); $('#dYear').disabled = false; $('#dYear').value = e.year; }
     else { e.year = 0; $('#dYear').disabled = true; }
@@ -4357,7 +4450,7 @@ function buildPrint(){
       const extra = [e.serials.join(', '), e.note].filter(Boolean).join(' — ');
       const b = bandOf(e);
       html += `<tr><td class="q">${e.qty}</td><td>${esc(labelFor(e))}</td>
-        <td class="bandcell">${b ? `<span class="swatch" style="background:${b.bg}"></span>${b.name} (${b.m} ${e.year})` : '—'}</td>
+        <td class="bandcell">${b ? `<span class="swatch" style="background:${b.bg}"></span>${b.name} (${b.m} ${e.year})${e.soldNew ? ' · SOLD NEW ¹' : ''}` : '—'}</td>
         <td>${x ? fmtDate(x) : '—'}</td><td class="${st === 'exp' ? 'bexp' : ''}">${stTxt}</td>
         <td>${esc(e.area || '')}</td><td>${esc(extra)}</td></tr>`;
     });
@@ -4374,6 +4467,10 @@ $('#btnPrint').onclick = () => {
 
 /* ---------- colorful PDF report ---------- */
 function pdfBandChip(e){
+  if(e.soldNew && e.chrome && e.color >= 0)
+    return `<span class="pdf-band"><span class="pb-sw" style="background:linear-gradient(135deg,#eef1f4,#c2c9d0,#a7afb8)"></span>${BANDS[e.color].m} ${e.year} · CHROME · SOLD NEW ¹</span>`;
+  if(e.soldNew && e.color >= 0){ const b = BANDS[e.color];
+    return `<span class="pdf-band"><span class="pb-sw" style="background:${b.bg}"></span>${b.m} ${e.year} · SOLD NEW ¹</span>`; }
   if(e.chrome) return `<span class="pdf-band"><span class="pb-sw" style="background:linear-gradient(135deg,#eef1f4,#c2c9d0,#a7afb8)"></span>MFG ${BANDS[e.color].m} ${e.year} · CHROME</span>`;
   if(e.color < 0) return `<span class="pdf-band"><span class="pb-sw" style="background:#fff;border-style:dashed"></span>NO BAND</span>`;
   const b = BANDS[e.color];
@@ -4709,7 +4806,7 @@ function buildPdfSheet(){
   });
   html += `</table></div>`;
 
-  html += `<div class="pdf-foot"><span>Band = inspection month per EWS Treating Line Standard POL · 6-mo recert · IES</span>
+  html += `<div class="pdf-foot"><span>Band = inspection month per EWS Treating Line Standard POL · 6-mo recert · ¹ SOLD NEW = sell-month band, expires 12 mo · IES</span>
     <span>Iron Inventory — ${esc(S.settings.fleet || '')}</span></div>`;
   $('#pdfsheet').innerHTML = html;
 }
@@ -4936,6 +5033,13 @@ function load2(){ // re-run guards after restore / after adopting a synced snaps
   S.entries.forEach(e => {
     if(e.itemId === 'tee' && e.size === '2"' && e.variant && e.variant.indexOf('br') < 0) e.variant = e.variant + ' · 2" br';
   });
+  // one-time migration: chrome entries logged before this build shipped were Mason's
+  // sold-as-new workaround (confirmed 2026-07-24, all 23) — convert band → sell month, 12-mo expiry.
+  // Chrome pieces added AFTER this build stay chrome.
+  const SOLDNEW_CUT = 1784867608411;
+  const _snFix = e => { if(e.chrome && (e.created || 0) < SOLDNEW_CUT && !e.soldNew){ delete e.chrome; e.soldNew = true; } };
+  S.entries.forEach(_snFix);
+  S.archives.forEach(a => { if(Array.isArray(a.entries)) a.entries.forEach(_snFix); if(Array.isArray(a.replaced)) a.replaced.forEach(_snFix); });
   // every ASSIGNED pump tee is a 2" T×W×W with a 2" branch — by fleet rule, no exceptions
   S.entries.forEach(e => {
     if(e.itemId === 'tee' && typeof pumpOf === 'function' && pumpOf(e)){
@@ -4945,7 +5049,7 @@ function load2(){ // re-run guards after restore / after adopting a synced snaps
     }
   });
   reunitePumpTees();
-  const _nk = e => [e.itemId, e.size||'', e.variant||'', e.conn||'', e.color, e.year, e.chrome?'C':'', e.area||''].join('|');
+  const _nk = e => [e.itemId, e.size||'', e.variant||'', e.conn||'', e.color, e.year, e.chrome?'C':'', e.soldNew?'N':'', e.area||''].join('|');
   const _nm = new Map(); const _nl = [];
   S.entries.forEach(e => {
     const k = _nk(e);
