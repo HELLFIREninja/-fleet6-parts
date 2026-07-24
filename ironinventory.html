@@ -859,6 +859,14 @@ body.optheme #hdrBack{border-color:var(--opc);color:var(--opc)}
 @media (hover:hover){ .olrow .ol-x{display:flex} }
 .ol-new{flex:none;font-family:var(--disp);font-weight:800;font-size:9px;letter-spacing:.1em;color:#06130c;background:#3dd68c;border-radius:5px;padding:3px 6px}
 .ol-gh{display:flex;align-items:center;justify-content:space-between;font-family:var(--disp);font-weight:800;font-size:11px;letter-spacing:.14em;color:var(--ink3);text-transform:uppercase;margin:14px 2px 8px}
+.grp-sub{display:flex;align-items:center;justify-content:space-between;margin:8px 2px 4px;padding:4px 9px;border-radius:7px;
+  background:rgba(255,255,255,.045);border-left:3px solid rgba(154,163,173,.4);
+  font-family:var(--disp);font-weight:800;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink2)}
+.grp-sub .ct{color:var(--ink3);letter-spacing:.06em}
+.ol-tsub{display:flex;align-items:center;justify-content:space-between;margin:9px 2px 5px;padding:4px 10px;border-radius:7px;
+  background:rgba(255,255,255,.045);border-left:3px solid var(--opc,rgba(154,163,173,.4));
+  font-family:var(--disp);font-weight:800;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink2)}
+.ol-tsub span{color:var(--ink3);letter-spacing:.06em}
 .ol-strip{background:rgba(61,214,140,.1);border:1px solid rgba(61,214,140,.35);color:#3dd68c;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:700;margin-bottom:10px}
 /* Report tab — in-date runway (dark twin of the PDF strip) */
 .rrun{display:flex;gap:6px}
@@ -1091,7 +1099,7 @@ table.pumpmx{width:100%;border-collapse:separate;border-spacing:0;table-layout:f
     <div id="extraWrap" class="st3"></div>
     <div id="draftsWrap"></div>
     <div class="tiny muted st3" style="margin-top:10px">Running list right now: <b id="homeRunning">0</b> pieces across every operation.</div>
-    <div class="home-ground" aria-hidden="true"><span class="hg-mark">EVOLUTION WELL SERVICES</span><span class="hg-sub">Treating Iron · 15K · Fleet 6</span><span class="hg-build">build 7.24-M</span></div>
+    <div class="home-ground" aria-hidden="true"><span class="hg-mark">EVOLUTION WELL SERVICES</span><span class="hg-sub">Treating Iron · 15K · Fleet 6</span><span class="hg-build">build 7.24-N</span></div>
   </div>
 
   <!-- OPERATION HUB · current list or true-up -->
@@ -1744,6 +1752,9 @@ function save(){ store.write(S); document.getElementById('storwarn').classList.t
 function allItems(){ return CATALOG.concat(S.custom); }
 function item(id){ return allItems().find(i => i.id === id); }
 function catName(id){ const c = CATS.find(c => c.id === id); return c ? c.name : id; }
+const CONN_SHORT = {T:'ACME Thread', D:'H4 D-Hub', F:'Flanged'};
+const ironTypeKey = e => `${e.size && e.size !== SZ_ML ? e.size : (e.size || '—')} · ${CONN_SHORT[e.conn] || CONN_NAME[e.conn] || '—'}`;
+const ironTypeSort = (a, b) => (a.conn || '').localeCompare(b.conn || '') || (a.size || '').localeCompare(b.size || '', undefined, {numeric:true}) || labelFor(a).localeCompare(labelFor(b));
 function labelFor(e){
   const it = item(e.itemId);
   const bits = [];
@@ -2442,8 +2453,16 @@ function renderOpList(){
   const box = $('#olList');
   box.innerHTML = groups.map(k => {
     const gq = gm[k].reduce((s,e) => s + e.qty, 0);
+    gm[k].sort(ironTypeSort);
+    let lastTk = null;
     return `<div class="ol-gh"><span>${esc(k)}</span><span>${gq} pc${gq === 1 ? '' : 's'}</span></div>` +
       gm[k].map((e, ri) => {
+        const tk = ironTypeKey(e);
+        const subH = tk !== lastTk
+          ? `<div class="ol-tsub">${esc(tk)}<span>${gm[k].filter(x => ironTypeKey(x) === tk).reduce((s,x) => s + x.qty, 0)} pc${gm[k].filter(x => ironTypeKey(x) === tk).reduce((s,x) => s + x.qty, 0) === 1 ? '' : 's'}</span></div>`
+          : '';
+        lastTk = tk;
+        return subH + (function(){
         const b = bandOf(e);
         const chip = b ? `<span class="ol-band" style="background:${b.bg};color:${b.tx}">${e.chrome ? 'MFG' : b.m}</span>` : `<span class="ol-band" style="background:#22272d;color:#9aa3ad">—</span>`;
         const sub = [bandLabel(e), e.serials.length ? 'S/N ' + e.serials.join(', ') : ''].filter(Boolean).join(' · ');
@@ -2453,6 +2472,7 @@ function renderOpList(){
             ${newIds.has(e.id) ? '<span class="ol-new">NEW</span>' : ''}
             <span class="ol-qty">×${e.qty}</span>
             <span class="ol-x" data-x="${e.id}">✕</span></button></div>`;
+        })();
       }).join('');
   }).join('');
   box.querySelectorAll('.olrow').forEach(r => {
@@ -3433,16 +3453,29 @@ function renderList(){
     wrap.appendChild(sec);
   }
   sortedGroups.forEach(([gname, arr]) => {
-    arr.sort((a,b) => {
+    // size + connection are hard category walls — a 3" ACME check never files with a 3" D-Hub check
+    arr.sort((a, b) => ironTypeSort(a, b) || (() => {
       const xa = expiryOf(a), xb = expiryOf(b);
       if(xa && xb && xa - xb) return xa - xb;
       if(!!xa !== !!xb) return xa ? -1 : 1;
-      return labelFor(a).localeCompare(labelFor(b));
-    });
+      return 0;
+    })());
     const qty = arr.reduce((s,e) => s + e.qty, 0);
     const g = document.createElement('div'); g.className = 'grp';
     g.innerHTML = `<div class="grp-h">${esc(gname)}<span class="ct">${qty} pc${qty === 1 ? '' : 's'}</span></div>`;
-    arr.forEach(e => g.appendChild(mkRow(e, false)));
+    let lastTk = null;
+    arr.forEach(e => {
+      const tk = ironTypeKey(e);
+      if(tk !== lastTk){
+        const sh = document.createElement('div');
+        sh.className = 'grp-sub';
+        const tq = arr.filter(x => ironTypeKey(x) === tk).reduce((s,x) => s + x.qty, 0);
+        sh.innerHTML = `${esc(tk)}<span class="ct">${tq}</span>`;
+        g.appendChild(sh);
+        lastTk = tk;
+      }
+      g.appendChild(mkRow(e, false));
+    });
     wrap.appendChild(g);
   });
 }
@@ -4171,7 +4204,9 @@ function expiryChartSVG(w, forPrint){
 function preciseLabel(e){
   const it = item(e.itemId);
   if(it && (it.coflex || it.pair)) return (e.size && e.size !== SZ_ML ? e.size + ' ' : '') + it.name;  // pump pairing = location, not iron type
-  return labelFor(e);
+  const base = labelFor(e);
+  const cn = CONN_SHORT[e.conn] || '';
+  return cn && base.indexOf(cn) < 0 && base.indexOf(CONN_NAME[e.conn] || '§') < 0 ? base + ' · ' + cn : base;   // size + type are the category — never blur ACME with D-Hub
 }
 function preciseRollup(){
   const m = new Map();
@@ -4797,7 +4832,13 @@ function buildPdfSheet(){
   [...groups.entries()].sort((a,b) => a[0].localeCompare(b[0])).forEach(([g, arr]) => {
     const gq = arr.reduce((s,e) => s + e.qty, 0);
     html += `<tr><td colspan="6" class="grp-title" style="padding:5px 6px">${esc(g)} — ${gq} pc${gq === 1 ? '' : 's'}</td></tr>`;
-    arr.sort((a,b) => labelFor(a).localeCompare(labelFor(b))).forEach(e => {
+    let lastTk2 = null;
+    arr.sort(ironTypeSort).forEach(e => {
+      const tk = ironTypeKey(e);
+      if(tk !== lastTk2){
+        html += `<tr><td></td><td colspan="5" style="font-size:8.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#178a58;padding:6px 6px 2px;border-bottom:1px solid #dfe4ea">${esc(tk)}</td></tr>`;
+        lastTk2 = tk;
+      }
       const x = expiryOf(e);
       const extra = [e.serials.join(', '), e.note].filter(Boolean).join(' — ');
       html += `<tr><td>${e.qty}</td><td>${esc(labelFor(e))}</td><td>${pdfBandChip(e)}</td>
