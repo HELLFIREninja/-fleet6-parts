@@ -73,6 +73,12 @@ h1.brand .accent{color:var(--acc)}
 .brand-sub{display:flex;justify-content:center;gap:8px;align-items:center;margin-top:3px;font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--ink3);font-weight:600}
 .brand-sub b{color:var(--ink2);font-weight:700}
 .brand-sub .dot{width:4px;height:4px;border-radius:50%;background:var(--acc)}
+.brand-op{color:var(--opc,#3dd68c)}
+.brand-op:empty{display:none}
+body.optheme h1.brand{font-size:clamp(20px, 6vw, 26px)}
+h1.brand.brand-long .brand-op{display:block;font-size:.66em;letter-spacing:.24em;line-height:1.2;margin-bottom:1px}
+body.optheme h1.brand .accent{color:var(--opc)}
+body.optheme .brand-sub .dot{background:var(--opc)}
 
 /* ---------- bottom nav ---------- */
 nav.tabs{
@@ -776,29 +782,56 @@ input:focus,select:focus,textarea:focus{background:#12151a;box-shadow:inset 0 1p
 .op-sb.bigbtn{box-shadow:inset 5px 0 0 #f2c94c, inset 24px 0 38px -24px rgba(242,201,76,.65), var(--e-1)}
 .op-frac .opct{color:#f26060}.op-pd .opct{color:#3dd68c}.op-pt .opct{color:#58a6ff}.op-sb .opct{color:#f2c94c}
 .bigbtn .opct{font-family:var(--disp);font-weight:800;font-size:13px}
-#opStripe{display:none;position:fixed;top:0;left:0;right:0;z-index:70;height:23px;align-items:center;justify-content:center;
-  background:linear-gradient(90deg,var(--opc,#3dd68c),var(--opc-deep,var(--opc,#3dd68c)));color:#0b0f13;
-  font-family:var(--disp);font-weight:800;font-size:10.5px;letter-spacing:.3em;text-indent:.3em;
-  box-shadow:0 2px 12px rgba(0,0,0,.35)}
-#opStripe.show{display:flex;animation:stripeIn .26s ease}
-@keyframes stripeIn{from{transform:translateY(-100%)}to{transform:translateY(0)}}
-body.optheme #hubTitle::after{content:'';display:block;width:64px;height:5px;border-radius:3px;background:linear-gradient(90deg,var(--opc),var(--opc-deep));margin-top:8px}
-/* keep the sync chip readable when HOME floats over the header corner */
-body:has(#homeBtn:not(.hidden)) .sync-chip{margin-right:98px}
+/* ---- FULL op immersion — the color owns the page (Mason: scribe it into memory) ---- */
+body.optheme::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(760px 480px at 50% -140px, var(--opc-wash), transparent 72%),
+    radial-gradient(420px 300px at 108% 30%, var(--opc-dim), transparent 65%),
+    linear-gradient(180deg, var(--opc-dim), transparent 340px)}
+body.optheme .wiz-t{color:var(--opc)}
+body.optheme .wiz-back{border-color:var(--opc);color:var(--opc)}
+body.optheme .wiz-back .bk{color:var(--opc)}
+body.optheme .cstep .bigbtn:not(.act-true){box-shadow:inset 4px 0 0 var(--opc), inset 24px 0 38px -24px var(--opc-wash), var(--e-1)}
+body.optheme .cstep .bigbtn.on:not(.act-true){border-color:var(--opc);box-shadow:inset 4px 0 0 var(--opc), inset 0 0 0 1.5px var(--opc), inset 24px 0 44px -22px var(--opc-wash), var(--e-1)}
+body.optheme .chip.on,body.optheme .chip.on-red{background:var(--opc-dim);border-color:var(--opc);color:var(--opc)}
+body.optheme .opt.on{background:var(--opc-dim);border-color:var(--opc);color:var(--opc)}
+body.optheme .headsel-btn.on{border-color:var(--opc);box-shadow:0 0 0 1px var(--opc), 0 10px 26px var(--opc-dim)}
+body.optheme .headsel-btn.on .hs-lab{color:var(--opc)}
+body.optheme .ptpiece.done{box-shadow:inset 3px 0 0 var(--opc), var(--e-1);border-color:var(--opc)}
+body.optheme .sessbar{border-color:var(--opc);background:linear-gradient(90deg, var(--opc-dim), var(--panel) 55%)}
+body.optheme #sessKind{color:var(--opc)}
+body.optheme nav.tabs button.on{color:var(--opc);border-top-color:var(--opc)}
+body.optheme nav.tabs button.on svg{stroke:var(--opc)}
+body.optheme nav.tabs button.on::before{background:radial-gradient(ellipse at center, var(--opc-wash), transparent 72%)}
+body.optheme .placard-in::before{background:linear-gradient(135deg,var(--opc),var(--opc-deep))}
+body.optheme .sync-dot.live{background:var(--opc)!important;box-shadow:0 0 0 3px var(--opc-dim)}
+body.optheme #homeBtn{background:var(--opc);box-shadow:0 0 0 3px var(--opc-dim), 0 6px 16px rgba(0,0,0,.45);border-color:rgba(255,255,255,.3)}
+@media (min-width:900px){
+  body.optheme nav.tabs button.on{background:var(--opc-dim);box-shadow:inset 3px 0 0 var(--opc)}
+}
+body.optheme .ol-strip{background:var(--opc-dim);border-color:var(--opc);color:var(--opc)}
+body.optheme .crumb{border-color:var(--opc)}
 body.optheme .wiz-step{color:var(--opc)}
-body.optheme #hubTitle,body.optheme #olTitle,body.optheme #ptTitle{color:var(--opc)}
+body.optheme #ptTitle{color:var(--opc)}
 body.optheme .fab{background:var(--opc);box-shadow:0 10px 26px var(--opc-dim),0 10px 22px rgba(0,0,0,.45)}
 body.optheme .sessbar{border-color:var(--opc)}
 body.optheme .hubbtn-op.bigbtn{box-shadow:inset 4px 0 0 var(--opc), inset 22px 0 34px -24px var(--opc-dim), var(--e-1)}
 body.optheme .ol-gh span:first-child{color:var(--opc)}
 body.optheme .crumb .k{color:var(--opc)}
-/* ---- HOME button — loud on purpose ---- */
-#homeBtn{position:fixed;top:12px;right:12px;z-index:80;font-family:var(--disp);font-weight:800;font-size:12px;letter-spacing:.12em;
-  color:#06130c;background:var(--acc,#1eb474);border:1.5px solid rgba(255,255,255,.25);border-radius:999px;padding:10px 16px;
-  box-shadow:0 0 0 3px rgba(30,180,116,.22), 0 8px 22px rgba(0,0,0,.5);cursor:pointer}
-#homeBtn:active{transform:scale(.95)}
-#homeBtn.hidden{display:none}
-body.optheme #homeBtn{top:30px}
+/* ---- header corner controls — BACK bottom-left, HOME bottom-right, locked into the placard ---- */
+.placard-in button.hdr-corner{position:absolute;bottom:4px;top:auto;z-index:6;font-family:var(--disp);font-weight:800;font-size:10.5px;letter-spacing:.1em;
+  border-radius:999px;padding:7px 12px;cursor:pointer;line-height:1}
+/* corners flank the sub line — trim it while themed so nothing collides */
+body.optheme .brand-sub .sub-mid{display:none}
+.placard-in button.hdr-corner.hidden{display:none}
+#hdrBack{left:10px;right:auto;background:rgba(12,15,18,.55);border:1px solid var(--line2);color:var(--ink2)}
+#hdrBack .bk{margin-right:2px}
+body.optheme #hdrBack{border-color:var(--opc);color:var(--opc)}
+#homeBtn{right:10px;left:auto;color:#06130c;background:var(--acc,#1eb474);border:1.5px solid rgba(255,255,255,.25);
+  box-shadow:0 0 0 3px rgba(30,180,116,.22), 0 6px 16px rgba(0,0,0,.45)}
+#homeBtn:active,#hdrBack:active{transform:scale(.95)}
+/* per-page BACK buttons retired — the header corner carries it now */
+#scr-count .cstep .wiz-back{display:none}
 .fab{position:fixed;right:18px;bottom:96px;z-index:55;width:58px;height:58px;border-radius:50%;background:var(--acc,#1eb474);color:#06130c;
   font-size:30px;font-weight:800;border:none;box-shadow:0 10px 26px rgba(30,180,116,.45);display:flex;align-items:center;justify-content:center;cursor:pointer}
 .fab:active{transform:scale(.94)}
@@ -806,11 +839,8 @@ body.optheme #homeBtn{top:30px}
 @keyframes fabIn{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
 .olrow-wrap.olin{animation:olIn .3s ease backwards}
 @keyframes olIn{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
-@media (prefers-reduced-motion:reduce){ .fab,.olrow-wrap.olin,#opStripe.show{animation:none} }
+@media (prefers-reduced-motion:reduce){ .fab,.olrow-wrap.olin{animation:none} }
 @media (min-width:900px){
-  #opStripe{left:216px}
-  #homeBtn{top:18px;right:26px}
-  body.optheme #homeBtn{top:42px}
   .fab{right:38px;bottom:34px}
   #hubBtns.bigcol{grid-template-columns:1fr 1fr}
   #hubBtns .bigbtn{min-height:96px}
@@ -830,6 +860,17 @@ body.optheme #homeBtn{top:30px}
 .ol-new{flex:none;font-family:var(--disp);font-weight:800;font-size:9px;letter-spacing:.1em;color:#06130c;background:#3dd68c;border-radius:5px;padding:3px 6px}
 .ol-gh{display:flex;align-items:center;justify-content:space-between;font-family:var(--disp);font-weight:800;font-size:11px;letter-spacing:.14em;color:var(--ink3);text-transform:uppercase;margin:14px 2px 8px}
 .ol-strip{background:rgba(61,214,140,.1);border:1px solid rgba(61,214,140,.35);color:#3dd68c;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:700;margin-bottom:10px}
+/* Report tab — in-date runway (dark twin of the PDF strip) */
+.rrun{display:flex;gap:6px}
+.rrun-c{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:10px;text-align:center;overflow:hidden;padding-bottom:7px}
+.rrun-c.dry{border-color:rgba(217,95,95,.6);background:rgba(217,95,95,.08)}
+.rrun-m{font-family:var(--disp);font-weight:800;font-size:10px;letter-spacing:.06em;padding:5px 2px 2px;color:var(--ink2)}
+.rrun-x{font-size:9px;color:#ec8383;font-weight:700;min-height:12px}
+.rrun-v{font-family:var(--disp);font-weight:800;font-size:21px;color:var(--ink);line-height:1.05}
+.rrun-c.dry .rrun-v{color:#ec8383}
+.rrun-k{font-size:7.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)}
+.rverdict{margin-top:8px;font-size:12px;font-weight:700;border-left:4px solid var(--acc);background:rgba(61,214,140,.08);border-radius:0 8px 8px 0;padding:8px 11px;color:var(--ink2)}
+.rverdict.dry{border-left-color:#d95f5f;background:rgba(217,95,95,.1);color:#ec9a9a}
 .ptpiece .ptp-x{flex:none;width:28px;height:28px;border-radius:8px;border:1px solid rgba(217,95,95,.4);background:rgba(217,95,95,.12);color:#ec8383;display:flex;align-items:center;justify-content:center;font-size:13px;margin-left:4px}
 @media (min-width:900px){ #cs-home.on{min-height:calc(100dvh - 140px)} }
 @media (prefers-reduced-motion:reduce){ .home-ground{animation:none} }
@@ -976,8 +1017,10 @@ table.pumpmx{width:100%;border-collapse:separate;border-spacing:0;table-layout:f
       <a class="app-switch" href="index.html" title="Back to the Parts app">‹ Parts</a>
       <span class="sync-chip" title="Cross-device sync status"><span class="sync-dot" id="syncDot"></span><span id="syncLbl">…</span></span>
     </div>
-    <h1 class="brand">IRON <span class="accent">INVENTORY</span></h1>
-    <div class="brand-sub"><b id="hdrFleet">FLEET 6</b><span class="dot"></span><span>TREATING IRON</span><span class="dot"></span><span>15K</span></div>
+    <h1 class="brand"><span id="brandOp" class="brand-op"></span>IRON <span class="accent">INVENTORY</span></h1>
+    <button id="hdrBack" class="hdr-corner hidden" type="button"><span class="bk">‹</span> BACK</button>
+    <button id="homeBtn" class="hdr-corner hidden" type="button">⌂ HOME</button>
+    <div class="brand-sub"><b id="hdrFleet">FLEET 6</b><span class="dot sub-mid"></span><span class="sub-mid">TREATING IRON</span><span class="dot"></span><span>15K</span></div>
   </div>
 </header>
 
@@ -986,8 +1029,6 @@ table.pumpmx{width:100%;border-collapse:separate;border-spacing:0;table-layout:f
 
 <!-- ============ COUNT (stepped wizard) ============ -->
 <section id="scr-count" class="screen on">
-  <button id="homeBtn" class="hidden" type="button">⌂ HOME</button>
-  <div id="opStripe" aria-hidden="true"></div>
 
   <!-- HOME · login + action picker (shows when no session is open) -->
   <div class="cstep" id="cs-home">
@@ -1020,22 +1061,21 @@ table.pumpmx{width:100%;border-collapse:separate;border-spacing:0;table-layout:f
     <div id="extraWrap" class="st3"></div>
     <div id="draftsWrap"></div>
     <div class="tiny muted st3" style="margin-top:10px">Running list right now: <b id="homeRunning">0</b> pieces across every operation.</div>
-    <div class="home-ground" aria-hidden="true"><span class="hg-mark">EVOLUTION WELL SERVICES</span><span class="hg-sub">Treating Iron · 15K · Fleet 6</span><span class="hg-build">build 7.24-D</span></div>
+    <div class="home-ground" aria-hidden="true"><span class="hg-mark">EVOLUTION WELL SERVICES</span><span class="hg-sub">Treating Iron · 15K · Fleet 6</span><span class="hg-build">build 7.24-J</span></div>
   </div>
 
   <!-- OPERATION HUB · current list or true-up -->
   <div class="cstep" id="cs-hub">
     <button class="wiz-back st1" type="button"><span class="bk">‹</span>BACK</button>
-    <div class="wiz-head st1"><span class="wiz-step">OPERATION</span><h2 class="wiz-t" id="hubTitle"></h2></div>
-    <div class="bigcol st2" id="hubBtns"></div>
+    <div class="bigcol st2" id="hubBtns" style="margin-top:6px"></div>
     <div class="tiny muted st3" id="hubHint" style="margin-top:10px"></div>
   </div>
 
   <!-- CURRENT LIST · live view of one operation -->
   <div class="cstep" id="cs-oplist">
     <button class="wiz-back st1" type="button"><span class="bk">‹</span>BACK</button>
-    <div class="wiz-head st1"><span class="wiz-step">CURRENT LIST</span><h2 class="wiz-t" id="olTitle"></h2>
-      <div class="tiny muted" id="olSub" style="margin-top:4px"></div></div>
+    <div class="wiz-head st1"><span class="wiz-step">CURRENT LIST</span>
+      <div class="tiny muted" id="olSub" style="margin-top:5px"></div></div>
     <div id="olNewStrip" class="st1"></div>
     <div id="olList" class="st2"></div>
     <button class="fab" id="olAdd" aria-label="add iron">＋</button>
@@ -1119,7 +1159,7 @@ table.pumpmx{width:100%;border-collapse:separate;border-spacing:0;table-layout:f
   </div>
   <div class="sumbar">
     <div class="sumcell"><div class="v" id="sumTotal">0</div><div class="k">Pieces</div></div>
-    <div class="sumcell"><div class="v" id="sumTypes">0</div><div class="k">Lines</div></div>
+    <div class="sumcell"><div class="v" id="sumTypes">0</div><div class="k">Line items</div></div>
     <div class="sumcell due"><div class="v" id="sumDue">0</div><div class="k">Due soon</div></div>
     <div class="sumcell exp"><div class="v" id="sumExp">0</div><div class="k">Expired</div></div>
   </div>
@@ -1152,6 +1192,12 @@ table.pumpmx{width:100%;border-collapse:separate;border-spacing:0;table-layout:f
     <div class="tile exp"><div class="v" id="rExp">0</div><div class="k">✕ Expired</div></div>
   </div>
 
+  <h2 class="sec">In-date runway — the next six months</h2>
+  <div id="rRunway"></div>
+
+  <h2 class="sec">By operation</h2>
+  <div class="card" style="padding:6px 10px"><table class="rpt" id="rOps"></table></div>
+
   <h2 class="sec">Running total — what's on location</h2>
   <div class="card" style="padding:6px 10px"><table class="rpt" id="rItems"></table></div>
 
@@ -1165,18 +1211,14 @@ table.pumpmx{width:100%;border-collapse:separate;border-spacing:0;table-layout:f
   <div class="card gridwrap" id="rGrid" style="padding:8px 6px"></div>
   <p class="tiny muted" style="margin:8px 2px 0">Columns = expiration month, colored by band. <b>Tap a month column to leave it out</b> — item totals recount without it (planning what's left after a swap-out). Tap again to bring it back.</p>
 
-  <h2 class="sec">Iron flow by month</h2>
-  <div class="card" style="padding:6px 10px"><table class="rpt" id="rFlow"></table></div>
-  <p class="tiny muted" style="margin:8px 2px 0">In = received · Sent = out for inspection · Adj = true-up corrections · Net = how the running total moved. Built from submitted lists — your usage rate for ordering ahead.</p>
+  <h2 class="sec" id="rPupH">Pup joints — footage on site</h2>
+  <div class="card" id="rPupC" style="padding:6px 10px"><table class="rpt" id="rPup"></table></div>
 
   <h2 class="sec">By type</h2>
   <div class="card" style="padding:6px 10px"><table class="rpt" id="rCats"></table></div>
 
   <h2 class="sec">By area</h2>
   <div class="card" style="padding:6px 10px"><table class="rpt" id="rAreas"></table></div>
-
-  <h2 class="sec">Submission history</h2>
-  <div id="rSubs"></div>
 
   <h2 class="sec">Export</h2>
   <div class="exports">
@@ -1187,7 +1229,7 @@ table.pumpmx{width:100%;border-collapse:separate;border-spacing:0;table-layout:f
     <button class="btn" id="btnRestore">⛅ Restore</button>
   </div>
   <input type="file" id="restoreFile" accept=".json,application/json" class="hidden">
-  <p class="tiny muted" style="margin-top:10px">Color PDF makes the full styled report — pick "Save as PDF" in the print menu. B&amp;W sheet is the plain shop copy. CSV opens straight in Excel. Backup saves everything — counts, inspection lists, favorites, settings.</p>
+  <p class="tiny muted" style="margin-top:10px">Color PDF builds the full styled report right in the app — share it or save the file. B&amp;W sheet is the plain shop copy. CSV opens straight in Excel. Backup saves everything — counts, history, favorites, settings.</p>
 </section>
 
 <!-- ============ SETUP ============ -->
@@ -1428,6 +1470,7 @@ const CATALOG = [
   {id:'flap',     cat:'CHK',  name:'Flapper Check',          sizes:['2"','3"','4"'], conns:['T']},
   {id:'dhubcheck',cat:'CHK',  name:'Pod Check — 3" Flapper', sizes:['3"'],           conns:['D']},
   {id:'dhubell',  cat:'FIT',  name:'Cannonball 90 · Ell',    sizes:['3"'],           conns:['D'], pair:true},   // paired to a pump (PT + head) so expiring ones are findable
+  {id:'bullplug', cat:'FIT',  name:'Bull Plug',              sizes:['3"'],           conns:['D']},   // blanks off a hub — always a 3"
   {id:'dart',     cat:'CHK',  name:'Dart Check',             sizes:['2"','3"'],      conns:['T']},
   {id:'pod',      cat:'CHK',  name:'Pod Check (DC15)',       sizes:['3"',SZ_ML],    conns:['F']},
   {id:'prv',      cat:'RLF',  name:'PRV',                    sizes:['2"','3"',SZ_ML], conns:['T','F'],
@@ -1466,6 +1509,7 @@ const DEFAULT_FAVS = ['pup','swv','tee','pvm','flap','mlsec','coflex'];
 
 /* fallback icons (no catalog picture) — simple steel silhouettes */
 const FALLBACK_ICON = {
+  bullplug:'<svg viewBox="0 0 100 60" fill="none"><rect x="18" y="14" width="16" height="32" rx="3" fill="#8b95a0"/><rect x="34" y="18" width="26" height="24" rx="3" fill="#39424c" stroke="#4a5560" stroke-width="2"/><path d="M60 18 L82 25 Q86 30 82 35 L60 42 Z" fill="#4a5560" stroke="#39424c" stroke-width="2"/></svg>',
   blindflange:'<svg viewBox="0 0 100 60"><circle cx="50" cy="30" r="26" fill="#39424c" stroke="#8b95a0" stroke-width="3"/><circle cx="50" cy="30" r="9" fill="#2a3138"/>' + [0,45,90,135,180,225,270,315].map(a=>{const r=Math.PI*a/180;return `<circle cx="${(50+19*Math.cos(r)).toFixed(1)}" cy="${(30+19*Math.sin(r)).toFixed(1)}" r="2.6" fill="#8b95a0"/>`}).join('') + '</svg>',
   MONO:'<svg viewBox="0 0 100 60" fill="none" stroke="#8b95a0" stroke-width="3"><rect x="14" y="22" width="72" height="16" rx="2" fill="#39424c"/><rect x="6" y="16" width="10" height="28" rx="2" fill="#8b95a0"/><rect x="84" y="16" width="10" height="28" rx="2" fill="#8b95a0"/></svg>',
   HOSE:'<svg viewBox="0 0 100 60" fill="none" stroke="#8b95a0" stroke-width="5"><path d="M15 45 C15 15, 85 15, 85 45" /><rect x="9" y="42" width="12" height="12" rx="2" fill="#39424c" stroke="none"/><rect x="79" y="42" width="12" height="12" rx="2" fill="#39424c" stroke="none"/></svg>',
@@ -2004,26 +2048,31 @@ let pumpCtx = {on:false, trailer:'', head:1};         // the per-pump guided wal
 let curOp = '';                                        // operation whose hub we're in
 /* every operation carries ONE color from its home button through every page inside it */
 const OP_COLORS = {
-  'Frac':          {c:'#f26060', deep:'#c23c3c', glow:'rgba(242,96,96,.70)',  dim:'rgba(242,96,96,.13)'},
-  'Pump Down':     {c:'#3dd68c', deep:'#169a63', glow:'rgba(61,214,140,.75)', dim:'rgba(61,214,140,.13)'},
-  'Pump Trailers': {c:'#58a6ff', deep:'#2f7fdb', glow:'rgba(88,166,255,.70)', dim:'rgba(88,166,255,.13)'},
-  'On Standby':    {c:'#f2c94c', deep:'#caa32a', glow:'rgba(242,201,76,.65)', dim:'rgba(242,201,76,.13)'}
+  'Frac':          {c:'#f26060', deep:'#c23c3c', glow:'rgba(242,96,96,.70)',  dim:'rgba(242,96,96,.13)',  wash:'rgba(242,96,96,.20)'},
+  'Pump Down':     {c:'#3dd68c', deep:'#169a63', glow:'rgba(61,214,140,.75)', dim:'rgba(61,214,140,.13)', wash:'rgba(61,214,140,.18)'},
+  'Pump Trailers': {c:'#58a6ff', deep:'#2f7fdb', glow:'rgba(88,166,255,.70)', dim:'rgba(88,166,255,.13)', wash:'rgba(88,166,255,.19)'},
+  'On Standby':    {c:'#f2c94c', deep:'#caa32a', glow:'rgba(242,201,76,.65)', dim:'rgba(242,201,76,.13)', wash:'rgba(242,201,76,.15)'}
 };
-const OP_DEFAULT = {c:'#9aa3ad', deep:'#767f89', glow:'rgba(154,163,173,.55)', dim:'rgba(154,163,173,.12)'};
+const OP_DEFAULT = {c:'#9aa3ad', deep:'#767f89', glow:'rgba(154,163,173,.55)', dim:'rgba(154,163,173,.12)', wash:'rgba(154,163,173,.12)'};
 const opColor = op => OP_COLORS[op] || OP_DEFAULT;
 function applyOpTheme(){
   const themed = ['hub','oplist','sec','setup','pieces','band','ptlist','pthead','review'].includes(countStep);
   const opNow = (S.session && S.session.op) || (liveMode.on && liveMode.op) || (countStep === 'hub' ? curOp : '') || curOp;
   const on = themed && !!opNow;
   document.body.classList.toggle('optheme', on);
-  const stripe = document.getElementById('opStripe');
+  const bop = document.getElementById('brandOp');
+  if(bop){
+    bop.textContent = on ? opNow.toUpperCase() + ' ' : '';
+    const h1 = bop.closest('h1');
+    if(h1) h1.classList.toggle('brand-long', on && (opNow.length + 15) > 20);   // long op names stack above
+  }
   if(on){
     const t = opColor(opNow);
     document.documentElement.style.setProperty('--opc', t.c);
     document.documentElement.style.setProperty('--opc-dim', t.dim);
     document.documentElement.style.setProperty('--opc-deep', t.deep || t.c);
-    if(stripe){ stripe.textContent = opNow.toUpperCase(); stripe.classList.add('show'); }
-  } else if(stripe) stripe.classList.remove('show');
+    document.documentElement.style.setProperty('--opc-wash', t.wash || t.dim);
+  }
 }
 let liveMode = {on:false, op:''};                      // CURRENT LIST mode — changes land on the running list instantly
 let newIds = new Set();                                // lines touched this visit (NEW tags)
@@ -2066,6 +2115,11 @@ $$('nav.tabs button').forEach(b => b.addEventListener('click', () => {
   $$('nav.tabs button').forEach(x => x.classList.toggle('on', x === b));
   const scr = b.dataset.scr;
   $$('.screen').forEach(s => s.classList.toggle('on', s.id === 'scr-' + scr));
+  if(scr !== 'count'){
+    document.body.classList.remove('optheme');
+    const bo = document.getElementById('brandOp'); if(bo) bo.textContent = '';
+    ['homeBtn','hdrBack'].forEach(id => { const el = document.getElementById(id); if(el) el.classList.add('hidden'); });
+  }
   hideLastbar();
   if(scr === 'count') renderCount();
   if(scr === 'list') renderList();
@@ -2100,7 +2154,9 @@ function renderCount(dir){
   if(['home','op','hub','oplist','sec','setup','pieces'].includes(countStep)) pumpCtx.on = false;
   if(['home','op'].includes(countStep)){ liveMode = {on:false, op:''}; }
   ensureHome();
-  const hb = $('#homeBtn'); if(hb) hb.classList.toggle('hidden', countStep === 'home' || countStep === 'op');
+  const chrome_off = countStep === 'home' || countStep === 'op';
+  const hb = $('#homeBtn'); if(hb) hb.classList.toggle('hidden', chrome_off);
+  const bb = $('#hdrBack'); if(bb) bb.classList.toggle('hidden', chrome_off);
   applyOpTheme();
   renderSessbar();
   if(countStep === 'home') renderHome();
@@ -2259,10 +2315,16 @@ function enterOp(tok){
   }
   goStep('hub', 'fwd');
 }
+/* Iron type + size only stay picked while ACTIVELY tapping pieces — stepping back out to the
+   section page / current list / hub wipes them, so every re-entry re-verifies type and size. */
+function resetIronPick(){
+  const c = CS();
+  if(c.size || c.conn !== 'T'){ c.size = ''; c.conn = 'T'; save(); }
+}
 function renderHub(){
   if(!curOp){ goStep('op', 'bck'); return; }
+  resetIronPick();
   const n = S.entries.filter(e => entryOp(e) === curOp).reduce((s,e) => s + e.qty, 0);
-  $('#hubTitle').textContent = curOp;
   $('#hubBtns').innerHTML = `
     <button class="bigbtn hubbtn-op" id="hubCur">CURRENT LIST<span class="sub">${n ? n + ' PCS ON ' + esc(curOp.toUpperCase()) : 'NOTHING LOGGED YET'} — SEE IT · ADD · REMOVE</span></button>
     <button class="bigbtn act-true" id="hubTrue">TRUE-UP<span class="sub">RECOUNT ${esc(curOp.toUpperCase())} FROM SCRATCH — COMPARES &amp; RESETS IT</span></button>`;
@@ -2315,7 +2377,7 @@ function attachSwipe(el, onRemove){
 }
 function renderOpList(){
   if(!liveMode.on || !liveMode.op || liveMode.op === 'Pump Trailers'){ goStep('hub', 'bck'); return; }
-  $('#olTitle').textContent = liveMode.op;
+  resetIronPick();
   const rows = S.entries.filter(e => entryOp(e) === liveMode.op);
   const n = rows.reduce((s,e) => s + e.qty, 0);
   $('#olSub').textContent = n ? n + ' piece' + (n === 1 ? '' : 's') + ' on the list — tap a line to fix it, swipe left to remove'
@@ -2350,6 +2412,7 @@ function renderOpList(){
     goStep(liveMode.op === 'Frac' || liveMode.op === 'Pump Down' ? 'sec' : (CS().size ? 'pieces' : 'setup'), 'fwd'); };
 }
 /* ---------- HOME button — back to the operation page from anywhere ---------- */
+$('#hdrBack').onclick = () => wizBack();
 $('#homeBtn').onclick = () => {
   buzz(10);
   if(S.session && sessionTotal() > 0){ $('#sessCancel').click(); return; }   // open true-up → save / scrap / stay
@@ -2419,7 +2482,7 @@ function renderPtHead(){
       const cur = pumpEntry(pumpCtx.trailer, pumpCtx.head, tp.itemId);
       const it = item(tp.itemId); const im = pieceImg(it);
       const sub = cur
-        ? ((tp.coflex ? (cur.serials.length ? 'S/N ' + esc(cur.serials.join(', ')) : 'on this head — no serial') : esc(bandLabel(cur))) + ' · tap → fix / re-assign')
+        ? ((tp.coflex ? (cur.serials.length ? esc(cur.serials.join(', ')) : 'on this head — no serial') : esc(bandLabel(cur))) + ' · tap → fix / re-assign')
         : (tp.coflex ? 'empty — tap → add hose + serial' : 'empty — tap → add & band it');
       return `<button class="ptpiece ${cur ? 'done' : ''}" data-i="${tp.itemId}" ${cur ? `data-cid="${cur.id}"` : ''}>
         <span class="ptp-img">${im.html}</span>
@@ -2443,7 +2506,7 @@ function renderPtHead(){
       const marked = pumpPieceEntry(pumpCtx.trailer, pumpCtx.head, tp.itemId);
       const it = item(tp.itemId); const im = pieceImg(it);
       const sub = marked ? '✓ coming off — tap to keep it'
-        : cur ? ((tp.coflex ? (cur.serials.length ? 'S/N ' + esc(cur.serials.join(', ')) : 'on this head') : esc(bandLabel(cur))) + ' · tap → remove')
+        : cur ? ((tp.coflex ? (cur.serials.length ? esc(cur.serials.join(', ')) : 'on this head') : esc(bandLabel(cur))) + ' · tap → remove')
         : 'nothing on this head';
       return `<button class="ptpiece ${marked ? 'done' : ''}${!cur && !marked ? ' off' : ''}" data-i="${tp.itemId}">
         <span class="ptp-img">${im.html}</span>
@@ -2457,7 +2520,7 @@ function renderPtHead(){
   box.innerHTML = HEAD_TEMPLATE.map(tp => {
     const e = pumpPieceEntry(pumpCtx.trailer, pumpCtx.head, tp.itemId);
     const it = item(tp.itemId); const im = pieceImg(it);
-    const sub = e ? (tp.coflex ? (e.serials.length ? 'S/N ' + esc(e.serials.join(', ')) : 'logged — no band') : esc(bandLabel(e)))
+    const sub = e ? (tp.coflex ? (e.serials.length ? esc(e.serials.join(', ')) : 'logged — no band') : esc(bandLabel(e)))
                   : (tp.coflex ? 'tap → serial (no band)' : 'tap → set the band');
     return `<button class="ptpiece ${e ? 'done' : ''}" data-i="${tp.itemId}">
       <span class="ptp-img">${im.html}</span>
@@ -2684,6 +2747,7 @@ function lockSwitchSheet(newTok, apply){
 function renderSec(){
   const c = CS();
   if(!c.sys){ goStep('op', 'bck'); return; }
+  resetIronPick();
   $('#secTitle').textContent = 'Where on ' + c.sys + '?';
   const sec = $('#secBtns');
   sec.innerHTML = '';
@@ -3257,7 +3321,7 @@ function renderList(){
     r.innerHTML = `<div class="qb">${e.qty}</div>
       <div class="grow">
         <div class="nm">${esc(labelFor(e))}${nd ? ` <b class="needtag">SET THE ${esc(nd.toUpperCase())}</b>` : ''}</div>
-        <div class="sub">${miniBand(e)} ${statusBadge(st, x)}${!hideArea && e.area ? `<span>· ${esc(e.area)}</span>` : ''}${e.serials.length ? `<span>· ${e.serials.length === 1 ? 'S/N ' + esc(e.serials[0]) : e.serials.length + ' S/N'}</span>` : ''}${e.note ? '<span>· ✎</span>' : ''}</div>
+        <div class="sub">${miniBand(e)} ${statusBadge(st, x)}${!hideArea && e.area ? `<span>· ${esc(e.area)}</span>` : ''}${e.serials.length ? `<span>· ${e.serials.length === 1 ? (hideArea ? esc(e.serials[0]) : 'S/N ' + esc(e.serials[0])) : e.serials.length + ' S/N'}</span>` : ''}${e.note ? '<span>· ✎</span>' : ''}</div>
       </div><span style="color:var(--ink3)">›</span>`;
     r.onclick = () => openDetail(e.id);
     return r;
@@ -4176,7 +4240,7 @@ function pumpCardsHTML(trailers){
         const stTxt = st === 'exp' ? `<span style="color:var(--danger-l)">✕ exp ${fmtDate(x)}</span>`
                     : st === 'due' ? `<span style="color:var(--amber)">⚠ ${fmtDate(x)}</span>`
                     : x ? `<span style="color:var(--acc-l)">✓ ${fmtDate(x)}</span>` : '';
-        const sn = e.serials && e.serials.length ? ` · S/N ${esc(e.serials.join(', '))}` : '';
+        const sn = e.serials && e.serials.length ? ` · ${esc(e.serials.join(', '))}` : '';
         html += `<div class="pt-row"><span class="pt-nm">${e.qty > 1 ? e.qty + '× ' : ''}${esc(labelForNoPump(e))}${sn}</span>${miniBand(e)}<span class="pt-meta">${stTxt}</span></div>`;
       });
     });
@@ -4189,6 +4253,45 @@ function renderReport(){
   $('#rTotal').textContent = t.total; $('#rOk').textContent = t.ok;
   $('#rDue').textContent = t.due; $('#rExp').textContent = t.exp;
   $('#rDueDays').textContent = S.settings.dueSoonDays;
+  // in-date runway + the will-we-run-out verdict (same math as the PDF)
+  const rw = runwayRows();
+  const vd = runwayVerdict(rw, t.none);
+  $('#rRunway').innerHTML = `<div class="rrun">` + rw.map(r => {
+    const b = BANDS[r.m];
+    return `<div class="rrun-c${r.after === 0 ? ' dry' : ''}" style="border-top:4px solid ${b.bg}">
+      <div class="rrun-m">${b.m} '${String(r.y).slice(2)}</div>
+      <div class="rrun-x">${r.expiring ? '−' + r.expiring : ''}</div>
+      <div class="rrun-v">${r.after}</div>
+      <div class="rrun-k">in date after</div></div>`;
+  }).join('') + `</div><div class="rverdict${vd.dry ? ' dry' : ''}">${esc(vd.text)}</div>`;
+  // by operation — RGBY identity carried into the tab
+  const opRows = opBreakdown();
+  $('#rOps').innerHTML = '<tr><th>Operation</th><th style="text-align:right">In date</th><th style="text-align:right">Due</th><th style="text-align:right">Expired</th><th style="text-align:right">No band</th><th style="text-align:right">Total</th></tr>' +
+    (opRows.length ? opRows.map(([op, o]) => {
+      const oc = OP_COLORS[op] ? opColor(op) : null;
+      return `<tr><td style="font-weight:800${oc ? ';color:' + oc.c : ''}">${oc ? `<span style="display:inline-block;width:9px;height:9px;border-radius:2.5px;background:${oc.c};margin-right:7px;vertical-align:-.5px"></span>` : ''}${esc(op)}</td>
+        <td style="text-align:right;color:var(--acc-l)">${o.ok || '—'}</td>
+        <td style="text-align:right;color:#f2b63c">${o.due || '—'}</td>
+        <td style="text-align:right;color:var(--danger-l)">${o.exp || '—'}</td>
+        <td style="text-align:right;color:var(--ink3)">${o.none || '—'}</td>
+        <td style="text-align:right;font-weight:800">${o.total}</td></tr>`;
+    }).join('') : '<tr><td class="muted">Nothing on the running list yet.</td></tr>');
+  // pup joint footage — only when pups are on site
+  const pf = pupFootage();
+  $('#rPupH').style.display = pf.rows.length ? '' : 'none';
+  $('#rPupC').style.display = pf.rows.length ? '' : 'none';
+  if(pf.rows.length){
+    $('#rPup').innerHTML = '<tr><th>Size</th><th>Lengths</th><th style="text-align:right">Joints</th><th style="text-align:right">In-date ft</th><th style="text-align:right">Expired ft</th><th style="text-align:right">Total ft</th></tr>' +
+      pf.rows.map(r => `<tr><td style="font-weight:800">${esc(r.size)}</td><td class="tiny">${esc(r.lens)}</td>
+        <td style="text-align:right">${r.joints}</td>
+        <td style="text-align:right;color:var(--acc-l);font-weight:700">${fmtFt(r.ok)}′</td>
+        <td style="text-align:right;color:${r.bad ? 'var(--danger-l)' : 'var(--ink3)'}">${r.bad ? fmtFt(r.bad) + '′' : '—'}</td>
+        <td style="text-align:right">${fmtFt(r.total)}′</td></tr>`).join('') +
+      `<tr><td style="font-weight:800">ALL</td><td></td><td style="text-align:right;font-weight:800">${pf.joints}</td>
+        <td style="text-align:right;color:var(--acc-l);font-weight:800">${fmtFt(pf.ok)}′</td>
+        <td style="text-align:right">${pf.bad ? fmtFt(pf.bad) + '′' : '—'}</td>
+        <td style="text-align:right;font-weight:800">${fmtFt(pf.total)}′</td></tr>`;
+  }
   $('#rChart').innerHTML = expiryChartSVG();
   // tap a month bar → jump to that month's column in the recert grid
   $('#rChart').querySelectorAll('rect[data-mk]').forEach(r => r.onclick = () => {
@@ -4208,27 +4311,7 @@ function renderReport(){
   $('#rItems').innerHTML = irows.length ? ih : '<tr><td class="muted">Nothing on the running list yet.</td></tr>';
   renderPumpReport();
 
-  // submission history
-  const KL = {insp:'INSPECTION', fail:'FAILED', iron:'PAD', recv:'RECEIVED', trueup:'TRUE-UP'};
-  const subs = S.archives.slice(-10).reverse();
-  $('#rSubs').innerHTML = subs.length
-    ? subs.map(a => `<div class="subrow"><span class="kindchip ${a.kind || 'iron'}">${KL[a.kind] || 'PAD'}</span>
-        <span class="grow">${esc(a.name)}<br><span class="tiny muted">${esc(String(a.date || ''))}${a.pad ? ' · ' + esc(a.pad) : ''}${a.disc ? ` · ${a.disc.length} diff${a.disc.length === 1 ? '' : 's'}` : ''}</span></span>
-        <span class="sq">${a.total}</span></div>`).join('')
-    : '<div class="tiny muted">No submissions yet — lists land here when crews hit SUBMIT.</div>';
-
   renderRecertGrid();
-
-  // iron flow by month
-  const FL = flowByMonth();
-  $('#rFlow').innerHTML = FL.length
-    ? '<tr><th>Month</th><th style="text-align:right">In</th><th style="text-align:right">Sent</th><th style="text-align:right">Failed</th><th style="text-align:right">Adj</th><th style="text-align:right">Net</th></tr>' +
-      FL.map(f => `<tr><td>${f.lbl}</td><td style="text-align:right;color:var(--acc-l)">${f.recv ? '+' + f.recv : '—'}</td>
-        <td style="text-align:right;color:#ec8a2d">${f.insp ? '−' + f.insp : '—'}</td>
-        <td style="text-align:right;color:var(--danger-l)">${f.fail ? '−' + f.fail : '—'}</td>
-        <td style="text-align:right;color:#8ecde8">${f.tu ? (f.adj > 0 ? '+' : '') + f.adj : '—'}</td>
-        <td style="text-align:right;font-weight:800;color:${f.net > 0 ? 'var(--acc-l)' : f.net < 0 ? 'var(--danger-l)' : 'var(--ink3)'}">${f.net > 0 ? '+' : ''}${f.net}</td></tr>`).join('')
-    : '<tr><td class="muted">Builds itself from submissions — receive, send and fail lists feed it.</td></tr>';
 
   // by type / by area
   const agg = (fn) => { const m = new Map();
