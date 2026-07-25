@@ -617,7 +617,7 @@ body.pdfbuild #pdfsheet{display:block;position:fixed;left:-10020px;top:0;width:7
   #pdfsheet .chartbox{border:1.5px solid #e3e8ed;border-radius:10px;padding:8px 8px 4px;background:#fbfcfd}
   #pdfsheet .exp-t{color:#c8332b;font-weight:700}
   #pdfsheet .due-t{color:#b07a10;font-weight:700}
-  #pdfsheet .pgrid{table-layout:fixed;width:100%}
+  #pdfsheet .pgrid{table-layout:fixed;width:100%;border-collapse:separate;border-spacing:0}
   #pdfsheet .pgrid td:first-child,#pdfsheet .pgrid th:first-child{width:148px;word-break:break-word}
   #pdfsheet .pgrid th.pg-m{text-align:center;font-family:var(--disp);font-weight:800;font-size:8px;letter-spacing:.03em;
     padding:5px 1px;border-radius:5px 5px 0 0;text-transform:none;line-height:1.25}
@@ -1144,7 +1144,7 @@ table.pumpmx{width:100%;border-collapse:separate;border-spacing:0;table-layout:f
     <div id="extraWrap" class="st3"></div>
     <div id="draftsWrap"></div>
     <div class="tiny muted st3" style="margin-top:10px">Running list right now: <b id="homeRunning">0</b> pieces across every operation.</div>
-    <div class="home-ground" aria-hidden="true"><span class="hg-mark">EVOLUTION WELL SERVICES</span><span class="hg-sub">Treating Iron · 15K · Fleet 6</span><span class="hg-build">build 7.25-D</span></div>
+    <div class="home-ground" aria-hidden="true"><span class="hg-mark">EVOLUTION WELL SERVICES</span><span class="hg-sub">Treating Iron · 15K · Fleet 6</span><span class="hg-build">build 7.25-E</span></div>
   </div>
 
   <!-- OPERATION HUB · current list or true-up -->
@@ -4709,10 +4709,11 @@ function pupFootage(){
 function recertGridTableHTML(){
   const G2 = recertGrid();
   if(!G2.rows.length) return '';
+  const colLine = c => { const b = BANDS[c.m]; return `border-left:2px solid ${b.bg};border-right:2px solid ${b.bg};`; };
   let t = `<table class="pgrid"><tr><th style="text-align:left">Item</th>`;
   G2.cols.forEach(c => {
     const b = BANDS[c.m];
-    t += `<th class="pg-m" style="border-top:5px solid ${b.bg};background:${c.past ? '#fdeeee' : c.cur ? '#fdf6e4' : '#f3f5f7'};color:#1c1f22">${b.m}<br>'${String(c.y).slice(2)}</th>`;
+    t += `<th class="pg-m" style="border-top:5px solid ${b.bg};${colLine(c)}background:${c.past ? '#fdeeee' : c.cur ? '#fdf6e4' : '#f3f5f7'};color:#1c1f22">${b.m}<br>'${String(c.y).slice(2)}</th>`;
   });
   t += `<th class="pg-t">TOTAL</th></tr>`;
   let grand2 = 0; const ct2 = new Map();
@@ -4722,13 +4723,13 @@ function recertGridTableHTML(){
     G2.cols.forEach(c => {
       const q = cells.get(c.k) || 0;
       if(q){ rt += q; ct2.set(c.k, (ct2.get(c.k) || 0) + q); }
-      t += `<td class="pg-c" ${q ? `style="background:${BANDS[c.m].bg}26;font-weight:700"` : ''}>${q || ''}</td>`;
+      t += `<td class="pg-c" style="${colLine(c)}${q ? `background:${BANDS[c.m].bg}26;font-weight:700` : ''}">${q || ''}</td>`;
     });
     grand2 += rt;
     t += `<td class="pg-t">${rt}</td></tr>`;
   });
   t += `<tr class="pg-tr"><td><b>TOTAL</b></td>`;
-  G2.cols.forEach(c => { t += `<td class="pg-c"><b>${ct2.get(c.k) || ''}</b></td>`; });
+  G2.cols.forEach(c => { t += `<td class="pg-c" style="${colLine(c)}"><b>${ct2.get(c.k) || ''}</b></td>`; });
   t += `<td class="pg-t">${grand2}</td></tr></table>`;
   return t;
 }
@@ -4985,29 +4986,40 @@ async function buildPdfFile(builder, tag){
     // section-header tops: cutting just AFTER one orphans it at a page bottom — pull the cut up instead
     const headTops = [...sheet.querySelectorAll('.psec h2, :scope > h2')]
       .map(el => Math.round(el.getBoundingClientRect().top - top0)).sort((a, b) => a - b);
+    // grid tables: when a page starts inside one, its month-header row is re-stamped up top
+    const pgTables = [...sheet.querySelectorAll('table.pgrid')].map(tb => {
+      const hr = tb.querySelector('tr');
+      return {hdrTop: Math.round(hr.getBoundingClientRect().top - top0),
+              hdrBottom: Math.round(hr.getBoundingClientRect().bottom - top0),
+              tableBottom: Math.round(tb.getBoundingClientRect().bottom - top0)};
+    });
     const canvas = await html2canvas(sheet, {scale, backgroundColor:'#ffffff', logging:false});
     const M = 20, pw = 612 - M * 2, ph = 792 - M * 2 - 14;        // US letter, footer strip reserved
     const pxPerPt = W / pw, pagePx = ph * pxPerPt;
     const ranges = []; let y0 = 0;
     while(y0 < H - 2){
-      const ideal = y0 + pagePx;
-      if(ideal >= H){ ranges.push([y0, H]); break; }
+      const rep = pgTables.find(t => y0 > t.hdrBottom - 4 && y0 < t.tableBottom - 6);
+      const hdrPx = rep ? (rep.hdrBottom - rep.hdrTop) + 4 : 0;
+      const ideal = y0 + pagePx - hdrPx;
+      if(ideal >= H){ ranges.push([y0, H, rep]); break; }
       let cut = 0;
       for(const c of cuts){ if(c > ideal) break; if(c > y0 + 60) cut = c; }
       if(cut){ for(const h of headTops){ if(h > cut - 44 && h < cut && h > y0 + 60){ cut = h - 6; break; } } }
-      ranges.push([y0, cut || ideal]); y0 = cut || ideal;
+      ranges.push([y0, cut || ideal, rep]); y0 = cut || ideal;
     }
     const doc = new window.jspdf.jsPDF({unit:'pt', format:'letter', compress:true});
     const kScale = canvas.width / W;
     ranges.forEach((r, i) => {
       if(i) doc.addPage();
+      const hdr = r[2] ? Math.round((r[2].hdrBottom - r[2].hdrTop) * kScale) : 0;
       const sh = Math.max(1, Math.round((r[1] - r[0]) * kScale));
       const pc = document.createElement('canvas');
-      pc.width = canvas.width; pc.height = sh;
+      pc.width = canvas.width; pc.height = hdr + sh;
       const cx = pc.getContext('2d');
       cx.fillStyle = '#fff'; cx.fillRect(0, 0, pc.width, pc.height);
-      cx.drawImage(canvas, 0, Math.round(r[0] * kScale), canvas.width, sh, 0, 0, canvas.width, sh);
-      doc.addImage(pc.toDataURL('image/jpeg', .9), 'JPEG', M, M, pw, (r[1] - r[0]) / pxPerPt);
+      if(hdr) cx.drawImage(canvas, 0, Math.round(r[2].hdrTop * kScale), canvas.width, hdr, 0, 0, canvas.width, hdr);
+      cx.drawImage(canvas, 0, Math.round(r[0] * kScale), canvas.width, sh, 0, hdr, canvas.width, sh);
+      doc.addImage(pc.toDataURL('image/jpeg', .9), 'JPEG', M, M, pw, (hdr + sh) / kScale / pxPerPt);
       doc.setFontSize(7.5); doc.setTextColor(120);
       doc.text('Iron Inventory - ' + (S.settings.fleet || '') + ' - ' + (S.settings.pad || ''), M, 792 - 12);
       doc.text('page ' + (i + 1) + ' / ' + ranges.length, 612 - M, 792 - 12, {align:'right'});
