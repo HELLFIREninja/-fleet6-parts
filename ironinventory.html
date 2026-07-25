@@ -1144,7 +1144,7 @@ table.pumpmx{width:100%;border-collapse:separate;border-spacing:0;table-layout:f
     <div id="extraWrap" class="st3"></div>
     <div id="draftsWrap"></div>
     <div class="tiny muted st3" style="margin-top:10px">Running list right now: <b id="homeRunning">0</b> pieces across every operation.</div>
-    <div class="home-ground" aria-hidden="true"><span class="hg-mark">EVOLUTION WELL SERVICES</span><span class="hg-sub">Treating Iron · 15K · Fleet 6</span><span class="hg-build">build 7.25-B</span></div>
+    <div class="home-ground" aria-hidden="true"><span class="hg-mark">EVOLUTION WELL SERVICES</span><span class="hg-sub">Treating Iron · 15K · Fleet 6</span><span class="hg-build">build 7.25-D</span></div>
   </div>
 
   <!-- OPERATION HUB · current list or true-up -->
@@ -1311,13 +1311,14 @@ table.pumpmx{width:100%;border-collapse:separate;border-spacing:0;table-layout:f
   <h2 class="sec">Export</h2>
   <div class="exports">
     <button class="btn teal" id="btnPdf">📄 Color PDF report</button>
+    <button class="btn" id="btnPdfList">▦ Iron Grid PDF</button>
     <button class="btn red" id="btnPrint">🖨 B&amp;W print sheet</button>
     <button class="btn" id="btnCsv">⇩ CSV (Excel)</button>
     <button class="btn" id="btnBackup">⛃ Backup file</button>
     <button class="btn" id="btnRestore">⛅ Restore</button>
   </div>
   <input type="file" id="restoreFile" accept=".json,application/json" class="hidden">
-  <p class="tiny muted" style="margin-top:10px">Color PDF builds the full styled report right in the app — share it or save the file. B&amp;W sheet is the plain shop copy. CSV opens straight in Excel. Backup saves everything — counts, history, favorites, settings.</p>
+  <p class="tiny muted" style="margin-top:10px">Color PDF builds the full styled report right in the app — share it or save the file. Iron Grid PDF is just the recert grid — every item by expiry month, one page to read. B&amp;W sheet is the plain shop copy. CSV opens straight in Excel. Backup saves everything — counts, history, favorites, settings.</p>
 </section>
 
 <!-- ============ SETUP ============ -->
@@ -4705,6 +4706,71 @@ function pupFootage(){
                 byLen:[...r.byLen.values()].sort((a,b) => a.ft - b.ft)}));
   return out;
 }
+function recertGridTableHTML(){
+  const G2 = recertGrid();
+  if(!G2.rows.length) return '';
+  let t = `<table class="pgrid"><tr><th style="text-align:left">Item</th>`;
+  G2.cols.forEach(c => {
+    const b = BANDS[c.m];
+    t += `<th class="pg-m" style="border-top:5px solid ${b.bg};background:${c.past ? '#fdeeee' : c.cur ? '#fdf6e4' : '#f3f5f7'};color:#1c1f22">${b.m}<br>'${String(c.y).slice(2)}</th>`;
+  });
+  t += `<th class="pg-t">TOTAL</th></tr>`;
+  let grand2 = 0; const ct2 = new Map();
+  G2.rows.forEach(([lbl, cells]) => {
+    let rt = 0;
+    t += `<tr><td>${esc(lbl)}</td>`;
+    G2.cols.forEach(c => {
+      const q = cells.get(c.k) || 0;
+      if(q){ rt += q; ct2.set(c.k, (ct2.get(c.k) || 0) + q); }
+      t += `<td class="pg-c" ${q ? `style="background:${BANDS[c.m].bg}26;font-weight:700"` : ''}>${q || ''}</td>`;
+    });
+    grand2 += rt;
+    t += `<td class="pg-t">${rt}</td></tr>`;
+  });
+  t += `<tr class="pg-tr"><td><b>TOTAL</b></td>`;
+  G2.cols.forEach(c => { t += `<td class="pg-c"><b>${ct2.get(c.k) || ''}</b></td>`; });
+  t += `<td class="pg-t">${grand2}</td></tr></table>`;
+  return t;
+}
+function fullCountTableHTML(){
+  const groups = new Map();
+  S.entries.forEach(e => { const k = catName(item(e.itemId) ? item(e.itemId).cat : 'CUST');
+    if(!groups.has(k)) groups.set(k, []); groups.get(k).push(e); });
+  let t = `<table><tr><th>Qty</th><th>Item</th><th>Band</th><th>Expires</th><th>Section</th><th>Serials / notes</th></tr>`;
+  [...groups.entries()].sort((a,b) => a[0].localeCompare(b[0])).forEach(([g, arr]) => {
+    const gq = arr.reduce((s,e) => s + e.qty, 0);
+    t += `<tr><td colspan="6" class="grp-title" style="padding:5px 6px">${esc(g)} — ${gq} pc${gq === 1 ? '' : 's'}</td></tr>`;
+    let lastTk2 = null;
+    arr.sort(ironTypeSort).forEach(e => {
+      const tk = ironTypeKey(e);
+      if(tk !== lastTk2){
+        t += `<tr><td></td><td colspan="5" style="font-size:8.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#178a58;padding:6px 6px 2px;border-bottom:1px solid #dfe4ea">${esc(tk)}</td></tr>`;
+        lastTk2 = tk;
+      }
+      const x = expiryOf(e);
+      const extra = [e.serials.join(', '), e.note].filter(Boolean).join(' — ');
+      t += `<tr><td>${e.qty}</td><td>${esc(labelFor(e))}</td><td>${pdfBandChip(e)}</td>
+        <td>${x ? fmtDate(x) : '—'}</td><td>${esc(e.area || '')}</td><td>${esc(extra)}</td></tr>`;
+    });
+  });
+  return t + `</table>`;
+}
+/* the GRID sheet — the recert grid, exact iron by expiry month, nothing else (Mason 7.25-D: "Make it the Grid. way easier to read") */
+function buildListSheet(){
+  const t = tallies();
+  const now = new Date();
+  let html = `<div class="pdf-hero"><h1>IRON INVENTORY — RECERT GRID</h1>
+    <div class="m">${esc(S.settings.fleet || '')}${S.settings.pad ? ' · Pad: ' + esc(S.settings.pad) : ''} ·
+    ${now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'})}
+    ${now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})} ·
+    ${t.total} piece${t.total === 1 ? '' : 's'} on the running list${t.exp ? ' · ' + t.exp + ' expired' : ''}${t.due ? ' · ' + t.due + ' due ≤' + S.settings.dueSoonDays + 'd' : ''}</div></div>`;
+  const gt = recertGridTableHTML();
+  html += gt ? `<div class="psec-long">` + gt + `</div>`
+             : `<div style="padding:20px 8px;font-size:13px;color:#67707b">Nothing with a band on the list yet — the grid fills in as iron gets banded.</div>`;
+  html += `<div class="pdf-foot"><span>Rows = exact iron · columns = expiry month · red columns are already past · Band = inspection month per EWS Treating Line Standard POL</span>
+    <span>Iron Inventory — ${esc(S.settings.fleet || '')}</span></div>`;
+  $('#pdfsheet').innerHTML = html;
+}
 function buildPdfSheet(){
   /* Every number in this report is computed from the CURRENT running list (S.entries) only.
      No archives, no submissions, no history — Mason: the PDF is a fleet snapshot, full stop. */
@@ -4823,30 +4889,8 @@ function buildPdfSheet(){
   html += `<div class="psec">${secH('Iron expiring by month')}<div class="chartbox pdf-chart">${expiryChartSVG(760, true)}</div></div>`;
 
   // 05 · RECERT GRID — exact iron by expiry month
-  const G2 = recertGrid();
-  if(G2.rows.length){
-    html += `<div class="psec">${secH('Recert grid — exact iron by expiry month')}<table class="pgrid"><tr><th style="text-align:left">Item</th>`;
-    G2.cols.forEach(c => {
-      const b = BANDS[c.m];
-      html += `<th class="pg-m" style="border-top:5px solid ${b.bg};background:${c.past ? '#fdeeee' : c.cur ? '#fdf6e4' : '#f3f5f7'};color:#1c1f22">${b.m}<br>'${String(c.y).slice(2)}</th>`;
-    });
-    html += `<th class="pg-t">TOTAL</th></tr>`;
-    let grand2 = 0; const ct2 = new Map();
-    G2.rows.forEach(([lbl, cells]) => {
-      let rt = 0;
-      html += `<tr><td>${esc(lbl)}</td>`;
-      G2.cols.forEach(c => {
-        const q = cells.get(c.k) || 0;
-        if(q){ rt += q; ct2.set(c.k, (ct2.get(c.k) || 0) + q); }
-        html += `<td class="pg-c" ${q ? `style="background:${BANDS[c.m].bg}26;font-weight:700"` : ''}>${q || ''}</td>`;
-      });
-      grand2 += rt;
-      html += `<td class="pg-t">${rt}</td></tr>`;
-    });
-    html += `<tr class="pg-tr"><td><b>TOTAL</b></td>`;
-    G2.cols.forEach(c => { html += `<td class="pg-c"><b>${ct2.get(c.k) || ''}</b></td>`; });
-    html += `<td class="pg-t">${grand2}</td></tr></table></div>`;
-  }
+  const gridT = recertGridTableHTML();
+  if(gridT) html += `<div class="psec">${secH('Recert grid — exact iron by expiry month')}` + gridT + `</div>`;
 
   // 06 · BAND MIX
   html += `<div class="psec">${secH('Band mix — inspection months on the iron today')}<div class="chartbox">${bandMixSVG()}</div></div>`;
@@ -4902,28 +4946,7 @@ function buildPdfSheet(){
   }
 
   // 11 · FULL COUNT — the audit appendix
-  const groups = new Map();
-  S.entries.forEach(e => { const k = catName(item(e.itemId) ? item(e.itemId).cat : 'CUST');
-    if(!groups.has(k)) groups.set(k, []); groups.get(k).push(e); });
-  html += `<div class="psec-long">${secH('Full count by type')}<table>
-    <tr><th>Qty</th><th>Item</th><th>Band</th><th>Expires</th><th>Section</th><th>Serials / notes</th></tr>`;
-  [...groups.entries()].sort((a,b) => a[0].localeCompare(b[0])).forEach(([g, arr]) => {
-    const gq = arr.reduce((s,e) => s + e.qty, 0);
-    html += `<tr><td colspan="6" class="grp-title" style="padding:5px 6px">${esc(g)} — ${gq} pc${gq === 1 ? '' : 's'}</td></tr>`;
-    let lastTk2 = null;
-    arr.sort(ironTypeSort).forEach(e => {
-      const tk = ironTypeKey(e);
-      if(tk !== lastTk2){
-        html += `<tr><td></td><td colspan="5" style="font-size:8.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#178a58;padding:6px 6px 2px;border-bottom:1px solid #dfe4ea">${esc(tk)}</td></tr>`;
-        lastTk2 = tk;
-      }
-      const x = expiryOf(e);
-      const extra = [e.serials.join(', '), e.note].filter(Boolean).join(' — ');
-      html += `<tr><td>${e.qty}</td><td>${esc(labelFor(e))}</td><td>${pdfBandChip(e)}</td>
-        <td>${x ? fmtDate(x) : '—'}</td><td>${esc(e.area || '')}</td><td>${esc(extra)}</td></tr>`;
-    });
-  });
-  html += `</table></div>`;
+  html += `<div class="psec-long">${secH('Full count by type')}` + fullCountTableHTML() + `</div>`;
 
   html += `<div class="pdf-foot"><span>Current running list only — no submission history · Band = inspection month per EWS Treating Line Standard POL · 6-mo recert · ¹ SOLD NEW = sell-month band, expires 12 mo · IES</span>
     <span>Iron Inventory — ${esc(S.settings.fleet || '')}</span></div>`;
@@ -4943,8 +4966,8 @@ function showPdfReady(){
   $('#pdfShareBtn').style.display = canSh ? '' : 'none';
   $('#pdfReady').classList.add('show');
 }
-async function buildPdfFile(){
-  buildPdfSheet();
+async function buildPdfFile(builder, tag){
+  (builder || buildPdfSheet)();
   document.body.classList.add('pdfbuild');
   const sheet = $('#pdfsheet');
   try{
@@ -4990,7 +5013,7 @@ async function buildPdfFile(){
       doc.text('page ' + (i + 1) + ' / ' + ranges.length, 612 - M, 792 - 12, {align:'right'});
     });
     const n = new Date();
-    const fname = 'Iron-Report-' + (S.settings.fleet || 'Fleet').replace(/[^A-Za-z0-9]+/g, '') + '-' +
+    const fname = 'Iron-' + (tag || 'Report') + '-' + (S.settings.fleet || 'Fleet').replace(/[^A-Za-z0-9]+/g, '') + '-' +
       n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0') + '-' + String(n.getDate()).padStart(2, '0') + '.pdf';
     const blob = doc.output('blob');
     return {blob, fname, pages: ranges.length, file: new File([blob], fname, {type:'application/pdf'}), url: ''};
@@ -4998,20 +5021,20 @@ async function buildPdfFile(){
     document.body.classList.remove('pdfbuild');
   }
 }
-$('#btnPdf').onclick = async () => {
+async function runPdfExport(builder, tag){
   if(!S.entries.length && !S.archives.length){ toast('Nothing to report yet'); return; }
   if($('#pdfBusy').classList.contains('show')) return;
   pdfCleanupOut(); $('#pdfReady').classList.remove('show');
   $('#pdfBusy').classList.add('show');
   try{
     if(!window.html2canvas || !window.jspdf) throw new Error('pdf libs missing');
-    pdfOut = await buildPdfFile();
+    pdfOut = await buildPdfFile(builder, tag);
     $('#pdfBusy').classList.remove('show');
     showPdfReady();
   }catch(err){
     console.warn('in-app pdf failed — falling back to the print box', err);
     $('#pdfBusy').classList.remove('show');
-    buildPdfSheet();
+    (builder || buildPdfSheet)();
     document.body.classList.add('pdfmode');
     setTimeout(() => {
       window.print();
@@ -5023,7 +5046,9 @@ $('#btnPdf').onclick = async () => {
       }, 1200);
     }, 80);
   }
-};
+}
+$('#btnPdf').onclick = () => runPdfExport();
+$('#btnPdfList').onclick = () => runPdfExport(buildListSheet, 'Grid');
 $('#pdfShareBtn').onclick = async () => {
   if(!pdfOut) return;
   try{
