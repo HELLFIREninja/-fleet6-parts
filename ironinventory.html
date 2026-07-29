@@ -671,7 +671,7 @@ body.bolopen{overflow:hidden}
 .bol-ct{font-size:11px;color:var(--acc-l);letter-spacing:.05em}
 .bolband{display:inline-flex;align-items:center;gap:6px;border-radius:9px;padding:7px 11px;font-family:var(--disp);font-weight:800;font-size:12px;border:2px solid transparent;opacity:.45;transition:opacity .12s, transform .08s}
 .bolband.on{opacity:1;border-color:rgba(255,255,255,.65);box-shadow:0 3px 10px rgba(0,0,0,.4)}
-.bolband .bb-ct{font-size:10px;opacity:.8}
+.bolband .bb-ct{font-size:11px;font-weight:800;background:rgba(0,0,0,.22);border-radius:6px;padding:1px 6px}
 .bol-opgrp{margin-bottom:9px}
 .bol-oph{display:flex;align-items:center;gap:8px;margin-bottom:6px}
 .bol-oph .op-sw{width:10px;height:10px;border-radius:3px;flex:none}
@@ -1182,7 +1182,7 @@ table.pumpmx{width:100%;border-collapse:separate;border-spacing:0;table-layout:f
     <div id="extraWrap" class="st3"></div>
     <div id="draftsWrap"></div>
     <div class="tiny muted st3" style="margin-top:10px">Running list right now: <b id="homeRunning">0</b> pieces across every operation.</div>
-    <div class="home-ground" aria-hidden="true"><span class="hg-mark">EVOLUTION WELL SERVICES</span><span class="hg-sub">Treating Iron · 15K · Fleet 6</span><span class="hg-build">build 7.25-F</span></div>
+    <div class="home-ground" aria-hidden="true"><span class="hg-mark">EVOLUTION WELL SERVICES</span><span class="hg-sub">Treating Iron · 15K · Fleet 6</span><span class="hg-build">build 7.25-G</span></div>
   </div>
 
   <!-- OPERATION HUB · current list or true-up -->
@@ -1470,8 +1470,10 @@ table.pumpmx{width:100%;border-collapse:separate;border-spacing:0;table-layout:f
 <div id="pdfsheet"></div>
 <div id="bolWrap"><div class="bol-card">
   <div class="bol-head"><div><div class="bol-kick">RECERT SHIPMENT</div><h2>IRON BOL</h2></div><button class="bol-x" id="bolClose" aria-label="close">✕</button></div>
-  <div class="bol-step">1 · WHICH BANDS ARE GOING OUT</div>
+  <div class="bol-step">1 · WHICH BANDS ARE GOING OUT <span id="bolPick" class="bol-ct"></span></div>
+  <div class="chiprow" id="bolPresets" style="margin-bottom:8px"></div>
   <div class="chiprow" id="bolBands"></div>
+  <p class="tiny muted" style="margin:6px 0 0">Shipping a range? Tap <b>EVERYTHING</b>, then tap off the bands staying home.</p>
   <div class="bol-step">2 · FROM WHICH OPERATIONS / SECTIONS</div>
   <div id="bolSecs"></div>
   <div class="bol-step">3 · THE LIST <span id="bolCount" class="bol-ct"></span></div>
@@ -5140,6 +5142,25 @@ function openBol(){
 }
 function closeBol(){ $('#bolWrap').classList.remove('show'); document.body.classList.remove('bolopen'); }
 function bolRender(){
+  // presets — one tap covers the common shipments
+  $('#bolPresets').innerHTML = `
+    <button class="chip" data-bp="all">✓ EVERYTHING</button>
+    <button class="chip" data-bp="hot">⚠ EXPIRED + DUE</button>
+    <button class="chip" data-bp="none">✕ CLEAR</button>`;
+  $('#bolPresets').querySelectorAll('[data-bp]').forEach(bt => bt.onclick = () => {
+    const mode = bt.dataset.bp;
+    if(mode === 'none') bolSel.bands.clear();
+    else if(mode === 'all') bolBandList().forEach(b => bolSel.bands.add(b.k));
+    else {
+      bolSel.bands.clear();
+      S.entries.forEach(e => { const st = statusOf(e); if(st === 'exp' || st === 'due') bolSel.bands.add(bolBandKey(e)); });
+    }
+    buzz(12); bolRender();
+  });
+  // live tally of what the taps picked up — before the section filter
+  let pickPcs = 0;
+  S.entries.forEach(e => { if(bolSel.bands.has(bolBandKey(e))) pickPcs += e.qty; });
+  $('#bolPick').textContent = bolSel.bands.size ? bolSel.bands.size + ' band' + (bolSel.bands.size === 1 ? '' : 's') + ' · ' + pickPcs + ' pcs picked' : '';
   // band chips — painted in the real band colors
   $('#bolBands').innerHTML = bolBandList().map(b => {
     if(b.k === 'NB') return `<button class="bolband ${bolSel.bands.has('NB') ? 'on' : ''}" data-bk="NB" style="background:#22272d;color:#9aa3ad;border-style:dashed">NO BAND <span class="bb-ct">×${b.n}</span></button>`;
