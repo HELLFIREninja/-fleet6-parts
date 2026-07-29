@@ -659,6 +659,44 @@ body.pdfbuild #pdfsheet{display:block;position:fixed;left:-10020px;top:0;width:7
 
 
 /* ---- PDF build overlay + ready bar ---- */
+#bolWrap{display:none;position:fixed;inset:0;z-index:290;background:rgba(10,13,16,.92);overflow-y:auto;-webkit-overflow-scrolling:touch}
+#bolWrap.show{display:block}
+body.bolopen{overflow:hidden}
+.bol-card{max-width:860px;margin:0 auto;padding:calc(14px + var(--sat, 0px)) 16px 40px}
+.bol-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px}
+.bol-head h2{font-family:var(--disp);font-weight:800;font-size:26px;letter-spacing:.08em;margin:0;color:var(--ink)}
+.bol-kick{font-size:10px;letter-spacing:.22em;font-weight:800;color:#f2c94c;margin-bottom:2px}
+.bol-x{width:40px;height:40px;border-radius:11px;border:1.5px solid var(--line2);background:var(--bg2);color:var(--ink2);font-size:17px}
+.bol-step{font-family:var(--disp);font-weight:800;font-size:12.5px;letter-spacing:.16em;color:var(--ink2);margin:18px 0 8px;display:flex;align-items:baseline;gap:10px}
+.bol-ct{font-size:11px;color:var(--acc-l);letter-spacing:.05em}
+.bolband{display:inline-flex;align-items:center;gap:6px;border-radius:9px;padding:7px 11px;font-family:var(--disp);font-weight:800;font-size:12px;border:2px solid transparent;opacity:.45;transition:opacity .12s, transform .08s}
+.bolband.on{opacity:1;border-color:rgba(255,255,255,.65);box-shadow:0 3px 10px rgba(0,0,0,.4)}
+.bolband .bb-ct{font-size:10px;opacity:.8}
+.bol-opgrp{margin-bottom:9px}
+.bol-oph{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.bol-oph .op-sw{width:10px;height:10px;border-radius:3px;flex:none}
+.bol-oph button{font-family:var(--disp);font-weight:800;font-size:11.5px;letter-spacing:.12em;background:none;border:none;color:var(--ink2);padding:2px 0}
+.bol-oph button.off{color:var(--ink3);text-decoration:line-through}
+.bolrow{display:flex;align-items:center;gap:9px;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:7px 10px;margin-bottom:6px}
+.bolrow .br-band{flex:none;width:40px;text-align:center;border-radius:6px;font-family:var(--disp);font-weight:800;font-size:10px;padding:4px 0}
+.bolrow .br-txt{flex:1;min-width:0}
+.bolrow .br-txt b{display:block;font-size:13.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bolrow .br-txt span{font-size:11px;color:var(--ink3)}
+.bolrow .br-step{flex:none;display:flex;align-items:center;gap:6px}
+.bolrow .br-step button{width:30px;height:30px;border-radius:8px;border:1.5px solid var(--line2);background:var(--bg2);color:var(--ink);font-size:15px;font-weight:800}
+.bolrow .br-q{font-family:var(--disp);font-weight:800;font-size:16px;min-width:26px;text-align:center}
+.bolrow .br-x{flex:none;width:30px;height:30px;border-radius:8px;border:none;background:rgba(217,95,95,.14);color:var(--danger-l);font-size:13px}
+.bol-empty{padding:14px 4px;color:var(--ink3);font-size:13px}
+#bolWrap input{width:100%;font-size:16px;padding:11px 12px;border-radius:10px;border:1.5px solid var(--line2);background:var(--bg2);color:var(--ink)}
+.btn.amberb{border-color:rgba(242,201,76,.5)}
+#pdfsheet .bol-info{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+#pdfsheet .bol-cell{border:1.5px solid #dfe4ea;border-radius:9px;padding:7px 10px}
+#pdfsheet .bol-cell .k{font-size:8.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#67707b}
+#pdfsheet .bol-cell .v{font-size:13px;font-weight:700;margin-top:2px;word-break:break-word}
+#pdfsheet .bol-signs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-top:26px;break-inside:avoid;page-break-inside:avoid}
+#pdfsheet .bol-sign .ln{border-bottom:1.5px solid #1c1f22;height:34px}
+#pdfsheet .bol-sign .lb{font-size:8.5px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:#67707b;margin-top:4px}
+#pdfsheet .bol-sign .dt{border-bottom:1.5px solid #b9c0c7;height:22px;margin-top:10px;width:60%}
 #pdfBusy{display:none;position:fixed;inset:0;z-index:300;background:rgba(10,13,16,.78);align-items:center;justify-content:center}
 #pdfBusy.show{display:flex}
 .pbz-card{background:#161a1f;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:22px 30px;text-align:center;box-shadow:0 18px 50px rgba(0,0,0,.5)}
@@ -1144,7 +1182,7 @@ table.pumpmx{width:100%;border-collapse:separate;border-spacing:0;table-layout:f
     <div id="extraWrap" class="st3"></div>
     <div id="draftsWrap"></div>
     <div class="tiny muted st3" style="margin-top:10px">Running list right now: <b id="homeRunning">0</b> pieces across every operation.</div>
-    <div class="home-ground" aria-hidden="true"><span class="hg-mark">EVOLUTION WELL SERVICES</span><span class="hg-sub">Treating Iron · 15K · Fleet 6</span><span class="hg-build">build 7.25-E</span></div>
+    <div class="home-ground" aria-hidden="true"><span class="hg-mark">EVOLUTION WELL SERVICES</span><span class="hg-sub">Treating Iron · 15K · Fleet 6</span><span class="hg-build">build 7.25-F</span></div>
   </div>
 
   <!-- OPERATION HUB · current list or true-up -->
@@ -1312,13 +1350,14 @@ table.pumpmx{width:100%;border-collapse:separate;border-spacing:0;table-layout:f
   <div class="exports">
     <button class="btn teal" id="btnPdf">📄 Color PDF report</button>
     <button class="btn" id="btnPdfList">▦ Iron Grid PDF</button>
+    <button class="btn amberb" id="btnBol">⛟ Iron BOL</button>
     <button class="btn red" id="btnPrint">🖨 B&amp;W print sheet</button>
     <button class="btn" id="btnCsv">⇩ CSV (Excel)</button>
     <button class="btn" id="btnBackup">⛃ Backup file</button>
     <button class="btn" id="btnRestore">⛅ Restore</button>
   </div>
   <input type="file" id="restoreFile" accept=".json,application/json" class="hidden">
-  <p class="tiny muted" style="margin-top:10px">Color PDF builds the full styled report right in the app — share it or save the file. Iron Grid PDF is just the recert grid — every item by expiry month, one page to read. B&amp;W sheet is the plain shop copy. CSV opens straight in Excel. Backup saves everything — counts, history, favorites, settings.</p>
+  <p class="tiny muted" style="margin-top:10px">Color PDF builds the full styled report right in the app — share it or save the file. Iron Grid PDF is just the recert grid — every item by expiry month, one page to read. Iron BOL builds a recert shipment sheet — pick the bands going out, pick the operations, trim the list, print it. B&amp;W sheet is the plain shop copy. CSV opens straight in Excel. Backup saves everything — counts, history, favorites, settings.</p>
 </section>
 
 <!-- ============ SETUP ============ -->
@@ -1429,6 +1468,25 @@ table.pumpmx{width:100%;border-collapse:separate;border-spacing:0;table-layout:f
 <div class="toast" id="toast"></div>
 <div id="printsheet"></div>
 <div id="pdfsheet"></div>
+<div id="bolWrap"><div class="bol-card">
+  <div class="bol-head"><div><div class="bol-kick">RECERT SHIPMENT</div><h2>IRON BOL</h2></div><button class="bol-x" id="bolClose" aria-label="close">✕</button></div>
+  <div class="bol-step">1 · WHICH BANDS ARE GOING OUT</div>
+  <div class="chiprow" id="bolBands"></div>
+  <div class="bol-step">2 · FROM WHICH OPERATIONS / SECTIONS</div>
+  <div id="bolSecs"></div>
+  <div class="bol-step">3 · THE LIST <span id="bolCount" class="bol-ct"></span></div>
+  <p class="tiny muted" style="margin:2px 0 8px">Tap − / + to ship part of a line · ✕ drops the line entirely.</p>
+  <div id="bolLines"></div>
+  <div class="bol-step">4 · SHIPMENT INFO</div>
+  <div class="fld"><label>Ship to (recert shop)</label><input id="bolTo" placeholder="IES — Williamsport"></div>
+  <div class="fld"><label>Carrier / hauled by</label><input id="bolCarrier" placeholder="Hot shot · company truck · etc."></div>
+  <div class="fld"><label>BOL number</label><input id="bolNum" placeholder="auto"></div>
+  <div class="fld"><label>Notes</label><input id="bolNotes" placeholder="optional"></div>
+  <div class="actions" style="margin:14px 0 30px">
+    <button class="btn ghost" id="bolCancel">Close</button>
+    <button class="btn teal" id="bolBuild">⛟ BUILD BOL PDF</button>
+  </div>
+</div></div>
 <div id="pdfBusy"><div class="pbz-card"><div class="pbz-ring"></div><div class="pbz-t">BUILDING PDF…</div></div></div>
 <div id="pdfReady"><div class="pr-card"><div class="pr-t">REPORT READY</div><div class="pr-m" id="pdfReadyMeta"></div><div class="pr-b"><button class="prb main" id="pdfShareBtn">SHARE</button><button class="prb" id="pdfSaveBtn">SAVE FILE</button><button class="prb x" id="pdfCloseBtn">✕</button></div></div></div>
 <script>
@@ -5033,6 +5091,162 @@ async function buildPdfFile(builder, tag){
     document.body.classList.remove('pdfbuild');
   }
 }
+/* ---------- IRON BOL builder — pick bands, pick sections, trim the list, print (Mason 7.25-F) ---------- */
+const bolSel = {bands:new Set(), secs:new Set(), qty:new Map(), excluded:new Set(), opened:false};
+const bolBandKey = e => (e.color == null || e.color < 0) ? 'NB' : e.year + '-' + e.color;
+const bolSecKey = e => 'A|' + (e.area || 'No section');
+function bolBandList(){
+  const m = new Map();
+  S.entries.forEach(e => {
+    const k = bolBandKey(e);
+    const o = m.get(k) || {k, y:e.year, c:e.color, n:0, chrome:!!e.chrome};
+    o.n += e.qty; m.set(k, o);
+  });
+  return [...m.values()].sort((a,b) => a.k === 'NB' ? 1 : b.k === 'NB' ? -1 : (a.y*12 + a.c) - (b.y*12 + b.c));
+}
+function bolSecList(){
+  const ops = new Map();
+  S.entries.forEach(e => {
+    const op = entryOp(e) || 'No section';
+    if(!ops.has(op)) ops.set(op, new Map());
+    const k = bolSecKey(e);
+    const s = ops.get(op);
+    s.set(k, (s.get(k) || 0) + e.qty);
+  });
+  const order = ['Frac', 'Pump Down', 'Pump Trailers', 'On Standby'];
+  return [...ops.entries()].sort((a,b) => {
+    const ia = order.indexOf(a[0]), ib = order.indexOf(b[0]);
+    return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a[0].localeCompare(b[0]);
+  });
+}
+function bolMatches(){
+  return S.entries.filter(e => bolSel.bands.has(bolBandKey(e)) && bolSel.secs.has(bolSecKey(e)) && !bolSel.excluded.has(e.id));
+}
+function bolQty(e){ const q = bolSel.qty.get(e.id); return Math.min(e.qty, q == null ? e.qty : Math.max(1, q)); }
+function openBol(){
+  if(!S.entries.length){ toast('Nothing on the running list yet'); return; }
+  if(!bolSel.opened){                            // first open: every section on, no bands picked yet
+    bolSel.opened = true;
+    bolSecList().forEach(([op, secs]) => secs.forEach((n, k) => bolSel.secs.add(k)));
+  } else {                                       // later opens: keep choices, but adopt brand-new sections
+    bolSecList().forEach(([op, secs]) => secs.forEach((n, k) => { if(!bolSel._seen || !bolSel._seen.has(k)) bolSel.secs.add(k); }));
+  }
+  bolSel._seen = new Set(); bolSecList().forEach(([op, secs]) => secs.forEach((n, k) => bolSel._seen.add(k)));
+  if(S.settings.bolTo) $('#bolTo').value = S.settings.bolTo;
+  if(S.settings.bolCarrier) $('#bolCarrier').value = S.settings.bolCarrier;
+  document.body.classList.add('bolopen');
+  $('#bolWrap').classList.add('show');
+  bolRender();
+}
+function closeBol(){ $('#bolWrap').classList.remove('show'); document.body.classList.remove('bolopen'); }
+function bolRender(){
+  // band chips — painted in the real band colors
+  $('#bolBands').innerHTML = bolBandList().map(b => {
+    if(b.k === 'NB') return `<button class="bolband ${bolSel.bands.has('NB') ? 'on' : ''}" data-bk="NB" style="background:#22272d;color:#9aa3ad;border-style:dashed">NO BAND <span class="bb-ct">×${b.n}</span></button>`;
+    const bd = BANDS[b.c];
+    return `<button class="bolband ${bolSel.bands.has(b.k) ? 'on' : ''}" data-bk="${b.k}" style="background:${bd.bg};color:${bd.tx}">${b.chrome ? 'MFG ' : ''}${bd.m} '${String(b.y).slice(2)} <span class="bb-ct">×${b.n}</span></button>`;
+  }).join('');
+  $('#bolBands').querySelectorAll('[data-bk]').forEach(ch => ch.onclick = () => {
+    const k = ch.dataset.bk;
+    bolSel.bands.has(k) ? bolSel.bands.delete(k) : bolSel.bands.add(k);
+    buzz(10); bolRender();
+  });
+  // sections grouped by operation, with an op-level toggle
+  $('#bolSecs').innerHTML = bolSecList().map(([op, secs]) => {
+    const oc = opColor(op);
+    const keys = [...secs.keys()];
+    const allOn = keys.every(k => bolSel.secs.has(k));
+    return `<div class="bol-opgrp"><div class="bol-oph"><span class="op-sw" style="background:${oc.c}"></span>
+      <button data-op="${esc(op)}" class="${allOn ? '' : 'off'}">${esc(op).toUpperCase()} — ${allOn ? 'ALL IN' : 'TAP TO INCLUDE ALL'}</button></div>
+      <div class="chiprow">` + keys.map(k => {
+        const lbl = k.slice(2);
+        return `<button class="chip ${bolSel.secs.has(k) ? 'on' : ''}" data-sk="${esc(k)}">${esc(lbl)} <b style="opacity:.65">×${secs.get(k)}</b></button>`;
+      }).join('') + `</div></div>`;
+  }).join('');
+  $('#bolSecs').querySelectorAll('[data-sk]').forEach(ch => ch.onclick = () => {
+    const k = ch.dataset.sk;
+    bolSel.secs.has(k) ? bolSel.secs.delete(k) : bolSel.secs.add(k);
+    buzz(10); bolRender();
+  });
+  $('#bolSecs').querySelectorAll('[data-op]').forEach(bt => bt.onclick = () => {
+    const grp = bolSecList().find(([op]) => op === bt.dataset.op);
+    if(!grp) return;
+    const keys = [...grp[1].keys()];
+    const allOn = keys.every(k => bolSel.secs.has(k));
+    keys.forEach(k => allOn ? bolSel.secs.delete(k) : bolSel.secs.add(k));
+    buzz(12); bolRender();
+  });
+  // the list — editable
+  const rows = bolMatches().sort((a,b) => (a.area || '').localeCompare(b.area || '') || ironTypeSort(a,b));
+  const pcs = rows.reduce((s,e) => s + bolQty(e), 0);
+  $('#bolCount').textContent = rows.length ? rows.length + ' line' + (rows.length === 1 ? '' : 's') + ' · ' + pcs + ' pc' + (pcs === 1 ? '' : 's') : '';
+  $('#bolLines').innerHTML = rows.length ? rows.map(e => {
+    const b = bandOf(e);
+    const chip = b ? `<span class="br-band" style="background:${b.bg};color:${b.tx}">${e.chrome ? 'MFG' : b.m}</span>` : `<span class="br-band" style="background:#22272d;color:#9aa3ad">—</span>`;
+    const q = bolQty(e);
+    return `<div class="bolrow">${chip}
+      <span class="br-txt"><b>${esc(preciseLabel(e))}</b><span>${esc(e.area || '')}${e.serials.length ? ' · ' + esc(e.serials.join(', ')) : ''}</span></span>
+      <span class="br-step"><button data-m="${e.id}">−</button><span class="br-q">${q}${q < e.qty ? '<span style="font-size:10px;color:var(--ink3)">/' + e.qty + '</span>' : ''}</span><button data-p="${e.id}">＋</button></span>
+      <button class="br-x" data-x="${e.id}">✕</button></div>`;
+  }).join('') : `<div class="bol-empty">${bolSel.bands.size ? 'Nothing matches those bands in the picked sections.' : 'Tap the band months going out for recert — the list builds itself.'}</div>`;
+  $('#bolLines').querySelectorAll('[data-m]').forEach(bt => bt.onclick = () => { const e = S.entries.find(x => x.id === bt.dataset.m); if(e){ bolSel.qty.set(e.id, Math.max(1, bolQty(e) - 1)); bolRender(); } });
+  $('#bolLines').querySelectorAll('[data-p]').forEach(bt => bt.onclick = () => { const e = S.entries.find(x => x.id === bt.dataset.p); if(e){ bolSel.qty.set(e.id, Math.min(e.qty, bolQty(e) + 1)); bolRender(); } });
+  $('#bolLines').querySelectorAll('[data-x]').forEach(bt => bt.onclick = () => { bolSel.excluded.add(bt.dataset.x); buzz(12); bolRender(); });
+}
+function buildBolSheet(){
+  const rows = bolMatches().sort((a,b) => (a.area || '').localeCompare(b.area || '') || ironTypeSort(a,b));
+  const pcs = rows.reduce((s,e) => s + bolQty(e), 0);
+  const now = new Date();
+  const num = $('#bolNum').value.trim() || ('BOL-' + (S.settings.fleet || 'F6').replace(/[^A-Za-z0-9]+/g, '') + '-' + fmtISO(now).replace(/-/g, '') + '-' + ((S.settings.bolSeq || 0) + 1));
+  let html = `<div class="pdf-hero"><h1>IRON BOL — RECERT SHIPMENT</h1>
+    <div class="m">${esc(S.settings.fleet || '')}${S.settings.pad ? ' · Pad: ' + esc(S.settings.pad) : ''} ·
+    ${now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'})}
+    ${now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</div></div>`;
+  html += `<div class="bol-info">
+    <div class="bol-cell"><div class="k">BOL #</div><div class="v">${esc(num)}</div></div>
+    <div class="bol-cell"><div class="k">Ship from</div><div class="v">${esc(S.settings.fleet || '')}${S.settings.pad ? ' · ' + esc(S.settings.pad) : ''}</div></div>
+    <div class="bol-cell"><div class="k">Ship to</div><div class="v">${esc($('#bolTo').value.trim() || '—')}</div></div>
+    <div class="bol-cell"><div class="k">Carrier</div><div class="v">${esc($('#bolCarrier').value.trim() || '—')}</div></div>
+    <div class="bol-cell"><div class="k">Prepared by</div><div class="v">${esc(S.currentUser || '')}</div></div>
+    <div class="bol-cell"><div class="k">Total</div><div class="v">${rows.length} line${rows.length === 1 ? '' : 's'} · ${pcs} pc${pcs === 1 ? '' : 's'}</div></div>
+  </div>`;
+  html += `<div class="psec-long"><table><tr><th>Qty</th><th>Item</th><th>Band</th><th>Expires</th><th>From</th><th>Serials / notes</th></tr>`;
+  let lastArea = null;
+  rows.forEach(e => {
+    if((e.area || '') !== lastArea){
+      lastArea = e.area || '';
+      html += `<tr><td colspan="6" class="grp-title" style="padding:5px 6px">${esc(lastArea || 'No section')}</td></tr>`;
+    }
+    const x = expiryOf(e);
+    const extra = [e.serials.join(', '), e.note].filter(Boolean).join(' — ');
+    const q = bolQty(e);
+    html += `<tr><td><b>${q}</b>${q < e.qty ? `<span style="font-size:8px;color:#67707b"> of ${e.qty}</span>` : ''}</td><td>${esc(preciseLabel(e))}</td><td>${pdfBandChip(e)}</td>
+      <td>${x ? fmtDate(x) : '—'}</td><td>${esc(e.area || '')}</td><td>${esc(extra)}</td></tr>`;
+  });
+  html += `<tr class="pg-tr"><td><b>${pcs}</b></td><td colspan="5"><b>TOTAL PIECES OUT FOR RECERT</b></td></tr></table></div>`;
+  const notes = $('#bolNotes').value.trim();
+  if(notes) html += `<div style="font-size:11px;padding:8px 2px 0"><b style="font-size:9px;letter-spacing:.14em;color:#67707b">NOTES </b> ${esc(notes)}</div>`;
+  html += `<div class="bol-signs">
+    <div class="bol-sign"><div class="ln"></div><div class="lb">Shipped by</div><div class="dt"></div><div class="lb">Date</div></div>
+    <div class="bol-sign"><div class="ln"></div><div class="lb">Carrier</div><div class="dt"></div><div class="lb">Date</div></div>
+    <div class="bol-sign"><div class="ln"></div><div class="lb">Received by (recert shop)</div><div class="dt"></div><div class="lb">Date</div></div>
+  </div>`;
+  html += `<div class="pdf-foot"><span>Iron listed ships for recertification per EWS Treating Line Standard POL · counts stay on the running list until removed in the app</span>
+    <span>Iron Inventory — ${esc(S.settings.fleet || '')}</span></div>`;
+  $('#pdfsheet').innerHTML = html;
+}
+$('#btnBol').onclick = openBol;
+$('#bolClose').onclick = closeBol;
+$('#bolCancel').onclick = closeBol;
+$('#bolBuild').onclick = async () => {
+  if(!bolMatches().length){ toast('Nothing on the BOL yet — pick the bands going out'); return; }
+  S.settings.bolTo = $('#bolTo').value.trim();
+  S.settings.bolCarrier = $('#bolCarrier').value.trim();
+  if(!$('#bolNum').value.trim()) S.settings.bolSeq = (S.settings.bolSeq || 0) + 1;
+  save();
+  await runPdfExport(buildBolSheet, 'BOL');
+  closeBol();
+};
 async function runPdfExport(builder, tag){
   if(!S.entries.length && !S.archives.length){ toast('Nothing to report yet'); return; }
   if($('#pdfBusy').classList.contains('show')) return;
