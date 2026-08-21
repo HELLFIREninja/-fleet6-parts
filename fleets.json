@@ -1,0 +1,11 @@
+{
+  "_comment": "Fleet registry for the Other-fleets view. Every fleet's app reads this file from the master's GitHub Pages site. To add a fleet: add a line with its number and Realtime Database URL, commit. No index.html change needed.",
+  "updated": "2026-08-21",
+  "fleets": [
+    { "fleet": 1,  "db": "https://ews-fleet1-default-rtdb.firebaseio.com" },
+    { "fleet": 6,  "db": "https://ews-fleet6-default-rtdb.firebaseio.com" },
+    { "fleet": 7,  "db": "https://ews-fleet7-default-rtdb.firebaseio.com" },
+    { "fleet": 10, "db": "https://fleet-10-parts-default-rtdb.firebaseio.com" },
+    { "fleet": 14, "db": "https://ews-fleet14-default-rtdb.firebaseio.com" }
+  ]
+}
